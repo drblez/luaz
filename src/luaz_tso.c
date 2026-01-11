@@ -11,21 +11,22 @@
  * | lua_tso_free | function | Free a dataset allocation |
  */
 #include "luaz_tso.h"
+#include "luaz_errors.h"
 
 int lua_tso_cmd(const char *cmd)
 {
   (void)cmd;
-  return -1; /* LUZ-30003 tso.cmd not implemented */
+  return LUZ_E_TSO_CMD;
 }
 
 int lua_tso_alloc(const char *spec)
 {
   (void)spec;
-  return -1; /* LUZ-30004 tso.alloc not implemented */
+  return LUZ_E_TSO_ALLOC;
 }
 
 int lua_tso_free(const char *spec)
 {
   (void)spec;
-  return -1; /* LUZ-30005 tso.free not implemented */
+  return LUZ_E_TSO_FREE;
 }

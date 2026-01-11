@@ -82,6 +82,10 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 - [x] Produce a test plan and fixture layout for batch‑mode execution.
 - [x] Create C core skeletons for host APIs and reserve LUZ ranges.
 - [x] Draft policy/config format and architecture overview docs.
+- [x] Document Lua VM touchpoints and patch plan.
+- [x] Define LUZ error constants and return codes in C stubs.
+- [x] Add a local build scaffold for C stubs.
+- [x] Add reserved message catalog for dataset I/O errors.
 
 ## Deliverables
 

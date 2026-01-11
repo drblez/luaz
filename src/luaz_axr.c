@@ -9,9 +9,10 @@
  * | lua_axr_request | function | Execute AXR request (optional) |
  */
 #include "luaz_axr.h"
+#include "luaz_errors.h"
 
 int lua_axr_request(const char *request)
 {
   (void)request;
-  return -1; /* LUZ-30012 axr.request not implemented */
+  return LUZ_E_AXR_REQUEST;
 }

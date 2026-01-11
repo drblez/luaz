@@ -1,0 +1,29 @@
+/*
+ * Copyright 2026 drblez AKA Ruslan Stepanenko (drblez@gmail.com)
+ *
+ * LUZ error codes for Lua/TSO C core stubs.
+ *
+ * Object Table:
+ * | Object | Kind | Purpose |
+ * |--------|------|---------|
+ * | LUZ_E_* | macro | Numeric error codes for stub returns |
+ */
+#ifndef LUAZ_ERRORS_H
+#define LUAZ_ERRORS_H
+
+#define LUZ_E_CORE_INIT 30001
+#define LUZ_E_CORE_SHUTDOWN 30002
+#define LUZ_E_TSO_CMD 30003
+#define LUZ_E_TSO_ALLOC 30004
+#define LUZ_E_TSO_FREE 30005
+#define LUZ_E_DS_OPEN 30006
+#define LUZ_E_DS_READ 30007
+#define LUZ_E_DS_WRITE 30008
+#define LUZ_E_DS_CLOSE 30009
+#define LUZ_E_ISPF_QRY 30010
+#define LUZ_E_ISPF_EXEC 30011
+#define LUZ_E_AXR_REQUEST 30012
+#define LUZ_E_TLS_CONNECT 30013
+#define LUZ_E_TLS_LISTEN 30014
+
+#endif /* LUAZ_ERRORS_H */

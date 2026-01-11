@@ -10,15 +10,16 @@
  * | lua_tls_listen | function | Optional TLS server |
  */
 #include "luaz_tls.h"
+#include "luaz_errors.h"
 
 int lua_tls_connect(const char *params)
 {
   (void)params;
-  return -1; /* LUZ-30013 tls.connect not implemented */
+  return LUZ_E_TLS_CONNECT;
 }
 
 int lua_tls_listen(const char *params)
 {
   (void)params;
-  return -1; /* LUZ-30014 tls.listen not implemented */
+  return LUZ_E_TLS_LISTEN;
 }

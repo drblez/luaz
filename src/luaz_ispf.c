@@ -10,14 +10,15 @@
  * | lua_ispf_exec | function | Execute ISPF command |
  */
 #include "luaz_ispf.h"
+#include "luaz_errors.h"
 
 int lua_ispf_qry(void)
 {
-  return -1; /* LUZ-30010 ispf.qry not implemented */
+  return LUZ_E_ISPF_QRY;
 }
 
 int lua_ispf_exec(const char *cmdline)
 {
   (void)cmdline;
-  return -1; /* LUZ-30011 ispf.exec not implemented */
+  return LUZ_E_ISPF_EXEC;
 }

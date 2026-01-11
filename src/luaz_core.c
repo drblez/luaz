@@ -10,13 +10,14 @@
  * | luaz_core_shutdown | function | Shutdown core runtime |
  */
 #include "luaz_core.h"
+#include "luaz_errors.h"
 
 int luaz_core_init(void)
 {
-  return -1; /* LUZ-30001 core init not implemented */
+  return LUZ_E_CORE_INIT;
 }
 
 int luaz_core_shutdown(void)
 {
-  return -1; /* LUZ-30002 core shutdown not implemented */
+  return LUZ_E_CORE_SHUTDOWN;
 }
