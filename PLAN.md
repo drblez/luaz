@@ -87,6 +87,7 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 - [x] Add a local build scaffold for C stubs.
 - [x] Add reserved message catalog for dataset I/O errors.
 - [x] Implement z/OS dynamic loading disable in `lua-vm/src/loadlib.c`.
+- [x] Restrict standard I/O in `lua-vm/src/liolib.c` for z/OS.
 
 ## Deliverables
 

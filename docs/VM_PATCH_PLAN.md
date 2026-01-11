@@ -15,6 +15,7 @@
 2. `liolib.c`
    - Replace file I/O with DDNAME dataset access hooks.
    - Enforce encoding policy on read/write boundaries.
+   - Implemented: z/OS disables io.open/popen/tmpfile with LUZ codes (see `docs/patches/liolib_zos.md`).
 
 3. `loslib.c`
    - Provide z/OS‑safe implementations for time/env/exit.

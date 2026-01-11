@@ -53,7 +53,15 @@ static int l_checkmode (const char *mode) {
 
 #if !defined(l_popen)		/* { */
 
-#if defined(LUA_USE_POSIX)	/* { */
+#if defined(LUAZ_ZOS)	/* { */
+
+#define l_popen(L,c,m)  \
+	  ((void)c, (void)m, \
+	  luaL_error(L, "LUZ-42001 popen is disabled on z/OS"), \
+	  (FILE*)0)
+#define l_pclose(L,file)		((void)L, (void)file, -1)
+
+#elif defined(LUA_USE_POSIX)	/* { */
 
 #define l_popen(L,c,m)		(fflush(NULL), popen(c,m))
 #define l_pclose(L,file)	(pclose(file))
@@ -258,14 +266,23 @@ static LStream *newfile (lua_State *L) {
 
 
 static void opencheck (lua_State *L, const char *fname, const char *mode) {
+#if defined(LUAZ_ZOS)
+  (void)fname;
+  (void)mode;
+  luaL_error(L, "LUZ-42002 file I/O is disabled on z/OS");
+#else
   LStream *p = newfile(L);
   p->f = fopen(fname, mode);
   if (l_unlikely(p->f == NULL))
     luaL_error(L, "cannot open file '%s' (%s)", fname, strerror(errno));
+#endif
 }
 
 
 static int io_open (lua_State *L) {
+#if defined(LUAZ_ZOS)
+  return luaL_error(L, "LUZ-42002 file I/O is disabled on z/OS");
+#else
   const char *filename = luaL_checkstring(L, 1);
   const char *mode = luaL_optstring(L, 2, "r");
   LStream *p = newfile(L);
@@ -274,6 +291,7 @@ static int io_open (lua_State *L) {
   errno = 0;
   p->f = fopen(filename, mode);
   return (p->f == NULL) ? luaL_fileresult(L, 0, filename) : 1;
+#endif
 }
 
 
@@ -300,10 +318,14 @@ static int io_popen (lua_State *L) {
 
 
 static int io_tmpfile (lua_State *L) {
+#if defined(LUAZ_ZOS)
+  return luaL_error(L, "LUZ-42003 tmpfile is disabled on z/OS");
+#else
   LStream *p = newfile(L);
   errno = 0;
   p->f = tmpfile();
   return (p->f == NULL) ? luaL_fileresult(L, 0, NULL) : 1;
+#endif
 }
 
 
@@ -838,4 +860,3 @@ LUAMOD_API int luaopen_io (lua_State *L) {
   createstdfile(L, stderr, NULL, "stderr");
   return 1;
 }
-
