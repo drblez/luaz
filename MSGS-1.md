@@ -8,6 +8,9 @@
 | LUZ-10004 | tso.msg not implemented | lua/tso.lua | Wait for implementation; use TSO/ISPF messaging in JCL | stub |
 | LUZ-10005 | tso.exit not implemented | lua/tso.lua | Wait for implementation; return RC via JCL step control | stub |
 | LUZ-11001 | ds.open_dd not implemented | lua/ds.lua | Wait for implementation; use DDNAME I/O via JCL tools | stub |
+| LUZ-11002 | ds.remove not implemented | lua/ds.lua | Wait for implementation; use dataset utilities | stub |
+| LUZ-11003 | ds.rename not implemented | lua/ds.lua | Wait for implementation; use dataset utilities | stub |
+| LUZ-11004 | ds.tmpname not implemented | lua/ds.lua | Wait for implementation; define dataset naming policy | stub |
 | LUZ-12001 | ispf.qry not implemented | lua/ispf.lua | Wait for implementation; verify ISPF setup manually | stub |
 | LUZ-12002 | ispf.exec not implemented | lua/ispf.lua | Wait for implementation; run ISPF services via JCL | stub |
 | LUZ-12003 | ispf.vget not implemented | lua/ispf.lua | Wait for implementation; avoid ISPF variable APIs | stub |

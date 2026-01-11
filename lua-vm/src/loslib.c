@@ -25,6 +25,24 @@
 #include "lualib.h"
 #include "llimits.h"
 
+#if defined(LUAZ_ZOS)
+static int luaz_callmod (lua_State *L, const char *mod,
+                         const char *func, int nargs) {
+  lua_settop(L, nargs);
+  lua_getglobal(L, mod);
+  if (!lua_istable(L, -1))
+    return luaL_error(L, "LUZ-44010 module not available: %s", mod);
+  lua_getfield(L, -1, func);
+  if (!lua_isfunction(L, -1))
+    return luaL_error(L, "LUZ-44011 function not available: %s.%s", mod, func);
+  lua_remove(L, -2);  /* remove module table */
+  lua_insert(L, 1);  /* move function below args */
+  if (lua_pcall(L, nargs, LUA_MULTRET, 0) != LUA_OK)
+    return lua_error(L);
+  return lua_gettop(L);
+}
+#endif
+
 
 /*
 ** {==================================================================
@@ -145,7 +163,12 @@
 
 static int os_execute (lua_State *L) {
 #if defined(LUAZ_ZOS)
-  return luaL_error(L, "LUZ-44001 os.execute is disabled on z/OS");
+  if (lua_isnoneornil(L, 1)) {
+    lua_pushboolean(L, 1);
+    return 1;
+  }
+  luaL_checkstring(L, 1);
+  return luaz_callmod(L, "tso", "cmd", 1);
 #else
   const char *cmd = luaL_optstring(L, 1, NULL);
   int stat;
@@ -163,7 +186,8 @@ static int os_execute (lua_State *L) {
 
 static int os_remove (lua_State *L) {
 #if defined(LUAZ_ZOS)
-  return luaL_error(L, "LUZ-44002 os.remove is disabled on z/OS");
+  luaL_checkstring(L, 1);
+  return luaz_callmod(L, "ds", "remove", 1);
 #else
   const char *filename = luaL_checkstring(L, 1);
   errno = 0;
@@ -174,7 +198,9 @@ static int os_remove (lua_State *L) {
 
 static int os_rename (lua_State *L) {
 #if defined(LUAZ_ZOS)
-  return luaL_error(L, "LUZ-44003 os.rename is disabled on z/OS");
+  luaL_checkstring(L, 1);
+  luaL_checkstring(L, 2);
+  return luaz_callmod(L, "ds", "rename", 2);
 #else
   const char *fromname = luaL_checkstring(L, 1);
   const char *toname = luaL_checkstring(L, 2);
@@ -186,7 +212,7 @@ static int os_rename (lua_State *L) {
 
 static int os_tmpname (lua_State *L) {
 #if defined(LUAZ_ZOS)
-  return luaL_error(L, "LUZ-44004 os.tmpname is disabled on z/OS");
+  return luaz_callmod(L, "ds", "tmpname", 0);
 #else
   char buff[LUA_TMPNAMBUFSIZE];
   int err;
@@ -471,7 +497,11 @@ static int os_setlocale (lua_State *L) {
 
 static int os_exit (lua_State *L) {
 #if defined(LUAZ_ZOS)
-  return luaL_error(L, "LUZ-44005 os.exit is disabled on z/OS");
+  if (lua_isnoneornil(L, 1)) {
+    lua_pushinteger(L, 0);
+    return luaz_callmod(L, "tso", "exit", 1);
+  }
+  return luaz_callmod(L, "tso", "exit", 1);
 #else
   int status;
   if (lua_isboolean(L, 1))

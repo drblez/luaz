@@ -95,6 +95,7 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 - [x] Disable C module searchers in `lua-vm/src/loadlib.c`.
 - [x] Restrict os.exit in `lua-vm/src/loslib.c`.
 - [x] Add z/OS time backend hooks in `lua-vm/src/loslib.c`.
+- [x] Proxy os.execute/remove/rename/tmpname/exit to `tso`/`ds` in `lua-vm/src/loslib.c`.
 
 ## Deliverables
 

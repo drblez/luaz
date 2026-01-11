@@ -25,6 +25,7 @@
    - Implemented: disable os.tmpname under z/OS (see `docs/patches/loslib_tmpname_zos.md`).
    - Implemented: disable os.exit under z/OS (see `docs/patches/loslib_exit_zos.md`).
    - Implemented: z/OS time backend hooks (see `docs/patches/loslib_time_zos.md`).
+   - Implemented: proxy os.* calls to `tso`/`ds` modules (see `docs/patches/loslib_proxy_zos.md`).
 
 4. `linit.c`
    - Register Lua modules: `tso`, `ds`, `ispf`, `axr`, `tls`.
