@@ -90,7 +90,34 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym);
 
 
 
-#if defined(LUA_USE_DLOPEN)	/* { */
+#if defined(LUAZ_ZOS)	/* { */
+/*
+** z/OS: dynamic library loading is disabled; C modules must be static.
+*/
+static void lsys_unloadlib (void *lib) {
+  (void)lib;
+}
+
+
+static void *lsys_load (lua_State *L, const char *path, int seeglb) {
+  (void)path;
+  (void)seeglb;
+  lua_pushliteral(L, "LUZ-41001 dynamic loading is disabled on z/OS");
+  return NULL;
+}
+
+
+static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
+  (void)lib;
+  (void)sym;
+  lua_pushliteral(L, "LUZ-41002 symbol lookup is disabled on z/OS");
+  return NULL;
+}
+
+/* }====================================================== */
+
+
+#elif defined(LUA_USE_DLOPEN)	/* { */
 /*
 ** {========================================================================
 ** This is an implementation of loadlib based on the dlfcn interface,
@@ -745,4 +772,3 @@ LUAMOD_API int luaopen_package (lua_State *L) {
   lua_pop(L, 1);  /* pop global table */
   return 1;  /* return 'package' table */
 }
-
