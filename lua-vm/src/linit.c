@@ -41,6 +41,45 @@ static const luaL_Reg stdlibs[] = {
 
 
 /*
+** Lua/TSO optional libraries (registered via build flags).
+*/
+#if defined(LUAZ_WITH_TSO)
+LUALIB_API int luaopen_tso (lua_State *L);
+#endif
+#if defined(LUAZ_WITH_DS)
+LUALIB_API int luaopen_ds (lua_State *L);
+#endif
+#if defined(LUAZ_WITH_ISPF)
+LUALIB_API int luaopen_ispf (lua_State *L);
+#endif
+#if defined(LUAZ_WITH_AXR)
+LUALIB_API int luaopen_axr (lua_State *L);
+#endif
+#if defined(LUAZ_WITH_TLS)
+LUALIB_API int luaopen_tls (lua_State *L);
+#endif
+
+static const luaL_Reg luazlibs[] = {
+#if defined(LUAZ_WITH_TSO)
+  {"tso", luaopen_tso},
+#endif
+#if defined(LUAZ_WITH_DS)
+  {"ds", luaopen_ds},
+#endif
+#if defined(LUAZ_WITH_ISPF)
+  {"ispf", luaopen_ispf},
+#endif
+#if defined(LUAZ_WITH_AXR)
+  {"axr", luaopen_axr},
+#endif
+#if defined(LUAZ_WITH_TLS)
+  {"tls", luaopen_tls},
+#endif
+  {NULL, NULL}
+};
+
+
+/*
 ** require and preload selected standard libraries
 */
 LUALIB_API void luaL_openselectedlibs (lua_State *L, int load, int preload) {
@@ -58,6 +97,9 @@ LUALIB_API void luaL_openselectedlibs (lua_State *L, int load, int preload) {
     }
   }
   lua_assert((mask >> 1) == LUA_UTF8LIBK);
+  for (lib = luazlibs; lib->name != NULL; lib++) {
+    lua_pushcfunction(L, lib->func);
+    lua_setfield(L, -2, lib->name);
+  }
   lua_pop(L, 1);  /* remove PRELOAD table */
 }
-

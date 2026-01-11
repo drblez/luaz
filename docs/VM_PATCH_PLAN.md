@@ -22,6 +22,7 @@
 
 4. `linit.c`
    - Register Lua modules: `tso`, `ds`, `ispf`, `axr`, `tls`.
+   - Implemented: optional preload gated by `LUAZ_WITH_*` flags (see `docs/patches/linit_luazlibs.md`).
 
 ## Patch Delivery
 
