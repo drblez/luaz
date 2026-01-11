@@ -21,3 +21,5 @@
 | LUZ-30017 | gmt backend not implemented | src/luaz_time.c | Build without `LUAZ_TIME_ZOS` or implement time hooks | stub |
 | LUZ-30018 | policy get not implemented | src/luaz_policy.c | Build without `LUAZ_POLICY` or implement policy hooks | stub |
 | LUZ-30019 | clock backend not implemented | src/luaz_time.c | Build without `LUAZ_TIME_ZOS` or implement time hooks | stub |
+| LUZ-30020 | LUAMAP lookup not implemented | src/luaz_path.c | Implement LUAPATH lookup hooks | stub |
+| LUZ-30021 | LUAPATH load not implemented | src/luaz_path.c | Implement LUAPATH loader hooks | stub |

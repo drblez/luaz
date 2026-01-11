@@ -277,6 +277,9 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
 #endif
 
 #if defined(LUAZ_ZOS)
+#include "luaz_path_stub.h"
+#include <ctype.h>
+#endif
 #undef LUA_PATH_VAR
 #define LUA_PATH_VAR    "LUAPATH"
 #endif
@@ -576,9 +579,45 @@ static int checkload (lua_State *L, int stat, const char *filename) {
 #if defined(LUAZ_ZOS)
 static int searcher_Lua (lua_State *L) {
   const char *name = luaL_checkstring(L, 1);
-  (void)name;
-  lua_pushliteral(L, "LUZ-43001 LUAPATH loader not implemented");
-  return 1;
+  size_t nlen = strlen(name);
+  char member[9];
+  unsigned long mlen = sizeof(member) - 1;
+  unsigned long buflen = 0;
+  char *buf;
+  size_t i;
+
+  if (nlen <= 8) {
+    for (i = 0; i < nlen; i++) {
+      unsigned char c = (unsigned char)name[i];
+      if (c == '.')
+        c = '$';
+      c = (unsigned char)toupper(c);
+      if (!(c == '$' || c == '#' || c == '@' || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')))
+        c = '#';
+      member[i] = (char)c;
+    }
+    member[nlen] = '\0';
+  }
+  else {
+    if (luaz_path_lookup(name, member, &mlen) != 0)
+      return luaL_error(L, "LUZ-47002 LUAMAP entry not found for '%s'", name);
+    if (mlen == 0 || mlen > 8)
+      return luaL_error(L, "LUZ-47001 invalid module name mapping");
+    member[mlen] = '\0';
+  }
+
+  if (luaz_path_load(name, member, NULL, &buflen) != 0 || buflen == 0)
+    return luaL_error(L, "LUZ-47003 LUAPATH load failed for '%s'", name);
+
+  buf = (char *)lua_newuserdata(L, buflen);
+  if (luaz_path_load(name, member, buf, &buflen) != 0)
+    return luaL_error(L, "LUZ-47003 LUAPATH load failed for '%s'", name);
+
+  if (luaL_loadbufferx(L, buf, buflen, member, NULL) != LUA_OK)
+    return luaL_error(L, "LUZ-47004 module load error");
+
+  lua_pushstring(L, member);
+  return 2;
 }
 #else
 static int searcher_Lua (lua_State *L) {
