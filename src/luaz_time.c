@@ -10,6 +10,8 @@
  * | luaz_time_local | function | Convert epoch to local time |
  * | luaz_time_gmt | function | Convert epoch to GMT |
  * | luaz_time_clock | function | Get process CPU time in seconds |
+ * | luaz_time_date | function | Format date/time for Lua |
+ * | luaz_time_time | function | Compute time for Lua |
  */
 #include "luaz_errors.h"
 #include "luaz_time.h"
@@ -38,4 +40,18 @@ int luaz_time_clock(double *out_seconds)
 {
   (void)out_seconds;
   return LUZ_E_TIME_CLOCK;
+}
+
+int luaz_time_date(lua_State *L, const char *fmt, size_t fmtlen)
+{
+  (void)L;
+  (void)fmt;
+  (void)fmtlen;
+  return LUZ_E_TIME_DATE;
+}
+
+int luaz_time_time(lua_State *L)
+{
+  (void)L;
+  return LUZ_E_TIME_TIME;
 }

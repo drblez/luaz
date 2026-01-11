@@ -23,3 +23,5 @@
 | LUZ-30019 | clock backend not implemented | src/luaz_time.c | Build without `LUAZ_TIME_ZOS` or implement time hooks | stub |
 | LUZ-30020 | LUAMAP lookup not implemented | src/luaz_path.c | Implement LUAPATH lookup hooks | stub |
 | LUZ-30021 | LUAPATH load not implemented | src/luaz_path.c | Implement LUAPATH loader hooks | stub |
+| LUZ-30022 | date formatting not implemented | src/luaz_time.c | Build without `LUAZ_TIME_ZOS` or implement time hooks | stub |
+| LUZ-30023 | time computation not implemented | src/luaz_time.c | Build without `LUAZ_TIME_ZOS` or implement time hooks | stub |
