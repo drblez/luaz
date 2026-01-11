@@ -10,6 +10,7 @@ z/OS PDS/PDSE member names are limited to 8 characters. Lua module names are not
   - `luaz_path_resolve` maps module name to member,
   - `luaz_path_load` loads module source.
 - `src/luaz_path.c`: implement mapping logic for short names (≤8) and LUAMAP lookup for long names.
+- `src/luaz_platform.c`: bind LUAPATH hooks from platform ops.
   - uses direct member names for normalized names ≤ 8,
   - for longer names, consults `LUAMAP` entries in each PDS/PDSE (LUAPATH order).
 - Add LUAPATH hooks: `luaz_path_lookup` and `luaz_path_load`.

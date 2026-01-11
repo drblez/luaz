@@ -21,6 +21,8 @@ struct luaz_platform_ops {
   int (*read_dd)(const char *ddname, void *buf, unsigned long *len);
   int (*write_dd)(const char *ddname, const void *buf, unsigned long len);
   int (*get_env)(const char *key, char *out, unsigned long *len);
+  int (*luapath_read_luamap)(char *buf, unsigned long *len);
+  int (*luapath_read_member)(const char *member, char *buf, unsigned long *len);
 };
 
 int luaz_platform_set_ops(const struct luaz_platform_ops *ops);
