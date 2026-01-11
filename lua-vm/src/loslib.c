@@ -12,6 +12,9 @@
 #if defined(LUAZ_TIME_ZOS)
 #include "luaz_time_stub.h"
 #endif
+#if defined(LUAZ_POLICY)
+#include "luaz_policy_stub.h"
+#endif
 
 #include <errno.h>
 #include <locale.h>
@@ -226,8 +229,23 @@ static int os_tmpname (lua_State *L) {
 
 
 static int os_getenv (lua_State *L) {
+#if defined(LUAZ_POLICY)
+  char buf[256];
+  unsigned long len = sizeof(buf);
+  const char *key = luaL_checkstring(L, 1);
+  if (luaz_policy_get(key, buf, &len) != 0)
+    return luaL_error(L, "LUZ-46001 policy get not implemented");
+  if (len == 0) {
+    lua_pushnil(L);
+    return 1;
+  }
+  buf[len < sizeof(buf) ? len : (sizeof(buf) - 1)] = '\0';
+  lua_pushstring(L, buf);
+  return 1;
+#else
   lua_pushstring(L, getenv(luaL_checkstring(L, 1)));  /* if NULL push nil */
   return 1;
+#endif
 }
 
 
@@ -484,6 +502,16 @@ static int os_difftime (lua_State *L) {
 
 
 static int os_setlocale (lua_State *L) {
+#if defined(LUAZ_POLICY)
+  char buf[64];
+  unsigned long len = sizeof(buf);
+  (void)L;
+  if (luaz_policy_get("locale", buf, &len) != 0 || len == 0)
+    return luaL_error(L, "LUZ-46002 policy locale not available");
+  buf[len < sizeof(buf) ? len : (sizeof(buf) - 1)] = '\0';
+  lua_pushstring(L, buf);
+  return 1;
+#else
   static const int cat[] = {LC_ALL, LC_COLLATE, LC_CTYPE, LC_MONETARY,
                       LC_NUMERIC, LC_TIME};
   static const char *const catnames[] = {"all", "collate", "ctype", "monetary",
@@ -492,6 +520,7 @@ static int os_setlocale (lua_State *L) {
   int op = luaL_checkoption(L, 2, "all", catnames);
   lua_pushstring(L, setlocale(cat[op], l));
   return 1;
+#endif
 }
 
 

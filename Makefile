@@ -19,7 +19,8 @@ SRC = \
   src/luaz_ispf.c \
   src/luaz_axr.c \
   src/luaz_tls.c \
-  src/luaz_time.c
+  src/luaz_time.c \
+  src/luaz_policy.c
 
 OBJ = $(SRC:.c=.o)
 

@@ -96,10 +96,4 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 - [x] Restrict os.exit in `lua-vm/src/loslib.c`.
 - [x] Add z/OS time backend hooks in `lua-vm/src/loslib.c`.
 - [x] Proxy os.execute/remove/rename/tmpname/exit to `tso`/`ds` in `lua-vm/src/loslib.c`.
-
-## Deliverables
-
-- z/OS build scripts and Lua core patches in `patches/`.
-- C core host API with documented `LUZ-*` messages.
-- JCL samples and test harness.
-- Updated RFC sections as implementation details evolve.
+- [x] Add policy‑proxy for os.getenv/os.setlocale in `lua-vm/src/loslib.c`.
