@@ -410,6 +410,9 @@ static int os_setlocale (lua_State *L) {
 
 
 static int os_exit (lua_State *L) {
+#if defined(LUAZ_ZOS)
+  return luaL_error(L, "LUZ-44005 os.exit is disabled on z/OS");
+#else
   int status;
   if (lua_isboolean(L, 1))
     status = (lua_toboolean(L, 1) ? EXIT_SUCCESS : EXIT_FAILURE);
@@ -419,6 +422,7 @@ static int os_exit (lua_State *L) {
     lua_close(L);
   if (L) exit(status);  /* 'if' to avoid warnings for unreachable 'return' */
   return 0;
+#endif
 }
 
 
