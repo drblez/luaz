@@ -8,3 +8,4 @@
 | LUZ-42001 | popen is disabled on z/OS | lua-vm/src/liolib.c | Avoid io.popen; use JCL/TSO for command execution | z/OS |
 | LUZ-42002 | file I/O is disabled on z/OS | lua-vm/src/liolib.c | Use DDNAME/dataset I/O via `ds` module | z/OS |
 | LUZ-42003 | tmpfile is disabled on z/OS | lua-vm/src/liolib.c | Avoid tmpfile; use datasets or memory buffers | z/OS |
+| LUZ-43001 | LUAPATH loader not implemented | lua-vm/src/loadlib.c | Use preloaded modules or implement LUAPATH loader | z/OS |

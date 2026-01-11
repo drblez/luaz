@@ -276,8 +276,18 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
 #define LUA_PATH_VAR    "LUA_PATH"
 #endif
 
+#if defined(LUAZ_ZOS)
+#undef LUA_PATH_VAR
+#define LUA_PATH_VAR    "LUAPATH"
+#endif
+
 #if !defined(LUA_CPATH_VAR)
 #define LUA_CPATH_VAR   "LUA_CPATH"
+#endif
+
+#if defined(LUAZ_ZOS)
+#undef LUA_CPATH_VAR
+#define LUA_CPATH_VAR   "LUACPATH"
 #endif
 
 
@@ -563,6 +573,14 @@ static int checkload (lua_State *L, int stat, const char *filename) {
 }
 
 
+#if defined(LUAZ_ZOS)
+static int searcher_Lua (lua_State *L) {
+  const char *name = luaL_checkstring(L, 1);
+  (void)name;
+  lua_pushliteral(L, "LUZ-43001 LUAPATH loader not implemented");
+  return 1;
+}
+#else
 static int searcher_Lua (lua_State *L) {
   const char *filename;
   const char *name = luaL_checkstring(L, 1);
@@ -570,6 +588,7 @@ static int searcher_Lua (lua_State *L) {
   if (filename == NULL) return 1;  /* module not found in this path */
   return checkload(L, (luaL_loadfile(L, filename) == LUA_OK), filename);
 }
+#endif
 
 
 /*
