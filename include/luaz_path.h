@@ -19,6 +19,7 @@ extern "C" {
 int luaz_path_lookup(const char *modname, char *member, unsigned long *len);
 int luaz_path_load(const char *modname, const char *member,
                    char *buf, unsigned long *len);
+int luaz_path_resolve(const char *modname, char *member, unsigned long *len);
 
 #ifdef __cplusplus
 }
