@@ -98,4 +98,4 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 - [x] Proxy os.execute/remove/rename/tmpname/exit to `tso`/`ds` in `lua-vm/src/loslib.c`.
 - [x] Add policy‑proxy for os.getenv/os.setlocale in `lua-vm/src/loslib.c`.
 - [x] Add z/OS hook for os.clock in `lua-vm/src/loslib.c`.
-- [~] Implement LUAPATH mapping with LUAMAP in `lua-vm/src/loadlib.c` (pending LUAPATH backend).
+- [x] Implement LUAPATH mapping with LUAMAP in `lua-vm/src/loadlib.c` and DDNAME backend.
