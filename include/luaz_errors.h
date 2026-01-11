@@ -29,5 +29,6 @@
 #define LUZ_E_TIME_LOCAL 30016
 #define LUZ_E_TIME_GMT 30017
 #define LUZ_E_POLICY_GET 30018
+#define LUZ_E_TIME_CLOCK 30019
 
 #endif /* LUAZ_ERRORS_H */

@@ -9,6 +9,7 @@
  * | luaz_time_now | function | Get current epoch seconds |
  * | luaz_time_local | function | Convert epoch to local time |
  * | luaz_time_gmt | function | Convert epoch to GMT |
+ * | luaz_time_clock | function | Get process CPU time in seconds |
  */
 #include "luaz_errors.h"
 #include "luaz_time.h"
@@ -31,4 +32,10 @@ int luaz_time_gmt(const time_t *t, struct tm *out)
   (void)t;
   (void)out;
   return LUZ_E_TIME_GMT;
+}
+
+int luaz_time_clock(double *out_seconds)
+{
+  (void)out_seconds;
+  return LUZ_E_TIME_CLOCK;
 }
