@@ -27,6 +27,7 @@
    - Implemented: z/OS time backend hooks (see `docs/patches/loslib_time_zos.md`).
    - Implemented: proxy os.* calls to `tso`/`ds` modules (see `docs/patches/loslib_proxy_zos.md`).
    - Implemented: policy‑proxy for getenv/setlocale (see `docs/patches/loslib_policy_proxy.md`).
+   - Implemented: `os.clock` z/OS hook (see `docs/patches/loslib_clock_zos.md`).
 
 4. `linit.c`
    - Register Lua modules: `tso`, `ds`, `ispf`, `axr`, `tls`.

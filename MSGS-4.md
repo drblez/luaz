@@ -22,5 +22,6 @@
 | LUZ-45003 | z/OS localtime conversion not implemented | lua-vm/src/loslib.c | Build without `LUAZ_TIME_ZOS` or implement hooks | z/OS |
 | LUZ-45004 | z/OS strftime failed | lua-vm/src/loslib.c | Check format string and locale settings | z/OS |
 | LUZ-45005 | z/OS mktime not implemented | lua-vm/src/loslib.c | Build without `LUAZ_TIME_ZOS` or implement hooks | z/OS |
+| LUZ-45006 | z/OS clock not implemented | lua-vm/src/loslib.c | Build without `LUAZ_TIME_ZOS` or implement clock hook | z/OS |
 | LUZ-46001 | policy get not implemented | lua-vm/src/loslib.c | Build without `LUAZ_POLICY` or implement policy hooks | z/OS |
 | LUZ-46002 | policy locale not available | lua-vm/src/loslib.c | Set locale in `LUACONF` policy | z/OS |

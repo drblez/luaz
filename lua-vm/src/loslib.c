@@ -250,8 +250,12 @@ static int os_getenv (lua_State *L) {
 
 
 static int os_clock (lua_State *L) {
+#if defined(LUAZ_TIME_ZOS)
+  return luaL_error(L, "LUZ-45006 z/OS clock not implemented");
+#else
   lua_pushnumber(L, ((lua_Number)clock())/(lua_Number)CLOCKS_PER_SEC);
   return 1;
+#endif
 }
 
 
