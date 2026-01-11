@@ -21,6 +21,7 @@
 3. `loslib.c`
    - Provide z/OS‑safe implementations for time/env/exit.
    - Implemented: disable os.execute/remove/rename under z/OS (see `docs/patches/loslib_zos.md`).
+   - Implemented: disable os.tmpname under z/OS (see `docs/patches/loslib_tmpname_zos.md`).
 
 4. `linit.c`
    - Register Lua modules: `tso`, `ds`, `ispf`, `axr`, `tls`.

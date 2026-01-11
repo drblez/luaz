@@ -12,3 +12,4 @@
 | LUZ-44001 | os.execute is disabled on z/OS | lua-vm/src/loslib.c | Use TSO command execution via `tso` module | z/OS |
 | LUZ-44002 | os.remove is disabled on z/OS | lua-vm/src/loslib.c | Use dataset services via `ds` module | z/OS |
 | LUZ-44003 | os.rename is disabled on z/OS | lua-vm/src/loslib.c | Use dataset services via `ds` module | z/OS |
+| LUZ-44004 | os.tmpname is disabled on z/OS | lua-vm/src/loslib.c | Use dataset naming policy or in‑memory buffers | z/OS |
