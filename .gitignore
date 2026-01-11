@@ -34,3 +34,6 @@
 
 # Local agent guidance
 AGENTS.md
+
+# Third-party sources
+third_party/
