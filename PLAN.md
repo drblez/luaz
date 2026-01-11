@@ -80,6 +80,8 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 - [x] Write JCL templates for IKJEFT01/ISPSTART and dataset allocations.
 - [x] Define EBCDIC/ASCII conversion policy and annotate all I/O touchpoints.
 - [x] Produce a test plan and fixture layout for batch‑mode execution.
+- [x] Create C core skeletons for host APIs and reserve LUZ ranges.
+- [x] Draft policy/config format and architecture overview docs.
 
 ## Deliverables
 
