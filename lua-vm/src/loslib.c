@@ -141,6 +141,9 @@
 
 
 static int os_execute (lua_State *L) {
+#if defined(LUAZ_ZOS)
+  return luaL_error(L, "LUZ-44001 os.execute is disabled on z/OS");
+#else
   const char *cmd = luaL_optstring(L, 1, NULL);
   int stat;
   errno = 0;
@@ -151,21 +154,30 @@ static int os_execute (lua_State *L) {
     lua_pushboolean(L, stat);  /* true if there is a shell */
     return 1;
   }
+#endif
 }
 
 
 static int os_remove (lua_State *L) {
+#if defined(LUAZ_ZOS)
+  return luaL_error(L, "LUZ-44002 os.remove is disabled on z/OS");
+#else
   const char *filename = luaL_checkstring(L, 1);
   errno = 0;
   return luaL_fileresult(L, remove(filename) == 0, filename);
+#endif
 }
 
 
 static int os_rename (lua_State *L) {
+#if defined(LUAZ_ZOS)
+  return luaL_error(L, "LUZ-44003 os.rename is disabled on z/OS");
+#else
   const char *fromname = luaL_checkstring(L, 1);
   const char *toname = luaL_checkstring(L, 2);
   errno = 0;
   return luaL_fileresult(L, rename(fromname, toname) == 0, NULL);
+#endif
 }
 
 
@@ -429,4 +441,3 @@ LUAMOD_API int luaopen_os (lua_State *L) {
   luaL_newlib(L, syslib);
   return 1;
 }
-

@@ -9,3 +9,6 @@
 | LUZ-42002 | file I/O is disabled on z/OS | lua-vm/src/liolib.c | Use DDNAME/dataset I/O via `ds` module | z/OS |
 | LUZ-42003 | tmpfile is disabled on z/OS | lua-vm/src/liolib.c | Avoid tmpfile; use datasets or memory buffers | z/OS |
 | LUZ-43001 | LUAPATH loader not implemented | lua-vm/src/loadlib.c | Use preloaded modules or implement LUAPATH loader | z/OS |
+| LUZ-44001 | os.execute is disabled on z/OS | lua-vm/src/loslib.c | Use TSO command execution via `tso` module | z/OS |
+| LUZ-44002 | os.remove is disabled on z/OS | lua-vm/src/loslib.c | Use dataset services via `ds` module | z/OS |
+| LUZ-44003 | os.rename is disabled on z/OS | lua-vm/src/loslib.c | Use dataset services via `ds` module | z/OS |

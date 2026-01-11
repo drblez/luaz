@@ -90,6 +90,7 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 - [x] Restrict standard I/O in `lua-vm/src/liolib.c` for z/OS.
 - [x] Add optional Lua/TSO module preload in `lua-vm/src/linit.c`.
 - [x] Add LUAPATH stub searcher in `lua-vm/src/loadlib.c`.
+- [x] Restrict os.execute/remove/rename in `lua-vm/src/loslib.c`.
 
 ## Deliverables
 
