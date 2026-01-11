@@ -1,0 +1,20 @@
+-- Copyright 2026 drblez AKA Ruslan Stepanenko (drblez@gmail.com)
+--
+-- Lua/TSO TLS module stubs.
+--
+-- Object Table:
+-- | Object | Kind | Purpose |
+-- |--------|------|---------|
+-- | tls.connect | function | Open TLS connection |
+-- | tls.listen | function | Optional TLS server |
+local tls = {}
+
+function tls.connect(_)
+  error("LUZ-14001 tls.connect not implemented")
+end
+
+function tls.listen(_)
+  error("LUZ-14002 tls.listen not implemented")
+end
+
+return tls

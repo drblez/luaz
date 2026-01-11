@@ -35,5 +35,7 @@
 # Local agent guidance
 AGENTS.md
 
-# Third-party sources
-third_party/
+# Third-party sources (keep lua-src tracked)
+third_party/*
+!third_party/lua-src/
+!third_party/lua-src/**

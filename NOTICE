@@ -1,3 +1,6 @@
 Lua/TSO
 
 Copyright 2026 drblez AKA Ruslan Stepanenko (drblez@gmail.com)
+
+This product includes Lua 5.5.0, Copyright (c) 1994-2025 Lua.org, PUC-Rio,
+licensed under the MIT License (see LICENSES/LUA).
