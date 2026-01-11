@@ -12,6 +12,7 @@
    - Add dataset‑based module search using `LUAPATH` DDNAME concatenation.
    - Implemented: z/OS dynamic loading disabled with LUZ codes (see `docs/patches/loadlib_zos.md`).
    - Implemented: LUAPATH stub searcher for z/OS (see `docs/patches/loadlib_luapath_stub.md`).
+   - Implemented: disable C module searchers for z/OS (see `docs/patches/loadlib_cdisable_zos.md`).
 
 2. `liolib.c`
    - Replace file I/O with DDNAME dataset access hooks.

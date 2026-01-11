@@ -617,14 +617,29 @@ static int loadfunc (lua_State *L, const char *filename, const char *modname) {
 }
 
 
+#if defined(LUAZ_ZOS)
+static int searcher_C (lua_State *L) {
+  (void)L;
+  lua_pushliteral(L, "LUZ-43002 C module loading is disabled on z/OS");
+  return 1;
+}
+#else
 static int searcher_C (lua_State *L) {
   const char *name = luaL_checkstring(L, 1);
   const char *filename = findfile(L, name, "cpath", LUA_CSUBSEP);
   if (filename == NULL) return 1;  /* module not found in this path */
   return checkload(L, (loadfunc(L, filename, name) == 0), filename);
 }
+#endif
 
 
+#if defined(LUAZ_ZOS)
+static int searcher_Croot (lua_State *L) {
+  (void)L;
+  lua_pushliteral(L, "LUZ-43002 C module loading is disabled on z/OS");
+  return 1;
+}
+#else
 static int searcher_Croot (lua_State *L) {
   const char *filename;
   const char *name = luaL_checkstring(L, 1);
@@ -645,6 +660,7 @@ static int searcher_Croot (lua_State *L) {
   lua_pushstring(L, filename);  /* will be 2nd argument to module */
   return 2;
 }
+#endif
 
 
 static int searcher_preload (lua_State *L) {

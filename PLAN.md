@@ -92,6 +92,7 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 - [x] Add LUAPATH stub searcher in `lua-vm/src/loadlib.c`.
 - [x] Restrict os.execute/remove/rename in `lua-vm/src/loslib.c`.
 - [x] Restrict os.tmpname in `lua-vm/src/loslib.c`.
+- [x] Disable C module searchers in `lua-vm/src/loadlib.c`.
 
 ## Deliverables
 
