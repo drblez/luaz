@@ -15,3 +15,8 @@
 | LUZ-44003 | os.rename is disabled on z/OS | lua-vm/src/loslib.c | Use dataset services via `ds` module | z/OS |
 | LUZ-44004 | os.tmpname is disabled on z/OS | lua-vm/src/loslib.c | Use dataset naming policy or in‑memory buffers | z/OS |
 | LUZ-44005 | os.exit is disabled on z/OS | lua-vm/src/loslib.c | Use `tso.exit` or return RC via host runtime | z/OS |
+| LUZ-45001 | z/OS time backend not implemented | lua-vm/src/loslib.c | Build without `LUAZ_TIME_ZOS` or implement hooks | z/OS |
+| LUZ-45002 | z/OS gmt conversion not implemented | lua-vm/src/loslib.c | Build without `LUAZ_TIME_ZOS` or implement hooks | z/OS |
+| LUZ-45003 | z/OS localtime conversion not implemented | lua-vm/src/loslib.c | Build without `LUAZ_TIME_ZOS` or implement hooks | z/OS |
+| LUZ-45004 | z/OS strftime failed | lua-vm/src/loslib.c | Check format string and locale settings | z/OS |
+| LUZ-45005 | z/OS mktime not implemented | lua-vm/src/loslib.c | Build without `LUAZ_TIME_ZOS` or implement hooks | z/OS |

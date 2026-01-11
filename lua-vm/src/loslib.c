@@ -9,6 +9,9 @@
 
 #include "lprefix.h"
 
+#if defined(LUAZ_TIME_ZOS)
+#include "luaz_time_stub.h"
+#endif
 
 #include <errno.h>
 #include <locale.h>
@@ -319,6 +322,49 @@ static time_t l_checktime (lua_State *L, int arg) {
 
 
 static int os_date (lua_State *L) {
+#if defined(LUAZ_TIME_ZOS)
+  size_t slen;
+  const char *s = luaL_optlstring(L, 1, "%c", &slen);
+  time_t t;
+  struct tm stm;
+  const char *se = s + slen;  /* 's' end */
+  if (luaz_time_now(&t) != 0)
+    return luaL_error(L, "LUZ-45001 z/OS time backend not implemented");
+  if (*s == '!') {  /* UTC? */
+    if (luaz_time_gmt(&t, &stm) != 0)
+      return luaL_error(L, "LUZ-45002 z/OS gmt conversion not implemented");
+    s++;  /* skip '!' */
+  }
+  else {
+    if (luaz_time_local(&t, &stm) != 0)
+      return luaL_error(L, "LUZ-45003 z/OS localtime conversion not implemented");
+  }
+  if (strcmp(s, "*t") == 0) {
+    lua_createtable(L, 0, 9);  /* 9 = number of fields */
+    setallfields(L, &stm);
+  }
+  else {
+    char cc[4];  /* buffer for individual conversion specifiers */
+    luaL_Buffer b;
+    cc[0] = '%';
+    luaL_buffinit(L, &b);
+    while (s < se) {
+      if (*s != '%')  /* not a conversion specifier? */
+        luaL_addchar(&b, *s++);
+      else {
+        size_t reslen;
+        char *buff = luaL_prepbuffsize(&b, SIZETIMEFMT);
+        s++;  /* skip '%' */
+        /* copy specifier to 'cc' */
+        s = checkoption(L, s, ct_diff2sz(se - s), cc + 1);
+        reslen = strftime(buff, SIZETIMEFMT, cc, &stm);
+        luaL_addsize(&b, reslen);
+      }
+    }
+    luaL_pushresult(&b);
+  }
+  return 1;
+#else
   size_t slen;
   const char *s = luaL_optlstring(L, 1, "%c", &slen);
   time_t t = luaL_opt(L, l_checktime, 2, time(NULL));
@@ -358,10 +404,23 @@ static int os_date (lua_State *L) {
     luaL_pushresult(&b);
   }
   return 1;
+#endif
 }
 
 
 static int os_time (lua_State *L) {
+#if defined(LUAZ_TIME_ZOS)
+  time_t t;
+  if (lua_isnoneornil(L, 1)) {
+    if (luaz_time_now(&t) != 0)
+      return luaL_error(L, "LUZ-45001 z/OS time backend not implemented");
+  }
+  else {
+    return luaL_error(L, "LUZ-45005 z/OS mktime not implemented");
+  }
+  l_pushtime(L, t);
+  return 1;
+#else
   time_t t;
   if (lua_isnoneornil(L, 1))  /* called without args? */
     t = time(NULL);  /* get current time */
@@ -384,6 +443,7 @@ static int os_time (lua_State *L) {
                   "time result cannot be represented in this installation");
   l_pushtime(L, t);
   return 1;
+#endif
 }
 
 

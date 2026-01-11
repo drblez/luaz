@@ -16,3 +16,6 @@
 | LUZ-30012 | axr.request not implemented | src/luaz_axr.c | Use AXR gateway exec | stub |
 | LUZ-30013 | tls.connect not implemented | src/luaz_tls.c | Use AT‑TLS if available | stub |
 | LUZ-30014 | tls.listen not implemented | src/luaz_tls.c | Disable TLS server mode | stub |
+| LUZ-30015 | time backend not implemented | src/luaz_time.c | Build without `LUAZ_TIME_ZOS` or implement time hooks | stub |
+| LUZ-30016 | localtime backend not implemented | src/luaz_time.c | Build without `LUAZ_TIME_ZOS` or implement time hooks | stub |
+| LUZ-30017 | gmt backend not implemented | src/luaz_time.c | Build without `LUAZ_TIME_ZOS` or implement time hooks | stub |
