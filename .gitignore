@@ -1,0 +1,36 @@
+# macOS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build artifacts
+*.o
+*.obj
+*.so
+*.a
+*.dylib
+*.dll
+*.exe
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# Logs
+*.log
+
+# Lua artifacts
+*.luac
+
+# Temp
+*~
+.tmp/
+
+# Local agent guidance
+AGENTS.md
