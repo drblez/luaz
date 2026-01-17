@@ -8,7 +8,7 @@
  * |--------|------|---------|
  * | main | function | Entry point for LUAEXEC |
  */
-#include "IODD"
+#include "iodd.h"
 
 int main(void)
 {

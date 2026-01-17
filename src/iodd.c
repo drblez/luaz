@@ -8,8 +8,8 @@
  * |--------|------|---------|
  * | luaz_io_dd_register | function | Register DDNAME-based LUAPATH hooks |
  */
-#include "IODD"
-#include "PLATFORM"
+#include "iodd.h"
+#include "platform.h"
 
 #include <stdio.h>
 #include <string.h>

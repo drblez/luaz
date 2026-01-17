@@ -7,13 +7,13 @@
 #define loslib_c
 #define LUA_LIB
 
-#include "LPREFIX"
+#include "lprefix.h"
 
 #if defined(LUAZ_TIME_ZOS)
-#include "TIMSTB"
+#include "timstb.h"
 #endif
 #if defined(LUAZ_POLICY)
-#include "POLSTB"
+#include "polstb.h"
 #endif
 
 #include <errno.h>
@@ -22,11 +22,11 @@
 #include <string.h>
 #include <time.h>
 
-#include "LUA"
+#include "lua.h"
 
-#include "LAUXLIB"
-#include "LUALIB"
-#include "LLIMITS"
+#include "lauxlib.h"
+#include "lualib.h"
+#include "llimits.h"
 
 #if defined(LUAZ_ZOS)
 static int luaz_callmod (lua_State *L, const char *mod,

@@ -10,8 +10,8 @@
  * | lua_tso_alloc | function | Allocate a dataset |
  * | lua_tso_free | function | Free a dataset allocation |
  */
-#include "TSO"
-#include "ERRORS"
+#include "tso.h"
+#include "errors.h"
 
 int lua_tso_cmd(const char *cmd)
 {

@@ -8,9 +8,9 @@
 #define lvm_h
 
 
-#include "LDO"
-#include "LOBJECT"
-#include "LTM"
+#include "ldo.h"
+#include "lobject.h"
+#include "ltm.h"
 
 
 #if !defined(LUA_NOCVTN2S)

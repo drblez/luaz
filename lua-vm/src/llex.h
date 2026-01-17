@@ -9,8 +9,8 @@
 
 #include <limits.h>
 
-#include "LOBJECT"
-#include "LZIO"
+#include "lobject.h"
+#include "lzio.h"
 
 
 /*

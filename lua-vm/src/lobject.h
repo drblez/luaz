@@ -12,8 +12,8 @@
 #include <stdarg.h>
 
 
-#include "LLIMITS"
-#include "LUA"
+#include "llimits.h"
+#include "lua.h"
 
 
 /*

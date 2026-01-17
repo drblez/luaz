@@ -7,7 +7,7 @@
 #define lcode_c
 #define LUA_CORE
 
-#include "LPREFIX"
+#include "lprefix.h"
 
 
 #include <float.h>
@@ -15,20 +15,20 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "LUA"
+#include "lua.h"
 
-#include "LCODE"
-#include "LDEBUG"
-#include "LDO"
-#include "LGC"
-#include "LLEX"
-#include "LMEM"
-#include "LOBJECT"
-#include "LOPCODES"
-#include "LPARSER"
-#include "LSTRING"
-#include "LTABLE"
-#include "LVM"
+#include "lcode.h"
+#include "ldebug.h"
+#include "ldo.h"
+#include "lgc.h"
+#include "llex.h"
+#include "lmem.h"
+#include "lobject.h"
+#include "lopcodes.h"
+#include "lparser.h"
+#include "lstring.h"
+#include "ltable.h"
+#include "lvm.h"
 
 
 /* (note that expressions VJMP also have jumps.) */
@@ -1925,7 +1925,7 @@ static int finaltarget (Instruction *code, int i) {
 ** Do a final pass over the code of a function, doing small peephole
 ** optimizations and adjustments.
 */
-#include "LOPNAMES"
+#include "lopnames.h"
 void luaK_finish (FuncState *fs) {
   int i;
   Proto *p = fs->f;

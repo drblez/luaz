@@ -7,31 +7,31 @@
 #define ldo_c
 #define LUA_CORE
 
-#include "LPREFIX"
+#include "lprefix.h"
 
 
 #include <setjmp.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "LUA"
+#include "lua.h"
 
-#include "LAPI"
-#include "LDEBUG"
-#include "LDO"
-#include "LFUNC"
-#include "LGC"
-#include "LMEM"
-#include "LOBJECT"
-#include "LOPCODES"
-#include "LPARSER"
-#include "LSTATE"
-#include "LSTRING"
-#include "LTABLE"
-#include "LTM"
-#include "LUNDUMP"
-#include "LVM"
-#include "LZIO"
+#include "lapi.h"
+#include "ldebug.h"
+#include "ldo.h"
+#include "lfunc.h"
+#include "lgc.h"
+#include "lmem.h"
+#include "lobject.h"
+#include "lopcodes.h"
+#include "lparser.h"
+#include "lstate.h"
+#include "lstring.h"
+#include "ltable.h"
+#include "ltm.h"
+#include "lundump.h"
+#include "lvm.h"
+#include "lzio.h"
 
 
 

@@ -25,7 +25,7 @@
 #define LUA_VERSION_RELEASE_NUM  (LUA_VERSION_NUM * 100 + LUA_VERSION_RELEASE_N)
 
 
-#include "LUACONF"
+#include "luaconf.h"
 
 
 /* mark for precompiled code ('<esc>Lua') */

@@ -8,10 +8,10 @@
 #define ldo_h
 
 
-#include "LLIMITS"
-#include "LOBJECT"
-#include "LSTATE"
-#include "LZIO"
+#include "llimits.h"
+#include "lobject.h"
+#include "lstate.h"
+#include "lzio.h"
 
 
 /*

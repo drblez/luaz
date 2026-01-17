@@ -9,8 +9,8 @@
  * | luaz_core_init | function | Initialize core runtime |
  * | luaz_core_shutdown | function | Shutdown core runtime |
  */
-#include "CORE"
-#include "ERRORS"
+#include "core.h"
+#include "errors.h"
 
 int luaz_core_init(void)
 {

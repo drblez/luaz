@@ -7,20 +7,20 @@
 #define ldump_c
 #define LUA_CORE
 
-#include "LPREFIX"
+#include "lprefix.h"
 
 
 #include <limits.h>
 #include <stddef.h>
 
-#include "LUA"
+#include "lua.h"
 
-#include "LAPI"
-#include "LGC"
-#include "LOBJECT"
-#include "LSTATE"
-#include "LTABLE"
-#include "LUNDUMP"
+#include "lapi.h"
+#include "lgc.h"
+#include "lobject.h"
+#include "lstate.h"
+#include "ltable.h"
+#include "lundump.h"
 
 
 typedef struct {

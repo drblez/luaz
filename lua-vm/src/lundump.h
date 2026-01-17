@@ -9,9 +9,9 @@
 
 #include <limits.h>
 
-#include "LLIMITS"
-#include "LOBJECT"
-#include "LZIO"
+#include "llimits.h"
+#include "lobject.h"
+#include "lzio.h"
 
 
 /* data to catch conversion errors */

@@ -7,25 +7,25 @@
 #define llex_c
 #define LUA_CORE
 
-#include "LPREFIX"
+#include "lprefix.h"
 
 
 #include <locale.h>
 #include <string.h>
 
-#include "LUA"
+#include "lua.h"
 
-#include "LCTYPE"
-#include "LDEBUG"
-#include "LDO"
-#include "LGC"
-#include "LLEX"
-#include "LOBJECT"
-#include "LPARSER"
-#include "LSTATE"
-#include "LSTRING"
-#include "LTABLE"
-#include "LZIO"
+#include "lctype.h"
+#include "ldebug.h"
+#include "ldo.h"
+#include "lgc.h"
+#include "llex.h"
+#include "lobject.h"
+#include "lparser.h"
+#include "lstate.h"
+#include "lstring.h"
+#include "ltable.h"
+#include "lzio.h"
 
 
 

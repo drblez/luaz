@@ -7,7 +7,7 @@
 #define lobject_c
 #define LUA_CORE
 
-#include "LPREFIX"
+#include "lprefix.h"
 
 
 #include <float.h>
@@ -18,16 +18,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "LUA"
+#include "lua.h"
 
-#include "LCTYPE"
-#include "LDEBUG"
-#include "LDO"
-#include "LMEM"
-#include "LOBJECT"
-#include "LSTATE"
-#include "LSTRING"
-#include "LVM"
+#include "lctype.h"
+#include "ldebug.h"
+#include "ldo.h"
+#include "lmem.h"
+#include "lobject.h"
+#include "lstate.h"
+#include "lstring.h"
+#include "lvm.h"
 
 
 /*

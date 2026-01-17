@@ -11,18 +11,18 @@
 #define loadlib_c
 #define LUA_LIB
 
-#include "LPREFIX"
+#include "lprefix.h"
 
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "LUA"
+#include "lua.h"
 
-#include "LAUXLIB"
-#include "LUALIB"
-#include "LLIMITS"
+#include "lauxlib.h"
+#include "lualib.h"
+#include "llimits.h"
 
 
 /*
@@ -277,7 +277,7 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
 #endif
 
 #if defined(LUAZ_ZOS)
-#include "PTHSTB"
+#include "pthstb.h"
 #endif
 #undef LUA_PATH_VAR
 #define LUA_PATH_VAR    "LUAPATH"

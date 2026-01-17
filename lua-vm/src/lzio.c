@@ -7,18 +7,18 @@
 #define lzio_c
 #define LUA_CORE
 
-#include "LPREFIX"
+#include "lprefix.h"
 
 
 #include <string.h>
 
-#include "LUA"
+#include "lua.h"
 
-#include "LAPI"
-#include "LLIMITS"
-#include "LMEM"
-#include "LSTATE"
-#include "LZIO"
+#include "lapi.h"
+#include "llimits.h"
+#include "lmem.h"
+#include "lstate.h"
+#include "lzio.h"
 
 
 int luaZ_fill (ZIO *z) {

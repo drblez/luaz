@@ -7,8 +7,8 @@
 #ifndef lopcodes_h
 #define lopcodes_h
 
-#include "LLIMITS"
-#include "LOBJECT"
+#include "llimits.h"
+#include "lobject.h"
 
 
 /*===========================================================================

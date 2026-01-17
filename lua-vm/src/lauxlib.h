@@ -12,8 +12,8 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#include "LUACONF"
-#include "LUA"
+#include "luaconf.h"
+#include "lua.h"
 
 
 /* global table */

@@ -7,7 +7,7 @@
 #define lmathlib_c
 #define LUA_LIB
 
-#include "LPREFIX"
+#include "lprefix.h"
 
 
 #include <float.h>
@@ -16,11 +16,11 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "LUA"
+#include "lua.h"
 
-#include "LAUXLIB"
-#include "LUALIB"
-#include "LLIMITS"
+#include "lauxlib.h"
+#include "lualib.h"
+#include "llimits.h"
 
 
 #undef PI

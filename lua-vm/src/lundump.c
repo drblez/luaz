@@ -7,23 +7,23 @@
 #define lundump_c
 #define LUA_CORE
 
-#include "LPREFIX"
+#include "lprefix.h"
 
 
 #include <limits.h>
 #include <string.h>
 
-#include "LUA"
+#include "lua.h"
 
-#include "LDEBUG"
-#include "LDO"
-#include "LFUNC"
-#include "LMEM"
-#include "LOBJECT"
-#include "LSTRING"
-#include "LTABLE"
-#include "LUNDUMP"
-#include "LZIO"
+#include "ldebug.h"
+#include "ldo.h"
+#include "lfunc.h"
+#include "lmem.h"
+#include "lobject.h"
+#include "lstring.h"
+#include "ltable.h"
+#include "lundump.h"
+#include "lzio.h"
 
 
 #if !defined(luai_verifycode)

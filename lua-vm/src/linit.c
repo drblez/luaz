@@ -9,16 +9,16 @@
 #define LUA_LIB
 
 
-#include "LPREFIX"
+#include "lprefix.h"
 
 
 #include <stddef.h>
 
-#include "LUA"
+#include "lua.h"
 
-#include "LUALIB"
-#include "LAUXLIB"
-#include "LLIMITS"
+#include "lualib.h"
+#include "lauxlib.h"
+#include "llimits.h"
 
 
 /*

@@ -17,7 +17,7 @@
 #define TIME_H
 
 #include <time.h>
-#include "LUA"
+#include "lua.h"
 
 #ifdef __cplusplus
 extern "C" {

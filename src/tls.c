@@ -9,8 +9,8 @@
  * | lua_tls_connect | function | Open TLS connection |
  * | lua_tls_listen | function | Optional TLS server |
  */
-#include "TLS"
-#include "ERRORS"
+#include "tls.h"
+#include "errors.h"
 
 int lua_tls_connect(const char *params)
 {

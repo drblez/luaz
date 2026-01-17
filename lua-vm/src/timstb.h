@@ -17,7 +17,7 @@
 #define TIMSTB_H
 
 #include <time.h>
-#include "LUA"
+#include "lua.h"
 
 int luaz_time_now(time_t *out);
 int luaz_time_local(const time_t *t, struct tm *out);

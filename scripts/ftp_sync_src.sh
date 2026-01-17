@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage:
-  ftp_sync_src.sh --pds HLQ.PDS --root <dir> [--host H] [--port P] [--user U] [--pass W] [--map FILE]
+  ftp_sync_src.sh --pds HLQ.PDS --root <dir> [--host H] [--port P] [--user U] [--pass W] [--map FILE] [--rewrite-includes-map FILE]
 
 Defaults:
   --root .
@@ -13,11 +13,13 @@ Defaults:
   --user from MF_USER
   --pass from MF_PASS
   --map  ./pds-map.txt
+  --rewrite-includes-map  (optional) rewrite quoted includes to PDS member names during export
 
 Notes:
   - Uses FILETYPE=SEQ with RECFM=FB LRECL=80 (matches DRBLEZ.LUA.SRC).
   - Member names are derived from basename, uppercased, non-alnum => '_', truncated to 8.
   - Collisions are resolved with a 2-hex suffix (first 6 + suffix).
+  - When --rewrite-includes-map is provided, files are staged to a temp dir and rewritten before upload.
 USAGE
 }
 
@@ -28,6 +30,7 @@ PASS="${MF_PASS:-}"
 ROOT="."
 PDS=""
 MAP="./pds-map.txt"
+REWRITE_MAP=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -38,10 +41,11 @@ while [[ $# -gt 0 ]]; do
     --user) USER="$2"; shift 2;;
     --pass) PASS="$2"; shift 2;;
     --map) MAP="$2"; shift 2;;
+    --rewrite-includes-map) REWRITE_MAP="$2"; shift 2;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown arg: $1" >&2; usage; exit 1;;
   esac
- done
+done
 
 if [[ -z "$PDS" ]]; then
   echo "Missing --pds" >&2
@@ -57,10 +61,30 @@ if [[ ! -d "$ROOT" ]]; then
   exit 1
 fi
 
-TMP_FTP="$(mktemp)"
-trap 'rm -f "$TMP_FTP"' EXIT
+STAGE_ROOT="$ROOT"
+STAGE_DIR=""
+TMP_FTP=""
 
-python3 - <<'PY' "$ROOT" "$PDS" "$MAP" "$TMP_FTP"
+cleanup() {
+  [[ -n "$TMP_FTP" && -f "$TMP_FTP" ]] && rm -f "$TMP_FTP"
+  [[ -n "$STAGE_DIR" && -d "$STAGE_DIR" ]] && rm -rf "$STAGE_DIR"
+}
+trap cleanup EXIT
+
+if [[ -n "$REWRITE_MAP" ]]; then
+  if [[ ! -f "$REWRITE_MAP" ]]; then
+    echo "Rewrite map not found: $REWRITE_MAP" >&2
+    exit 1
+  fi
+  STAGE_DIR="$(mktemp -d)"
+  cp -R "$ROOT"/. "$STAGE_DIR"/
+  scripts/rewrite_includes.py --map "$REWRITE_MAP" --root "$STAGE_DIR" >/dev/null
+  STAGE_ROOT="$STAGE_DIR"
+fi
+
+TMP_FTP="$(mktemp)"
+
+python3 - <<'PY' "$STAGE_ROOT" "$PDS" "$MAP" "$TMP_FTP"
 import os, re, sys, binascii
 root, pds, map_path, ftp_path = sys.argv[1:]
 

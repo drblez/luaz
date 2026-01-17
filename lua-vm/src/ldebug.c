@@ -7,27 +7,27 @@
 #define ldebug_c
 #define LUA_CORE
 
-#include "LPREFIX"
+#include "lprefix.h"
 
 
 #include <stdarg.h>
 #include <stddef.h>
 #include <string.h>
 
-#include "LUA"
+#include "lua.h"
 
-#include "LAPI"
-#include "LCODE"
-#include "LDEBUG"
-#include "LDO"
-#include "LFUNC"
-#include "LOBJECT"
-#include "LOPCODES"
-#include "LSTATE"
-#include "LSTRING"
-#include "LTABLE"
-#include "LTM"
-#include "LVM"
+#include "lapi.h"
+#include "lcode.h"
+#include "ldebug.h"
+#include "ldo.h"
+#include "lfunc.h"
+#include "lobject.h"
+#include "lopcodes.h"
+#include "lstate.h"
+#include "lstring.h"
+#include "ltable.h"
+#include "ltm.h"
+#include "lvm.h"
 
 
 

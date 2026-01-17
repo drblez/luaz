@@ -13,8 +13,8 @@
  * | luaz_time_date | function | Format date/time for Lua |
  * | luaz_time_time | function | Compute time for Lua |
  */
-#include "ERRORS"
-#include "TIME"
+#include "errors.h"
+#include "time.h"
 
 int luaz_time_now(time_t *out)
 {

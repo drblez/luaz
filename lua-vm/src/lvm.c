@@ -7,7 +7,7 @@
 #define lvm_c
 #define LUA_CORE
 
-#include "LPREFIX"
+#include "lprefix.h"
 
 #include <float.h>
 #include <limits.h>
@@ -16,20 +16,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "LUA"
+#include "lua.h"
 
-#include "LAPI"
-#include "LDEBUG"
-#include "LDO"
-#include "LFUNC"
-#include "LGC"
-#include "LOBJECT"
-#include "LOPCODES"
-#include "LSTATE"
-#include "LSTRING"
-#include "LTABLE"
-#include "LTM"
-#include "LVM"
+#include "lapi.h"
+#include "ldebug.h"
+#include "ldo.h"
+#include "lfunc.h"
+#include "lgc.h"
+#include "lobject.h"
+#include "lopcodes.h"
+#include "lstate.h"
+#include "lstring.h"
+#include "ltable.h"
+#include "ltm.h"
+#include "lvm.h"
 
 
 /*
@@ -1202,7 +1202,7 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
   const Instruction *pc;
   int trap;
 #if LUA_USE_JUMPTABLE
-#include "LJUMPTAB"
+#include "ljumptab.h"
 #endif
  startfunc:
   trap = L->hookmask;
@@ -1219,7 +1219,7 @@ void luaV_execute (lua_State *L, CallInfo *ci) {
     vmfetch();
     #if 0
     { /* low-level line tracing for debugging Lua */
-      #include "LOPNAMES"
+      #include "lopnames.h"
       int pcrel = pcRel(pc, cl->p);
       printf("line: %d; %s (%d)\n", luaG_getfuncline(cl->p, pcrel),
              opnames[GET_OPCODE(i)], pcrel);
