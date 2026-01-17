@@ -7,10 +7,10 @@
 #define lopcodes_c
 #define LUA_CORE
 
-#include "lprefix.h"
+#include "LPREFIX"
 
 
-#include "lopcodes.h"
+#include "LOPCODES"
 
 
 #define opmode(mm,ot,it,t,a,m)  \

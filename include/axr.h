@@ -1,24 +1,24 @@
 /*
  * Copyright 2026 drblez AKA Ruslan Stepanenko (drblez@gmail.com)
  *
- * Lua/TSO DDNAME I/O helpers for LUAPATH.
+ * Lua/TSO AXR API stubs.
  *
  * Object Table:
  * | Object | Kind | Purpose |
  * |--------|------|---------|
- * | luaz_io_dd_register | function | Register DDNAME-based LUAPATH hooks |
+ * | lua_axr_request | function | Execute AXR request (optional) |
  */
-#ifndef LUAZ_IO_DD_H
-#define LUAZ_IO_DD_H
+#ifndef AXR_H
+#define AXR_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int luaz_io_dd_register(void);
+int lua_axr_request(const char *request);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* LUAZ_IO_DD_H */
+#endif /* AXR_H */

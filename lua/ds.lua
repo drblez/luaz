@@ -12,19 +12,19 @@
 local ds = {}
 
 function ds.open_dd(_)
-  error("LUZ-11001 ds.open_dd not implemented")
+  error("LUZ11001 ds.open_dd not implemented")
 end
 
 function ds.remove(_)
-  error("LUZ-11002 ds.remove not implemented")
+  error("LUZ11002 ds.remove not implemented")
 end
 
 function ds.rename(_, _)
-  error("LUZ-11003 ds.rename not implemented")
+  error("LUZ11003 ds.rename not implemented")
 end
 
 function ds.tmpname()
-  error("LUZ-11004 ds.tmpname not implemented")
+  error("LUZ11004 ds.tmpname not implemented")
 end
 
 return ds

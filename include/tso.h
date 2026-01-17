@@ -10,8 +10,8 @@
  * | lua_tso_alloc | function | Allocate a dataset |
  * | lua_tso_free | function | Free a dataset allocation |
  */
-#ifndef LUAZ_TSO_H
-#define LUAZ_TSO_H
+#ifndef TSO_H
+#define TSO_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,4 +25,4 @@ int lua_tso_free(const char *spec);
 }
 #endif
 
-#endif /* LUAZ_TSO_H */
+#endif /* TSO_H */

@@ -15,6 +15,6 @@ Lua/TSO operates on datasets and DDNAME rather than USS files. Standard `io.*` a
 
 ## How to verify
 
-- With `LUAZ_ZOS` defined, calling `io.open(...)` should raise `LUZ-42002`.
-- Calling `io.popen(...)` should raise `LUZ-42001`.
-- Calling `io.tmpfile()` should raise `LUZ-42003`.
+- With `LUAZ_ZOS` defined, calling `io.open(...)` should raise `LUZ42002`.
+- Calling `io.popen(...)` should raise `LUZ42001`.
+- Calling `io.tmpfile()` should raise `LUZ42003`.

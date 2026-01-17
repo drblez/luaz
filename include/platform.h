@@ -9,8 +9,8 @@
  * | luaz_platform_ops | struct | Host hooks for dataset I/O, logging, and environment |
  * | luaz_platform_set_ops | function | Register platform hooks |
  */
-#ifndef LUAZ_PLATFORM_H
-#define LUAZ_PLATFORM_H
+#ifndef PLATFORM_H
+#define PLATFORM_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,4 +31,4 @@ int luaz_platform_set_ops(const struct luaz_platform_ops *ops);
 }
 #endif
 
-#endif /* LUAZ_PLATFORM_H */
+#endif /* PLATFORM_H */

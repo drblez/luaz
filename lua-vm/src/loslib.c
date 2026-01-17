@@ -7,13 +7,13 @@
 #define loslib_c
 #define LUA_LIB
 
-#include "lprefix.h"
+#include "LPREFIX"
 
 #if defined(LUAZ_TIME_ZOS)
-#include "luaz_time_stub.h"
+#include "TIMSTB"
 #endif
 #if defined(LUAZ_POLICY)
-#include "luaz_policy_stub.h"
+#include "POLSTB"
 #endif
 
 #include <errno.h>
@@ -22,11 +22,11 @@
 #include <string.h>
 #include <time.h>
 
-#include "lua.h"
+#include "LUA"
 
-#include "lauxlib.h"
-#include "lualib.h"
-#include "llimits.h"
+#include "LAUXLIB"
+#include "LUALIB"
+#include "LLIMITS"
 
 #if defined(LUAZ_ZOS)
 static int luaz_callmod (lua_State *L, const char *mod,
@@ -34,10 +34,10 @@ static int luaz_callmod (lua_State *L, const char *mod,
   lua_settop(L, nargs);
   lua_getglobal(L, mod);
   if (!lua_istable(L, -1))
-    return luaL_error(L, "LUZ-44010 module not available: %s", mod);
+    return luaL_error(L, "LUZ44010 module not available: %s", mod);
   lua_getfield(L, -1, func);
   if (!lua_isfunction(L, -1))
-    return luaL_error(L, "LUZ-44011 function not available: %s.%s", mod, func);
+    return luaL_error(L, "LUZ44011 function not available: %s.%s", mod, func);
   lua_remove(L, -2);  /* remove module table */
   lua_insert(L, 1);  /* move function below args */
   if (lua_pcall(L, nargs, LUA_MULTRET, 0) != LUA_OK)
@@ -234,7 +234,7 @@ static int os_getenv (lua_State *L) {
   unsigned long len = sizeof(buf);
   const char *key = luaL_checkstring(L, 1);
   if (luaz_policy_get(key, buf, &len) != 0)
-    return luaL_error(L, "LUZ-46001 policy get not implemented");
+    return luaL_error(L, "LUZ46001 policy get not implemented");
   if (len == 0) {
     lua_pushnil(L);
     return 1;
@@ -253,7 +253,7 @@ static int os_clock (lua_State *L) {
 #if defined(LUAZ_TIME_ZOS)
   double secs = 0.0;
   if (luaz_time_clock(&secs) != 0)
-    return luaL_error(L, "LUZ-45006 z/OS clock not implemented");
+    return luaL_error(L, "LUZ45006 z/OS clock not implemented");
   lua_pushnumber(L, secs);
   return 1;
 #else
@@ -468,7 +468,7 @@ static int os_setlocale (lua_State *L) {
   unsigned long len = sizeof(buf);
   (void)L;
   if (luaz_policy_get("locale", buf, &len) != 0 || len == 0)
-    return luaL_error(L, "LUZ-46002 policy locale not available");
+    return luaL_error(L, "LUZ46002 policy locale not available");
   buf[len < sizeof(buf) ? len : (sizeof(buf) - 1)] = '\0';
   lua_pushstring(L, buf);
   return 1;

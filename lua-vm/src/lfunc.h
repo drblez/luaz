@@ -8,7 +8,7 @@
 #define lfunc_h
 
 
-#include "lobject.h"
+#include "LOBJECT"
 
 
 #define sizeCclosure(n)  \

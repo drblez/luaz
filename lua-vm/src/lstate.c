@@ -7,25 +7,25 @@
 #define lstate_c
 #define LUA_CORE
 
-#include "lprefix.h"
+#include "LPREFIX"
 
 
 #include <stddef.h>
 #include <string.h>
 
-#include "lua.h"
+#include "LUA"
 
-#include "lapi.h"
-#include "ldebug.h"
-#include "ldo.h"
-#include "lfunc.h"
-#include "lgc.h"
-#include "llex.h"
-#include "lmem.h"
-#include "lstate.h"
-#include "lstring.h"
-#include "ltable.h"
-#include "ltm.h"
+#include "LAPI"
+#include "LDEBUG"
+#include "LDO"
+#include "LFUNC"
+#include "LGC"
+#include "LLEX"
+#include "LMEM"
+#include "LSTATE"
+#include "LSTRING"
+#include "LTABLE"
+#include "LTM"
 
 
 

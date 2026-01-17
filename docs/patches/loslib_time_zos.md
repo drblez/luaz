@@ -16,5 +16,5 @@ Date/time should support z/OS‑specific backends while keeping default LE behav
 
 ## How to verify
 
-- Build with `-DLUAZ_TIME_ZOS` and call `os.time()`; expect `LUZ-30023` until backend is implemented.
+- Build with `-DLUAZ_TIME_ZOS` and call `os.time()`; expect `LUZ30023` until backend is implemented.
 - Build without the flag and confirm standard behavior.

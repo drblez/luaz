@@ -7,7 +7,7 @@
 #define lauxlib_c
 #define LUA_LIB
 
-#include "lprefix.h"
+#include "LPREFIX"
 
 
 #include <errno.h>
@@ -22,10 +22,10 @@
 ** Any function declared here could be written as an application function.
 */
 
-#include "lua.h"
+#include "LUA"
 
-#include "lauxlib.h"
-#include "llimits.h"
+#include "LAUXLIB"
+#include "LLIMITS"
 
 
 /*

@@ -7,22 +7,22 @@
 #define ltm_c
 #define LUA_CORE
 
-#include "lprefix.h"
+#include "LPREFIX"
 
 
 #include <string.h>
 
-#include "lua.h"
+#include "LUA"
 
-#include "ldebug.h"
-#include "ldo.h"
-#include "lgc.h"
-#include "lobject.h"
-#include "lstate.h"
-#include "lstring.h"
-#include "ltable.h"
-#include "ltm.h"
-#include "lvm.h"
+#include "LDEBUG"
+#include "LDO"
+#include "LGC"
+#include "LOBJECT"
+#include "LSTATE"
+#include "LSTRING"
+#include "LTABLE"
+#include "LTM"
+#include "LVM"
 
 
 static const char udatatypename[] = "userdata";

@@ -20,7 +20,7 @@
 
 ## Errors
 
-- `LUZ-47001`: invalid module name mapping.
-- `LUZ-47002`: LUAMAP entry not found for long name.
-- `LUZ-47003`: module source not found in LUAPATH.
-- `LUZ-47004`: module load failed.
+- `LUZ47001`: invalid module name mapping.
+- `LUZ47002`: LUAMAP entry not found for long name.
+- `LUZ47003`: module source not found in LUAPATH.
+- `LUZ47004`: module load failed.

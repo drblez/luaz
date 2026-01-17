@@ -9,8 +9,8 @@
  * | luaz_path_lookup | function | Map long module name to member via LUAMAP |
  * | luaz_path_load | function | Load module source from LUAPATH |
  */
-#ifndef LUAZ_PATH_H
-#define LUAZ_PATH_H
+#ifndef PATH_H
+#define PATH_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,4 +31,4 @@ int luaz_path_set_ops(const struct luaz_path_ops *ops);
 }
 #endif
 
-#endif /* LUAZ_PATH_H */
+#endif /* PATH_H */

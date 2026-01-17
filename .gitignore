@@ -39,3 +39,9 @@ AGENTS.md
 third_party/*
 !third_party/lua-src/
 !third_party/lua-src/**
+
+# Local secrets
+CREDENTIAL.md
+
+# Job outputs
+jcl/*.out

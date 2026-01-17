@@ -16,5 +16,5 @@ Environment and locale should be controlled via policy datasets on z/OS rather t
 
 ## How to verify
 
-- Build with `-DLUAZ_POLICY` and call `os.getenv("key")`; expect `LUZ-46001` until policy backend is implemented.
-- Call `os.setlocale()` and verify it returns policy locale or `LUZ-46002`.
+- Build with `-DLUAZ_POLICY` and call `os.getenv("key")`; expect `LUZ46001` until policy backend is implemented.
+- Call `os.setlocale()` and verify it returns policy locale or `LUZ46002`.

@@ -15,4 +15,4 @@ CPU time should use a z/OS‑specific source when required. Until that backend e
 
 ## How to verify
 
-- Build with `-DLUAZ_TIME_ZOS` and call `os.clock()`; expect `LUZ-45006` until backend is implemented.
+- Build with `-DLUAZ_TIME_ZOS` and call `os.clock()`; expect `LUZ45006` until backend is implemented.

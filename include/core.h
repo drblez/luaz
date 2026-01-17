@@ -9,8 +9,8 @@
  * | luaz_core_init | function | Initialize core runtime |
  * | luaz_core_shutdown | function | Shutdown core runtime |
  */
-#ifndef LUAZ_CORE_H
-#define LUAZ_CORE_H
+#ifndef CORE_H
+#define CORE_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,4 +23,4 @@ int luaz_core_shutdown(void);
 }
 #endif
 
-#endif /* LUAZ_CORE_H */
+#endif /* CORE_H */

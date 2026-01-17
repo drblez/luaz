@@ -6,7 +6,7 @@ Temporary filenames based on USS semantics are not reliable for dataset‑based 
 
 ## What changes
 
-- `lua-vm/src/loslib.c`: disable `os.tmpname` under `LUAZ_ZOS` with `LUZ-44004`.
+- `lua-vm/src/loslib.c`: disable `os.tmpname` under `LUAZ_ZOS` with `LUZ44004`.
 
 ## Expected effect
 
@@ -14,4 +14,4 @@ Temporary filenames based on USS semantics are not reliable for dataset‑based 
 
 ## How to verify
 
-- With `LUAZ_ZOS` defined, calling `os.tmpname()` returns `LUZ-44004`.
+- With `LUAZ_ZOS` defined, calling `os.tmpname()` returns `LUZ44004`.

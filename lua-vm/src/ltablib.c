@@ -7,18 +7,18 @@
 #define ltablib_c
 #define LUA_LIB
 
-#include "lprefix.h"
+#include "LPREFIX"
 
 
 #include <limits.h>
 #include <stddef.h>
 #include <string.h>
 
-#include "lua.h"
+#include "LUA"
 
-#include "lauxlib.h"
-#include "lualib.h"
-#include "llimits.h"
+#include "LAUXLIB"
+#include "LUALIB"
+#include "LLIMITS"
 
 
 /*

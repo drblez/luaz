@@ -7,7 +7,7 @@ Lua/TSO modules are expected to be loaded from dataset concatenations (DDNAME `L
 ## What changes
 
 - `lua-vm/src/loadlib.c`: define `LUA_PATH_VAR` as `LUAPATH` on z/OS.
-- Override `searcher_Lua` under `LUAZ_ZOS` to return a `LUZ-43001` error.
+- Override `searcher_Lua` under `LUAZ_ZOS` to return a `LUZ43001` error.
 
 ## Expected effect
 
@@ -16,5 +16,5 @@ Lua/TSO modules are expected to be loaded from dataset concatenations (DDNAME `L
 
 ## How to verify
 
-- With `LUAZ_ZOS` defined, calling `require("anymodule")` should include `LUZ-43001` in the error chain.
-- Confirm `MSGS-4.md` lists `LUZ-43001`.
+- With `LUAZ_ZOS` defined, calling `require("anymodule")` should include `LUZ43001` in the error chain.
+- Confirm `MSGS-4.md` lists `LUZ43001`.

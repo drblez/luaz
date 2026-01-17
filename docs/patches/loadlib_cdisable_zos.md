@@ -6,7 +6,7 @@ On z/OS, dynamic C module loading is disabled and modules must be linked statica
 
 ## What changes
 
-- `lua-vm/src/loadlib.c`: under `LUAZ_ZOS`, `searcher_C` and `searcher_Croot` return `LUZ-43002`.
+- `lua-vm/src/loadlib.c`: under `LUAZ_ZOS`, `searcher_C` and `searcher_Croot` return `LUZ43002`.
 
 ## Expected effect
 
@@ -14,4 +14,4 @@ On z/OS, dynamic C module loading is disabled and modules must be linked statica
 
 ## How to verify
 
-- With `LUAZ_ZOS` defined, requiring a C module should include `LUZ-43002` in the error chain.
+- With `LUAZ_ZOS` defined, requiring a C module should include `LUZ43002` in the error chain.

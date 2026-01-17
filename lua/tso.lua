@@ -13,23 +13,23 @@
 local tso = {}
 
 function tso.cmd(_)
-  error("LUZ-10001 tso.cmd not implemented")
+  error("LUZ10001 tso.cmd not implemented")
 end
 
 function tso.alloc(_)
-  error("LUZ-10002 tso.alloc not implemented")
+  error("LUZ10002 tso.alloc not implemented")
 end
 
 function tso.free(_)
-  error("LUZ-10003 tso.free not implemented")
+  error("LUZ10003 tso.free not implemented")
 end
 
 function tso.msg(_)
-  error("LUZ-10004 tso.msg not implemented")
+  error("LUZ10004 tso.msg not implemented")
 end
 
 function tso.exit(_)
-  error("LUZ-10005 tso.exit not implemented")
+  error("LUZ10005 tso.exit not implemented")
 end
 
 return tso

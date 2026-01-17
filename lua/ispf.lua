@@ -12,19 +12,19 @@
 local ispf = {}
 
 function ispf.qry()
-  error("LUZ-12001 ispf.qry not implemented")
+  error("LUZ12001 ispf.qry not implemented")
 end
 
 function ispf.exec(_)
-  error("LUZ-12002 ispf.exec not implemented")
+  error("LUZ12002 ispf.exec not implemented")
 end
 
 function ispf.vget(_,_)
-  error("LUZ-12003 ispf.vget not implemented")
+  error("LUZ12003 ispf.vget not implemented")
 end
 
 function ispf.vput(_,_)
-  error("LUZ-12004 ispf.vput not implemented")
+  error("LUZ12004 ispf.vput not implemented")
 end
 
 return ispf

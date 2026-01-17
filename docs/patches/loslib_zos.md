@@ -15,6 +15,6 @@ Lua/TSO uses TSO and dataset APIs for system actions. Standard `os.execute`, `os
 
 ## How to verify
 
-- With `LUAZ_ZOS` defined, `os.execute()` -> `LUZ-44001`.
-- `os.remove()` -> `LUZ-44002`.
-- `os.rename()` -> `LUZ-44003`.
+- With `LUAZ_ZOS` defined, `os.execute()` -> `LUZ44001`.
+- `os.remove()` -> `LUZ44002`.
+- `os.rename()` -> `LUZ44003`.

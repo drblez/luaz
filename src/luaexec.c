@@ -8,7 +8,7 @@
  * |--------|------|---------|
  * | main | function | Entry point for LUAEXEC |
  */
-#include "luaz_io_dd.h"
+#include "IODD"
 
 int main(void)
 {

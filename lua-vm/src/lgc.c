@@ -7,23 +7,23 @@
 #define lgc_c
 #define LUA_CORE
 
-#include "lprefix.h"
+#include "LPREFIX"
 
 #include <string.h>
 
 
-#include "lua.h"
+#include "LUA"
 
-#include "ldebug.h"
-#include "ldo.h"
-#include "lfunc.h"
-#include "lgc.h"
-#include "lmem.h"
-#include "lobject.h"
-#include "lstate.h"
-#include "lstring.h"
-#include "ltable.h"
-#include "ltm.h"
+#include "LDEBUG"
+#include "LDO"
+#include "LFUNC"
+#include "LGC"
+#include "LMEM"
+#include "LOBJECT"
+#include "LSTATE"
+#include "LSTRING"
+#include "LTABLE"
+#include "LTM"
 
 
 /*

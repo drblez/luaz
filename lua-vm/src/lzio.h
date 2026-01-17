@@ -8,9 +8,9 @@
 #ifndef lzio_h
 #define lzio_h
 
-#include "lua.h"
+#include "LUA"
 
-#include "lmem.h"
+#include "LMEM"
 
 
 #define EOZ	(-1)			/* end of stream */

@@ -11,8 +11,8 @@
  * | lua_ds_write | function | Write to DDNAME stream |
  * | lua_ds_close | function | Close DDNAME stream |
  */
-#ifndef LUAZ_DS_H
-#define LUAZ_DS_H
+#ifndef DS_H
+#define DS_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,4 +29,4 @@ int lua_ds_close(struct lua_ds_handle *h);
 }
 #endif
 
-#endif /* LUAZ_DS_H */
+#endif /* DS_H */

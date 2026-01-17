@@ -13,11 +13,11 @@
  * | luaz_time_date | function | Format date/time for Lua |
  * | luaz_time_time | function | Compute time for Lua |
  */
-#ifndef LUAZ_TIME_H
-#define LUAZ_TIME_H
+#ifndef TIME_H
+#define TIME_H
 
 #include <time.h>
-#include "lua.h"
+#include "LUA"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,4 +34,4 @@ int luaz_time_time(lua_State *L);
 }
 #endif
 
-#endif /* LUAZ_TIME_H */
+#endif /* TIME_H */

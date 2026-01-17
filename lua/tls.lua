@@ -10,11 +10,11 @@
 local tls = {}
 
 function tls.connect(_)
-  error("LUZ-14001 tls.connect not implemented")
+  error("LUZ14001 tls.connect not implemented")
 end
 
 function tls.listen(_)
-  error("LUZ-14002 tls.listen not implemented")
+  error("LUZ14002 tls.listen not implemented")
 end
 
 return tls

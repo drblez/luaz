@@ -6,7 +6,7 @@ z/OS deployment for Lua/TSO does not rely on dynamic loading of shared libraries
 
 ## What changes
 
-- `lua-vm/src/loadlib.c`: add a z/OS branch (`LUAZ_ZOS`) that disables `dlopen`/symbol lookup and returns `LUZ-41001`/`LUZ-41002` errors.
+- `lua-vm/src/loadlib.c`: add a z/OS branch (`LUAZ_ZOS`) that disables `dlopen`/symbol lookup and returns `LUZ41001`/`LUZ41002` errors.
 
 ## Expected effect
 
@@ -15,5 +15,5 @@ z/OS deployment for Lua/TSO does not rely on dynamic loading of shared libraries
 
 ## How to verify
 
-- In a z/OS build with `LUAZ_ZOS` defined, calling `package.loadlib(...)` should return an error string containing `LUZ-41001`.
+- In a z/OS build with `LUAZ_ZOS` defined, calling `package.loadlib(...)` should return an error string containing `LUZ41001`.
 - Ensure `MSGS-4.md` lists the new LUZ codes.

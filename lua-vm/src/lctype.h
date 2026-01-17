@@ -7,7 +7,7 @@
 #ifndef lctype_h
 #define lctype_h
 
-#include "lua.h"
+#include "LUA"
 
 
 /*
@@ -33,7 +33,7 @@
 
 #include <limits.h>
 
-#include "llimits.h"
+#include "LLIMITS"
 
 
 #define ALPHABIT	0

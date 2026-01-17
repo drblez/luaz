@@ -23,4 +23,4 @@ z/OS PDS/PDSE member names are limited to 8 characters. Lua module names are not
 ## How to verify
 
 - With LUAMAP entry `very.long.name = VLONG001`, `require("very.long.name")` resolves to member `VLONG001`.
-- Missing LUAMAP entry yields `LUZ-47002`.
+- Missing LUAMAP entry yields `LUZ47002`.

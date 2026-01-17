@@ -7,7 +7,7 @@
 #define liolib_c
 #define LUA_LIB
 
-#include "lprefix.h"
+#include "LPREFIX"
 
 
 #include <ctype.h>
@@ -17,11 +17,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "lua.h"
+#include "LUA"
 
-#include "lauxlib.h"
-#include "lualib.h"
-#include "llimits.h"
+#include "LAUXLIB"
+#include "LUALIB"
+#include "LLIMITS"
 
 
 /*
@@ -57,7 +57,7 @@ static int l_checkmode (const char *mode) {
 
 #define l_popen(L,c,m)  \
 	  ((void)c, (void)m, \
-	  luaL_error(L, "LUZ-42001 popen is disabled on z/OS"), \
+	  luaL_error(L, "LUZ42001 popen is disabled on z/OS"), \
 	  (FILE*)0)
 #define l_pclose(L,file)		((void)L, (void)file, -1)
 
@@ -269,7 +269,7 @@ static void opencheck (lua_State *L, const char *fname, const char *mode) {
 #if defined(LUAZ_ZOS)
   (void)fname;
   (void)mode;
-  luaL_error(L, "LUZ-42002 file I/O is disabled on z/OS");
+  luaL_error(L, "LUZ42002 file I/O is disabled on z/OS");
 #else
   LStream *p = newfile(L);
   p->f = fopen(fname, mode);
@@ -281,7 +281,7 @@ static void opencheck (lua_State *L, const char *fname, const char *mode) {
 
 static int io_open (lua_State *L) {
 #if defined(LUAZ_ZOS)
-  return luaL_error(L, "LUZ-42002 file I/O is disabled on z/OS");
+  return luaL_error(L, "LUZ42002 file I/O is disabled on z/OS");
 #else
   const char *filename = luaL_checkstring(L, 1);
   const char *mode = luaL_optstring(L, 2, "r");
@@ -319,7 +319,7 @@ static int io_popen (lua_State *L) {
 
 static int io_tmpfile (lua_State *L) {
 #if defined(LUAZ_ZOS)
-  return luaL_error(L, "LUZ-42003 tmpfile is disabled on z/OS");
+  return luaL_error(L, "LUZ42003 tmpfile is disabled on z/OS");
 #else
   LStream *p = newfile(L);
   errno = 0;

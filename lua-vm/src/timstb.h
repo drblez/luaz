@@ -13,11 +13,11 @@
  * | luaz_time_date | function | Format date/time for Lua |
  * | luaz_time_time | function | Compute time for Lua |
  */
-#ifndef LUAZ_TIME_STUB_H
-#define LUAZ_TIME_STUB_H
+#ifndef TIMSTB_H
+#define TIMSTB_H
 
 #include <time.h>
-#include "lua.h"
+#include "LUA"
 
 int luaz_time_now(time_t *out);
 int luaz_time_local(const time_t *t, struct tm *out);
@@ -26,4 +26,4 @@ int luaz_time_clock(double *out_seconds);
 int luaz_time_date(lua_State *L, const char *fmt, size_t fmtlen);
 int luaz_time_time(lua_State *L);
 
-#endif /* LUAZ_TIME_STUB_H */
+#endif /* TIMSTB_H */

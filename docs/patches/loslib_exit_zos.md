@@ -6,7 +6,7 @@ Process termination should be controlled by the host runtime on z/OS (TSO/AXR/JC
 
 ## What changes
 
-- `lua-vm/src/loslib.c`: disable `os.exit` under `LUAZ_ZOS` with `LUZ-44005`.
+- `lua-vm/src/loslib.c`: disable `os.exit` under `LUAZ_ZOS` with `LUZ44005`.
 
 ## Expected effect
 
@@ -15,4 +15,4 @@ Process termination should be controlled by the host runtime on z/OS (TSO/AXR/JC
 
 ## How to verify
 
-- With `LUAZ_ZOS` defined, calling `os.exit()` returns `LUZ-44005`.
+- With `LUAZ_ZOS` defined, calling `os.exit()` returns `LUZ44005`.

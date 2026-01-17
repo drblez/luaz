@@ -7,7 +7,7 @@
 #define luac_c
 #define LUA_CORE
 
-#include "lprefix.h"
+#include "LPREFIX"
 
 #include <ctype.h>
 #include <errno.h>
@@ -15,16 +15,16 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "lua.h"
-#include "lauxlib.h"
+#include "LUA"
+#include "LAUXLIB"
 
-#include "lapi.h"
-#include "ldebug.h"
-#include "lobject.h"
-#include "lopcodes.h"
-#include "lopnames.h"
-#include "lstate.h"
-#include "lundump.h"
+#include "LAPI"
+#include "LDEBUG"
+#include "LOBJECT"
+#include "LOPCODES"
+#include "LOPNAMES"
+#include "LSTATE"
+#include "LUNDUMP"
 
 static void PrintFunction(const Proto* f, int full);
 #define luaU_print	PrintFunction

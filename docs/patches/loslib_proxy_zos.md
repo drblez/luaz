@@ -18,4 +18,4 @@ Lua/TSO should route OS operations to host APIs instead of disabling them outrig
 
 - With `LUAZ_ZOS` and `tso` module loaded, `os.execute("LISTCAT")` calls `tso.cmd`.
 - With `LUAZ_ZOS` and `ds` module loaded, `os.remove("HLQ.DATA")` calls `ds.remove`.
-- If modules are missing, errors include `LUZ-44010`/`LUZ-44011`.
+- If modules are missing, errors include `LUZ44010`/`LUZ44011`.

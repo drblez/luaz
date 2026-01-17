@@ -8,8 +8,8 @@
  * |--------|------|---------|
  * | LUZ_E_* | macro | Numeric error codes for stub returns |
  */
-#ifndef LUAZ_ERRORS_H
-#define LUAZ_ERRORS_H
+#ifndef ERRORS_H
+#define ERRORS_H
 
 #define LUZ_E_CORE_INIT 30001
 #define LUZ_E_CORE_SHUTDOWN 30002
@@ -35,4 +35,4 @@
 #define LUZ_E_TIME_DATE 30022
 #define LUZ_E_TIME_TIME 30023
 
-#endif /* LUAZ_ERRORS_H */
+#endif /* ERRORS_H */

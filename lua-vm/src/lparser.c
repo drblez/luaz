@@ -7,26 +7,26 @@
 #define lparser_c
 #define LUA_CORE
 
-#include "lprefix.h"
+#include "LPREFIX"
 
 
 #include <limits.h>
 #include <string.h>
 
-#include "lua.h"
+#include "LUA"
 
-#include "lcode.h"
-#include "ldebug.h"
-#include "ldo.h"
-#include "lfunc.h"
-#include "llex.h"
-#include "lmem.h"
-#include "lobject.h"
-#include "lopcodes.h"
-#include "lparser.h"
-#include "lstate.h"
-#include "lstring.h"
-#include "ltable.h"
+#include "LCODE"
+#include "LDEBUG"
+#include "LDO"
+#include "LFUNC"
+#include "LLEX"
+#include "LMEM"
+#include "LOBJECT"
+#include "LOPCODES"
+#include "LPARSER"
+#include "LSTATE"
+#include "LSTRING"
+#include "LTABLE"
 
 
 

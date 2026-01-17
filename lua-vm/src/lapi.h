@@ -8,8 +8,8 @@
 #define lapi_h
 
 
-#include "llimits.h"
-#include "lstate.h"
+#include "LLIMITS"
+#include "LSTATE"
 
 
 #if defined(LUA_USE_APICHECK)

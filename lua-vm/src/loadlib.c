@@ -11,18 +11,18 @@
 #define loadlib_c
 #define LUA_LIB
 
-#include "lprefix.h"
+#include "LPREFIX"
 
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "lua.h"
+#include "LUA"
 
-#include "lauxlib.h"
-#include "lualib.h"
-#include "llimits.h"
+#include "LAUXLIB"
+#include "LUALIB"
+#include "LLIMITS"
 
 
 /*
@@ -102,7 +102,7 @@ static void lsys_unloadlib (void *lib) {
 static void *lsys_load (lua_State *L, const char *path, int seeglb) {
   (void)path;
   (void)seeglb;
-  lua_pushliteral(L, "LUZ-41001 dynamic loading is disabled on z/OS");
+  lua_pushliteral(L, "LUZ41001 dynamic loading is disabled on z/OS");
   return NULL;
 }
 
@@ -110,7 +110,7 @@ static void *lsys_load (lua_State *L, const char *path, int seeglb) {
 static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
   (void)lib;
   (void)sym;
-  lua_pushliteral(L, "LUZ-41002 symbol lookup is disabled on z/OS");
+  lua_pushliteral(L, "LUZ41002 symbol lookup is disabled on z/OS");
   return NULL;
 }
 
@@ -277,7 +277,7 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
 #endif
 
 #if defined(LUAZ_ZOS)
-#include "luaz_path_stub.h"
+#include "PTHSTB"
 #endif
 #undef LUA_PATH_VAR
 #define LUA_PATH_VAR    "LUAPATH"
@@ -583,19 +583,19 @@ static int searcher_Lua (lua_State *L) {
   unsigned long buflen = 0;
   char *buf;
   if (luaz_path_resolve(name, member, &mlen) != 0)
-    return luaL_error(L, "LUZ-47002 LUAMAP entry not found for '%s'", name);
+    return luaL_error(L, "LUZ47002 LUAMAP entry not found for '%s'", name);
   if (mlen == 0 || mlen > 8)
-    return luaL_error(L, "LUZ-47001 invalid module name mapping");
+    return luaL_error(L, "LUZ47001 invalid module name mapping");
 
   if (luaz_path_load(name, member, NULL, &buflen) != 0 || buflen == 0)
-    return luaL_error(L, "LUZ-47003 LUAPATH load failed for '%s'", name);
+    return luaL_error(L, "LUZ47003 LUAPATH load failed for '%s'", name);
 
   buf = (char *)lua_newuserdata(L, buflen);
   if (luaz_path_load(name, member, buf, &buflen) != 0)
-    return luaL_error(L, "LUZ-47003 LUAPATH load failed for '%s'", name);
+    return luaL_error(L, "LUZ47003 LUAPATH load failed for '%s'", name);
 
   if (luaL_loadbufferx(L, buf, buflen, member, NULL) != LUA_OK)
-    return luaL_error(L, "LUZ-47004 module load error");
+    return luaL_error(L, "LUZ47004 module load error");
 
   lua_pushstring(L, member);
   return 2;
@@ -640,7 +640,7 @@ static int loadfunc (lua_State *L, const char *filename, const char *modname) {
 #if defined(LUAZ_ZOS)
 static int searcher_C (lua_State *L) {
   (void)L;
-  lua_pushliteral(L, "LUZ-43002 C module loading is disabled on z/OS");
+  lua_pushliteral(L, "LUZ43002 C module loading is disabled on z/OS");
   return 1;
 }
 #else
@@ -656,7 +656,7 @@ static int searcher_C (lua_State *L) {
 #if defined(LUAZ_ZOS)
 static int searcher_Croot (lua_State *L) {
   (void)L;
-  lua_pushliteral(L, "LUZ-43002 C module loading is disabled on z/OS");
+  lua_pushliteral(L, "LUZ43002 C module loading is disabled on z/OS");
   return 1;
 }
 #else

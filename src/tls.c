@@ -9,18 +9,17 @@
  * | lua_tls_connect | function | Open TLS connection |
  * | lua_tls_listen | function | Optional TLS server |
  */
-#ifndef LUAZ_TLS_H
-#define LUAZ_TLS_H
+#include "TLS"
+#include "ERRORS"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-int lua_tls_connect(const char *params);
-int lua_tls_listen(const char *params);
-
-#ifdef __cplusplus
+int lua_tls_connect(const char *params)
+{
+  (void)params;
+  return LUZ_E_TLS_CONNECT;
 }
-#endif
 
-#endif /* LUAZ_TLS_H */
+int lua_tls_listen(const char *params)
+{
+  (void)params;
+  return LUZ_E_TLS_LISTEN;
+}

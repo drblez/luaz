@@ -9,8 +9,8 @@
  * | luaz_path_lookup | function | Map long module name to member via LUAMAP |
  * | luaz_path_load | function | Load module source from LUAPATH |
  */
-#include "luaz_errors.h"
-#include "luaz_path.h"
+#include "ERRORS"
+#include "PATH"
 
 #include <ctype.h>
 #include <stdlib.h>

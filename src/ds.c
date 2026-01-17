@@ -11,8 +11,8 @@
  * | lua_ds_write | function | Write to DDNAME stream |
  * | lua_ds_close | function | Close DDNAME stream |
  */
-#include "luaz_ds.h"
-#include "luaz_errors.h"
+#include "DS"
+#include "ERRORS"
 
 struct lua_ds_handle {
   int reserved;

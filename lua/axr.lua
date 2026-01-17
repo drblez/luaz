@@ -9,7 +9,7 @@
 local axr = {}
 
 function axr.request(_)
-  error("LUZ-13001 axr.request not implemented")
+  error("LUZ13001 axr.request not implemented")
 end
 
 return axr

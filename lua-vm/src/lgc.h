@@ -11,8 +11,8 @@
 #include <stddef.h>
 
 
-#include "lobject.h"
-#include "lstate.h"
+#include "LOBJECT"
+#include "LSTATE"
 
 /*
 ** Collectable objects may have one of three colors: white, which means

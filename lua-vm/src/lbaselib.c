@@ -7,7 +7,7 @@
 #define lbaselib_c
 #define LUA_LIB
 
-#include "lprefix.h"
+#include "LPREFIX"
 
 
 #include <ctype.h>
@@ -15,11 +15,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "lua.h"
+#include "LUA"
 
-#include "lauxlib.h"
-#include "lualib.h"
-#include "llimits.h"
+#include "LAUXLIB"
+#include "LUALIB"
+#include "LLIMITS"
 
 
 static int luaB_print (lua_State *L) {

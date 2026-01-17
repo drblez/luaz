@@ -9,8 +9,8 @@
  * | lua_ispf_qry | function | Query ISPF environment |
  * | lua_ispf_exec | function | Execute ISPF command |
  */
-#ifndef LUAZ_ISPF_H
-#define LUAZ_ISPF_H
+#ifndef ISPF_H
+#define ISPF_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,4 +23,4 @@ int lua_ispf_exec(const char *cmdline);
 }
 #endif
 
-#endif /* LUAZ_ISPF_H */
+#endif /* ISPF_H */
