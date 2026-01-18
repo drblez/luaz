@@ -30,7 +30,7 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 ## 4) Dataset‑first I/O and `require`
 
 - [x] Implement dataset‑backed file access for `loadfile`, `dofile`, and `require` search via `LUAPATH` DDNAME concatenation.
-- [ ] Define module search order and error messaging per RFC.
+- [x] Define module search order and error messaging per RFC.
 - [x] Implement `luapath_read_luamap` and `luapath_read_member` in host runtime.
 - [~] Finalize LUAMAP format and collision policy (document + tests).
 - [x] Implement `ds.open_dd` host runtime (read/write) + unit tests.
