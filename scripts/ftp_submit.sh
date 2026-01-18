@@ -15,7 +15,9 @@ Env defaults (can override with flags):
 Behavior:
   - Submits JCL via FTP in JES mode.
   - Parses JOBID from FTP response.
-  - If -o is provided, polls and downloads job spool to that file.
+  - Always polls and downloads job spool.
+  - If -o is not provided, saves to jcl/<JOBNAME>_<JOBID>.out.
+  - Also archives a copy under jcl/ even when -o is provided.
 USAGE
 }
 
@@ -79,8 +81,14 @@ fi
 
 echo "Submitted as $JOBID"
 
+JOBNAME="$(rg -m1 -o "^//([A-Z0-9$#@]{1,8})\\b" "$JCL" | sed 's#^//##' || true)"
+if [[ -z "$JOBNAME" ]]; then
+  JOBNAME="$JOBID"
+fi
+mkdir -p jcl
+ARCHIVE_OUT="jcl/${JOBNAME}_${JOBID}.out"
 if [[ -z "$OUT" ]]; then
-  exit 0
+  OUT="$ARCHIVE_OUT"
 fi
 
 # Poll for job completion and download spool
@@ -99,7 +107,13 @@ bye
 EOF_GET
   then
     if rg -q "^250 " "$TMP_LOG"; then
+      if [[ "$OUT" != "$ARCHIVE_OUT" ]]; then
+        cp -f "$OUT" "$ARCHIVE_OUT"
+      fi
       echo "Fetched spool to $OUT"
+      if [[ "$OUT" != "$ARCHIVE_OUT" ]]; then
+        echo "Archived spool to $ARCHIVE_OUT"
+      fi
       exit 0
     fi
   fi

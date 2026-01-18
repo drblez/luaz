@@ -52,11 +52,12 @@ fi
 
 export MF_HOST="$HOST" MF_PORT="$PORT" MF_USER="$USER" MF_PASS="$PASS"
 
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.SRC" --root src --rewrite-includes-map pds-map-inc.csv
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.SRC" --root lua-vm/src --rewrite-includes-map pds-map-inc.csv
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.INC" --root include --rewrite-includes-map pds-map-inc.csv
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.INC" --root lua-vm/src --rewrite-includes-map pds-map-inc.csv
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.LUA" --root lua
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.JCL" --root jcl
+# SRC/INC: VB/1024, LUA/JCL: FB/80
+scripts/ftp_sync_src.sh --pds "$HLQ.LUA.SRC" --root src --map pds-map-src.csv --use-map --rewrite-includes-map pds-map-inc.csv --recfm VB --lrecl 1024
+scripts/ftp_sync_src.sh --pds "$HLQ.LUA.SRC" --root lua-vm/src --map pds-map-src.csv --use-map --rewrite-includes-map pds-map-inc.csv --recfm VB --lrecl 1024
+scripts/ftp_sync_src.sh --pds "$HLQ.LUA.INC" --root include --map pds-map-inc.csv --use-map --rewrite-includes-map pds-map-inc.csv --recfm VB --lrecl 1024
+scripts/ftp_sync_src.sh --pds "$HLQ.LUA.INC" --root lua-vm/src --map pds-map-inc.csv --use-map --rewrite-includes-map pds-map-inc.csv --recfm VB --lrecl 1024
+scripts/ftp_sync_src.sh --pds "$HLQ.LUA.LUA" --root lua --recfm FB --lrecl 80
+scripts/ftp_sync_src.sh --pds "$HLQ.LUA.JCL" --root jcl --recfm FB --lrecl 80
 
 echo "Done. Uploaded SRC/INC/LUA/JCL to $HLQ.LUA.*"

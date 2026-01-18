@@ -278,7 +278,6 @@ static lua_CFunction lsys_sym (lua_State *L, void *lib, const char *sym) {
 
 #if defined(LUAZ_ZOS)
 #include "pthstb.h"
-#endif
 #undef LUA_PATH_VAR
 #define LUA_PATH_VAR    "LUAPATH"
 #endif
