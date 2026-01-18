@@ -161,17 +161,17 @@ int main(int argc, char **argv) {
     hashfp = fopen("DD:HASHIN", "rb");
     if (hashfp == NULL) {
       fprintf(stderr, "%s: %s\n", LUZ40012, member);
-      return 8;
+      return 4;
     }
     if (read_hash_line(hashfp, &expected) != 0) {
       fprintf(stderr, "%s: %s\n", LUZ40015, member);
       fclose(hashfp);
-      return 8;
+      return 4;
     }
     fclose(hashfp);
     if (actual != expected) {
       fprintf(stderr, "%s: %s\n", LUZ40013, member);
-      return 8;
+      return 4;
     }
     return 0;
   }
