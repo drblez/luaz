@@ -7,6 +7,7 @@ Validate LUAMAP parsing, LUAPATH member lookup, and module load path.
 ## Preconditions
 
 - `DRBLEZ.LUA.SRC(LUAPUT)` exists (from `src/luaput.c`).
+- `DRBLEZ.LUA.JCL(UTBLD)` exists (from `jcl/UTBLD.jcl`).
 - `DRBLEZ.LUA.LOAD` and `DRBLEZ.LUA.OBJ` allocated.
 - `HASHCMP` built (not required for this test).
 
@@ -21,8 +22,7 @@ Validate LUAMAP parsing, LUAPATH member lookup, and module load path.
 - `MAPGEN` = 0
 - `SHORT` = 0
 - `LONG` = 0
-- `CCUT` = 0
-- `LKED` = 0
+- `UTBLD` = 0 (CC1/CC2/CC3/CC4/LKED)
 - `RUN` = 0
 
 ## Artifacts produced

@@ -8,6 +8,7 @@ Validate `ds.open_dd` read/write via DDNAME in batch.
 
 - `DRBLEZ.LUA.SRC(DSUT)` exists (from `src/dsut.c`).
 - `DRBLEZ.LUA.SRC(DS)` exists (from `src/ds.c`).
+- `DRBLEZ.LUA.JCL(UTBLD)` exists (from `jcl/UTBLD.jcl`).
 - `DRBLEZ.LUA.LOAD` and `DRBLEZ.LUA.OBJ` allocated.
 
 ## Steps
@@ -19,8 +20,7 @@ Validate `ds.open_dd` read/write via DDNAME in batch.
 
 - `ALLOC` = 0
 - `GENIN` = 0
-- `CCUT` = 0
-- `CCDS` = 0
+- `UTBLD` = 0 (CC1/CC2/LKED)
 - `LKED` = 0
 - `RUN` = 0
 - `VERIFY` = 0
