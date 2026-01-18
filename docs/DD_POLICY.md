@@ -5,6 +5,7 @@
 - `LUAPATH` contains **only PDS/PDSE** datasets.
 - Sequential datasets (PS) are **not** searched via LUAPATH.
 - PS is allowed only by explicit `require("DSN=...")` (to be implemented).
+- Detailed contract: `docs/LUAPATH_CONTRACT.md`.
 
 ## Module Name Mapping
 

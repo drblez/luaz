@@ -14,7 +14,9 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 - [ ] Define compiler/linker settings for XL C/C++ and LE (31/64‑bit target), include paths, and EBCDIC handling.
 - [ ] Replace/augment upstream `src/Makefile` with a z/OS‑specific build script (e.g., `make zos`, or a separate `build/` script).
 - [ ] Produce `LUAEXEC` load module and any required static libs.
-- [~] Implement PDSE hash-based incremental compile (HASHCMP tool + JCL PROC).
+- [x] Implement PDSE hash-based incremental compile (HASHCMP tool + JCL PROC).
+- [x] Validate incremental build on MF (compile only changed modules, update hashes, link OK).
+- [x] Provide FTP scripts for submit/sync and per‑step spool extraction.
 
 ## 3) Platform Abstraction Layer
 
@@ -29,6 +31,8 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 
 - [ ] Implement dataset‑backed file access for `loadfile`, `dofile`, and `require` search via `LUAPATH` DDNAME concatenation.
 - [ ] Define module search order and error messaging per RFC.
+- [x] Implement `luapath_read_luamap` and `luapath_read_member` in host runtime.
+- [~] Finalize LUAMAP format and collision policy (document + tests).
 
 ## 5) Host APIs (C Core + Lua libs)
 
@@ -37,6 +41,7 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
   - `ds.open_dd` stream interface.
   - `ispf.qry`, `ispf.exec`, `ispf.vget/vput`, minimal LM/TB/FT wrappers.
   - AXR mode A gateway (`LUAXR` REXX exec) and optional AXREXX helpers.
+- [ ] Wire `luaz_io_dd_register()` into `LUAEXEC` entrypoint init.
 
 ## 6) TLS via System SSL
 
@@ -59,6 +64,7 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 - [ ] Create a batch‑friendly test runner (RC≠0 on failure).
 - [ ] Add unit/integration/regression suites for datasets, TSO, ISPF, AXR, TLS.
 - [~] Define and document z/OS batch testing standard (UT/IT/RT JCL).
+- [x] Add dedicated MF JCL “unit test” jobs for host runtime helpers (e.g., HASHCMP, LUAPATH).
 
 ## 10) Packaging & Delivery
 

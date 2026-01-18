@@ -34,6 +34,13 @@ static int read_stream(FILE *fp, char *buf, unsigned long *len)
 
   while (total < cap && (n = fread(buf + total, 1, cap - total, fp)) > 0)
     total += (unsigned long)n;
+  if (total == cap) {
+    int c = fgetc(fp);
+    if (c != EOF) {
+      ungetc(c, fp);
+      return -1;
+    }
+  }
   *len = total;
   return 0;
 }

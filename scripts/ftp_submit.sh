@@ -94,6 +94,7 @@ fi
 
 # Poll for job completion and download spool
 ATTEMPT=1
+SUCCESS="no"
 while [[ $ATTEMPT -le $RETRIES ]]; do
   if ftp -inv "$HOST" "$PORT" <<EOF_GET >"$TMP_LOG"
 user $USER $PASS
@@ -115,16 +116,19 @@ EOF_GET
       if [[ "$OUT" != "$ARCHIVE_OUT" ]]; then
         echo "Archived spool to $ARCHIVE_OUT"
       fi
-      exit 0
+      SUCCESS="yes"
+      break
     fi
   fi
   sleep "$SLEEP"
   ATTEMPT=$((ATTEMPT+1))
 done
 
-echo "Timed out waiting for $JOBID" >&2
-cat "$TMP_LOG" >&2
-exit 1
+if [[ "$SUCCESS" != "yes" ]]; then
+  echo "Timed out waiting for $JOBID" >&2
+  cat "$TMP_LOG" >&2
+  exit 1
+fi
 
 # Download per-step outputs for quick navigation
 TMP_DIRLIST="$(mktemp)"
@@ -142,24 +146,39 @@ dir $JOBID
 bye
 EOF_DIR
 then
-  awk -v job="$JOBID" '
-    /^ *[0-9][0-9][0-9] / {
-      id=$1; step=$2; dd=$5;
-      gsub(/[^A-Za-z0-9_$#@]/,"",step);
-      gsub(/[^A-Za-z0-9_$#@]/,"",dd);
-      if (step=="" || step=="N/A") step="NA";
-      if (dd=="") dd="DD";
-      printf "%s.%s %s %s\n", job, id, step, dd;
-    }
-  ' "$TMP_DIRLIST" | while read -r jesid step dd; do
+  COUNT=0
+  while read -r jesid step dd; do
       out="jcl/${JOBNAME}_${JOBID}_${step}_${dd}.out"
-      ftp -inv "$HOST" "$PORT" <<EOF_GET >>"$TMP_LOG"
+      if ftp -inv "$HOST" "$PORT" <<EOF_GET >>"$TMP_LOG"
 user $USER $PASS
 passive
 epsv4
 quote SITE FILETYPE=JES
+quote SITE JESJOBNAME=*
+quote SITE JESOWNER=*
 get $jesid $out
 bye
 EOF_GET
-    done
+      then
+        if [[ -f "$out" ]]; then
+          COUNT=$((COUNT+1))
+        else
+          echo "Warning: missing per-step output $out" >&2
+        fi
+      fi
+    done < <(awk -v job="$JOBID" '
+      /^ *[0-9][0-9][0-9] / {
+        if (NF < 6) next;
+        if ($4 !~ /^[A-Z]$/) next;
+        id=$1; step=$2; dd=$5;
+        gsub(/[^A-Za-z0-9_$#@]/,"",step);
+        gsub(/[^A-Za-z0-9_$#@]/,"",dd);
+        if (step=="" || step=="N/A") step="NA";
+        if (dd=="") dd="DD";
+        printf "%s.%s %s %s\n", job, id, step, dd;
+      }
+    ' "$TMP_DIRLIST")
+  echo "Downloaded $COUNT per-step outputs"
 fi
+
+exit 0
