@@ -19,6 +19,7 @@
 - If normalized length **> 8**, resolve via `LUAMAP` in each PDS/PDSE, in LUAPATH order:
   - Format: `full.name = MEMBER` (one per line).
   - First match wins.
+- Short‑name collisions are user‑managed; long‑name collisions must be resolved in LUAMAP.
 
 ## Errors
 

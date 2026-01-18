@@ -18,6 +18,13 @@
 
 - Resolve via `LUAMAP` member in `LUAPATH` concatenation (first match wins).
 - `LUAMAP` lines are matched **exactly** against the requested module name (case‑sensitive).
+  If multiple `LUAMAP` entries exist across the concatenation, the first match
+  in `LUAPATH` order is used.
+
+### Collision Policy
+
+- Short names (≤ 8) map directly to a member; collisions are user‑managed.
+- Long names (> 8) must be disambiguated in `LUAMAP`.
 
 ## LUAMAP Format
 
