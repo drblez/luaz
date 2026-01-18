@@ -1,0 +1,122 @@
+//* Copyright 2026 drblez AKA Ruslan Stepanenko (drblez@gmail.com)
+//* Purpose: Unit test for HASHCMP (CRC32 compare/update).
+//* Objects:
+//* +---------+----------------------------------------------+
+//* | UT      | Allocate test SRC/HASH PDSEs                 |
+//* | CMP1    | Compare with missing hash (expect RC!=0)     |
+//* | UPD1    | Update hash (expect RC=0)                    |
+//* | CMP2    | Compare after update (expect RC=0)           |
+//* | MOD1    | Modify source member                         |
+//* | CMP3    | Compare after change (expect RC!=0)          |
+//* | UPD2    | Update hash after change (expect RC=0)       |
+//* | CMP4    | Final compare (expect RC=0)                  |
+//* +---------+----------------------------------------------+
+//UTHASH  JOB (ACCT),'UT HASHCMP',CLASS=A,MSGCLASS=H,NOTIFY=&SYSUID
+//         SET HLQ=DRBLEZ
+//         SET SRCPDS=&HLQ..TST.HASH.SRC
+//         SET HASHPDS=&HLQ..TST.HASH.HASH
+//         SET LOADLIB=&HLQ..LUA.LOAD
+//*
+//DELALL  EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  DELETE DRBLEZ.TST.HASH.SRC PURGE
+  DELETE DRBLEZ.TST.HASH.HASH PURGE
+  SET MAXCC=0
+/*
+//ALCSRC  EXEC PGM=IEFBR14
+//SRC     DD  DSN=&SRCPDS,
+//             DISP=(NEW,CATLG,DELETE),
+//             DSORG=PO,DSNTYPE=LIBRARY,
+//             RECFM=VB,LRECL=1024,BLKSIZE=0,
+//             SPACE=(TRK,(2,2,1)),UNIT=SYSALLDA
+//ALCHASH EXEC PGM=IEFBR14
+//HASH    DD  DSN=&HASHPDS,
+//             DISP=(NEW,CATLG,DELETE),
+//             DSORG=PO,DSNTYPE=LIBRARY,
+//             RECFM=FB,LRECL=80,BLKSIZE=0,
+//             SPACE=(TRK,(1,1,1)),UNIT=SYSALLDA
+//*
+//MK1     EXEC PGM=IEBGENER
+//SYSUT1  DD  *
+first line
+second line
+//SYSUT2  DD  DSN=&SRCPDS(TEST1),DISP=SHR
+//SYSPRINT DD SYSOUT=*
+//SYSIN   DD DUMMY
+//*
+//CMP1    EXEC PGM=HASHCMP,PARM='C TEST1 &SRCPDS &HASHPDS'
+//STEPLIB  DD  DSN=&LOADLIB,DISP=SHR
+//SRCIN    DD  DSN=&SRCPDS(TEST1),DISP=SHR
+//HASHIN   DD  DSN=&HASHPDS(TEST1),DISP=SHR
+// IF (CMP1.RC = 0) THEN
+//FAIL1   EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  SET MAXCC=12
+/*
+// ENDIF
+//UPD1    EXEC PGM=HASHCMP,PARM='U TEST1 &SRCPDS &HASHPDS'
+//STEPLIB  DD  DSN=&LOADLIB,DISP=SHR
+//SRCIN    DD  DSN=&SRCPDS(TEST1),DISP=SHR
+//HASHOUT  DD  DSN=&HASHPDS(TEST1),DISP=SHR
+// IF (UPD1.RC NE 0) THEN
+//FAIL2   EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  SET MAXCC=12
+/*
+// ENDIF
+//CMP2    EXEC PGM=HASHCMP,PARM='C TEST1 &SRCPDS &HASHPDS'
+//STEPLIB  DD  DSN=&LOADLIB,DISP=SHR
+//SRCIN    DD  DSN=&SRCPDS(TEST1),DISP=SHR
+//HASHIN   DD  DSN=&HASHPDS(TEST1),DISP=SHR
+// IF (CMP2.RC NE 0) THEN
+//FAIL3   EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  SET MAXCC=12
+/*
+// ENDIF
+//MOD1    EXEC PGM=IEBGENER
+//SYSUT1  DD  *
+first line
+second line changed
+//SYSUT2  DD  DSN=&SRCPDS(TEST1),DISP=SHR
+//SYSPRINT DD SYSOUT=*
+//SYSIN   DD DUMMY
+//*
+//CMP3    EXEC PGM=HASHCMP,PARM='C TEST1 &SRCPDS &HASHPDS'
+//STEPLIB  DD  DSN=&LOADLIB,DISP=SHR
+//SRCIN    DD  DSN=&SRCPDS(TEST1),DISP=SHR
+//HASHIN   DD  DSN=&HASHPDS(TEST1),DISP=SHR
+// IF (CMP3.RC = 0) THEN
+//FAIL4   EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  SET MAXCC=12
+/*
+// ENDIF
+//UPD2    EXEC PGM=HASHCMP,PARM='U TEST1 &SRCPDS &HASHPDS'
+//STEPLIB  DD  DSN=&LOADLIB,DISP=SHR
+//SRCIN    DD  DSN=&SRCPDS(TEST1),DISP=SHR
+//HASHOUT  DD  DSN=&HASHPDS(TEST1),DISP=SHR
+// IF (UPD2.RC NE 0) THEN
+//FAIL5   EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  SET MAXCC=12
+/*
+// ENDIF
+//CMP4    EXEC PGM=HASHCMP,PARM='C TEST1 &SRCPDS &HASHPDS'
+//STEPLIB  DD  DSN=&LOADLIB,DISP=SHR
+//SRCIN    DD  DSN=&SRCPDS(TEST1),DISP=SHR
+//HASHIN   DD  DSN=&HASHPDS(TEST1),DISP=SHR
+// IF (CMP4.RC NE 0) THEN
+//FAIL6   EXEC PGM=IDCAMS
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD *
+  SET MAXCC=12
+/*
+// ENDIF
+//

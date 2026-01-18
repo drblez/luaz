@@ -29,3 +29,9 @@
 | LUZ47002 | LUAMAP entry not found | lua-vm/src/loadlib.c | Add entry to LUAMAP in LUAPATH PDS | z/OS |
 | LUZ47003 | LUAPATH load failed | lua-vm/src/loadlib.c | Ensure member exists and LUAPATH is allocated | z/OS |
 | LUZ47004 | module load error | lua-vm/src/loadlib.c | Check module source and encoding | z/OS |
+| LUZ40010 | invalid arguments | src/hashcmp.c | Pass mode (C/U), member, source PDS, and hash PDS | build |
+| LUZ40011 | unable to open source member | src/hashcmp.c | Verify SRCIN DD, member name, and SRC PDS allocation | build |
+| LUZ40012 | hash member missing or unreadable | src/hashcmp.c | Ensure hash PDSE exists and member is readable | build |
+| LUZ40013 | hash mismatch | src/hashcmp.c | Recompile module to refresh hash | build |
+| LUZ40014 | unable to update hash member | src/hashcmp.c | Verify HASHOUT DD, PDSE allocation, and write access | build |
+| LUZ40015 | hash record format invalid | src/hashcmp.c | Regenerate hash member or delete it to force rebuild | build |

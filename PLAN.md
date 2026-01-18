@@ -14,6 +14,7 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 - [ ] Define compiler/linker settings for XL C/C++ and LE (31/64‑bit target), include paths, and EBCDIC handling.
 - [ ] Replace/augment upstream `src/Makefile` with a z/OS‑specific build script (e.g., `make zos`, or a separate `build/` script).
 - [ ] Produce `LUAEXEC` load module and any required static libs.
+- [~] Implement PDSE hash-based incremental compile (HASHCMP tool + JCL PROC).
 
 ## 3) Platform Abstraction Layer
 
@@ -57,6 +58,7 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 
 - [ ] Create a batch‑friendly test runner (RC≠0 on failure).
 - [ ] Add unit/integration/regression suites for datasets, TSO, ISPF, AXR, TLS.
+- [~] Define and document z/OS batch testing standard (UT/IT/RT JCL).
 
 ## 10) Packaging & Delivery
 
