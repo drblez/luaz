@@ -10,7 +10,7 @@
 
 ## Module Name Mapping
 
-- Module names follow Lua conventions: `a.b.c`.
+- Module names follow Lua conventions: `a.b.c` (applies to `require`, `loadfile`, and `dofile`).
 - Normalize name:
   - Uppercase.
   - Replace `.` with `$`.
