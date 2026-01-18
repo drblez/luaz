@@ -95,6 +95,8 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 - [ ] Add unit/integration/regression suites for datasets, TSO, ISPF, AXR, TLS.
 - [~] Define and document z/OS batch testing standard (UT/IT/RT JCL).
 - [x] Add dedicated MF JCL “unit test” jobs for host runtime helpers (e.g., HASHCMP, LUAPATH).
+  - [ ] Add Lua integration tests (`tests/integration/lua/`) with IT JCL wrappers.
+  - [ ] Each Lua integration test must validate LUZ outputs and RCs.
 
 ## 10) Packaging & Delivery
 
