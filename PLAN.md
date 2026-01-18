@@ -38,8 +38,8 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 ## 5) Host APIs (C Core + Lua libs)
 
 - [ ] Implement `tso`, `ds`, `ispf`, `axr`, `tls` in the C core and expose Lua modules.
-  - [ ] **tso module (z/OS-specific):**
-    - [ ] `tso.cmd(cmd, opts)` — run TSO command processor; capture RC, stdout/stderr.
+  - [~] **tso module (z/OS-specific):**
+    - [~] `tso.cmd(cmd, opts)` — run TSO command processor; capture RC, stdout/stderr.
     - [ ] `tso.alloc/dd`, `tso.free/dd` — DDNAME allocation/free helpers.
     - [ ] `tso.msg(text, level)` — write to SYSOUT with LUZ prefix.
     - [ ] `tso.exit(rc)` — controlled termination.
@@ -64,10 +64,14 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
     - [ ] SAF key ring / PKCS#11 selection (`GSK_KEYRING_FILE`).
 - [ ] Wire `luaz_io_dd_register()` into `LUAEXEC` entrypoint init.
   - [ ] `LUAEXEC` must resolve main script from `LUAIN` DD or `DSN=...` (RFC 4.1).
-  - [ ] Implement `LUAEXEC` PARM parsing (flags + `DSN=...` + `--` args).
-  - [ ] Implement optional `LUACFG` parsing (`key=value` per line).
   - [ ] Argument/RC propagation and LUZ-prefixed diagnostics.
   - [ ] Encoding handling per `docs/ENCODING_POLICY.md`.
+
+## 12) Deferred / TBD
+
+- [ ] Define `LUAEXEC` PARM syntax and supported flags.
+- [ ] Implement `LUAEXEC` PARM parsing (flags + `DSN=...` + `--` args).
+- [ ] Implement optional `LUACFG` parsing (`key=value` per line).
 
 ## 6) TLS via System SSL
 

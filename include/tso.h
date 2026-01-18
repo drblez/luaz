@@ -9,6 +9,8 @@
  * | lua_tso_cmd | function | Execute a TSO command |
  * | lua_tso_alloc | function | Allocate a dataset |
  * | lua_tso_free | function | Free a dataset allocation |
+ * | lua_tso_msg | function | Emit a TSO message |
+ * | lua_tso_exit | function | Exit with RC |
  */
 #ifndef TSO_H
 #define TSO_H
@@ -20,6 +22,8 @@ extern "C" {
 int lua_tso_cmd(const char *cmd);
 int lua_tso_alloc(const char *spec);
 int lua_tso_free(const char *spec);
+int lua_tso_msg(const char *text, int level);
+int lua_tso_exit(int rc);
 
 #ifdef __cplusplus
 }

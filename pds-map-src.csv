@@ -50,3 +50,4 @@ src/testc.c,TESTC
 src/time.c,TIME
 src/tls.c,TLS
 src/tso.c,TSO
+src/tsout.c,TSOUT

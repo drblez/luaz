@@ -12,3 +12,5 @@
 | LUZ00008 | DS UT empty read | tests | Ensure dataset has records | unit test |
 | LUZ00009 | loadfile UT OK | tests | None | unit test |
 | LUZ00010 | loadfile UT failed | tests | Inspect UT_LOADFILE job output and LUAPATH dataset | unit test |
+| LUZ00011 | TSO UT OK | tests | None | unit test |
+| LUZ00012 | TSO UT failed | tests | Inspect UT_TSO job output and module status | unit test |
