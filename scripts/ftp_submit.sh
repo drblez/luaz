@@ -18,6 +18,7 @@ Behavior:
   - Always polls and downloads job spool.
   - If -o is not provided, saves to jcl/<JOBNAME>_<JOBID>.out.
   - Also archives a copy under jcl/ even when -o is provided.
+  - Downloads per-step outputs as jcl/<JOBNAME>_<JOBID>_<STEP>_<DD>.out.
 USAGE
 }
 
@@ -124,3 +125,41 @@ done
 echo "Timed out waiting for $JOBID" >&2
 cat "$TMP_LOG" >&2
 exit 1
+
+# Download per-step outputs for quick navigation
+TMP_DIRLIST="$(mktemp)"
+trap 'rm -f "$TMP_LOG" "$TMP_DIRLIST"' EXIT
+
+if ftp -inv "$HOST" "$PORT" <<EOF_DIR >"$TMP_DIRLIST"
+user $USER $PASS
+passive
+epsv4
+quote SITE FILETYPE=JES
+quote SITE JESJOBNAME=*
+quote SITE JESOWNER=*
+quote SITE JESSTATUS=ALL
+dir $JOBID
+bye
+EOF_DIR
+then
+  awk -v job="$JOBID" '
+    /^ *[0-9][0-9][0-9] / {
+      id=$1; step=$2; dd=$5;
+      gsub(/[^A-Za-z0-9_$#@]/,"",step);
+      gsub(/[^A-Za-z0-9_$#@]/,"",dd);
+      if (step=="" || step=="N/A") step="NA";
+      if (dd=="") dd="DD";
+      printf "%s.%s %s %s\n", job, id, step, dd;
+    }
+  ' "$TMP_DIRLIST" | while read -r jesid step dd; do
+      out="jcl/${JOBNAME}_${JOBID}_${step}_${dd}.out"
+      ftp -inv "$HOST" "$PORT" <<EOF_GET >>"$TMP_LOG"
+user $USER $PASS
+passive
+epsv4
+quote SITE FILETYPE=JES
+get $jesid $out
+bye
+EOF_GET
+    done
+fi
