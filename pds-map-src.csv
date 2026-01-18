@@ -41,6 +41,7 @@ src/hashcmp.c,HASHCMP
 src/iodd.c,IODD
 src/ispf.c,ISPF
 src/luaexec.c,LUAEXEC
+src/luafut.c,LUAFUT
 src/luaput.c,LUAPUT
 src/path.c,PATH
 src/platform.c,PLATFORM

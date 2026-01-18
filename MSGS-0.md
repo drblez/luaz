@@ -10,3 +10,5 @@
 | LUZ00006 | DS UT open failed | tests | Verify DDNAME allocation and dataset existence | unit test |
 | LUZ00007 | DS UT read failed | tests | Verify dataset content and RECFM/LRECL | unit test |
 | LUZ00008 | DS UT empty read | tests | Ensure dataset has records | unit test |
+| LUZ00009 | loadfile UT OK | tests | None | unit test |
+| LUZ00010 | loadfile UT failed | tests | Inspect UT_LOADFILE job output and LUAPATH dataset | unit test |

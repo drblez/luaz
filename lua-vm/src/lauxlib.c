@@ -16,6 +16,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(LUAZ_ZOS)
+#include "pthstb.h"
+#endif
 
 /*
 ** This file uses only the official API of Lua.
@@ -807,6 +810,93 @@ static int skipcomment (FILE *f, int *cp) {
 
 LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename,
                                              const char *mode) {
+#if defined(LUAZ_ZOS)
+  int status;
+  int fnameindex = lua_gettop(L) + 1;  /* index of filename on the stack */
+  char member[9];
+  unsigned long mlen = sizeof(member) - 1;
+  unsigned long buflen = 0;
+  char *buf = NULL;
+  char *work = NULL;
+  const char *start;
+  size_t len;
+  int add_nl = 0;
+
+  if (filename == NULL) {
+    lua_pushliteral(L, "=stdin");
+    return LUA_ERRFILE;
+  }
+
+  lua_pushfstring(L, "@%s", filename);
+  if (luaz_path_resolve(filename, member, &mlen) != 0) {
+    lua_pushfstring(L, "LUZ47002 LUAMAP entry not found for '%s'", filename);
+    lua_remove(L, fnameindex);
+    return LUA_ERRFILE;
+  }
+
+  if (luaz_path_load(filename, member, NULL, &buflen) != 0 || buflen == 0) {
+    lua_pushfstring(L, "LUZ47003 LUAPATH load failed for '%s'", filename);
+    lua_remove(L, fnameindex);
+    return LUA_ERRFILE;
+  }
+  if (buflen > (unsigned long)(SIZE_MAX - 1)) {
+    lua_pushfstring(L, "LUZ47003 LUAPATH load failed for '%s'", filename);
+    lua_remove(L, fnameindex);
+    return LUA_ERRFILE;
+  }
+
+  buf = (char *)malloc((size_t)buflen + 1);
+  if (buf == NULL) {
+    lua_pushfstring(L, "LUZ47003 LUAPATH load failed for '%s'", filename);
+    lua_remove(L, fnameindex);
+    return LUA_ERRFILE;
+  }
+  if (luaz_path_load(filename, member, buf, &buflen) != 0) {
+    free(buf);
+    lua_pushfstring(L, "LUZ47003 LUAPATH load failed for '%s'", filename);
+    lua_remove(L, fnameindex);
+    return LUA_ERRFILE;
+  }
+  buf[buflen] = '\0';
+
+  start = buf;
+  len = (size_t)buflen;
+  if (len >= 3 && (unsigned char)start[0] == 0xEF &&
+      (unsigned char)start[1] == 0xBB &&
+      (unsigned char)start[2] == 0xBF) {
+    start += 3;
+    len -= 3;
+  }
+  if (len > 0 && start[0] == '#') {
+    const char *nl = memchr(start, '\n', len);
+    if (nl != NULL) {
+      start = nl + 1;
+      len = (size_t)(buf + buflen - start);
+      add_nl = 1;
+    }
+  }
+
+  if (add_nl) {
+    work = (char *)malloc(len + 1);
+    if (work == NULL) {
+      free(buf);
+      lua_pushfstring(L, "LUZ47003 LUAPATH load failed for '%s'", filename);
+      lua_remove(L, fnameindex);
+      return LUA_ERRFILE;
+    }
+    work[0] = '\n';
+    if (len > 0)
+      memcpy(work + 1, start, len);
+    status = luaL_loadbufferx(L, work, len + 1, lua_tostring(L, -1), mode);
+    free(work);
+  }
+  else {
+    status = luaL_loadbufferx(L, start, len, lua_tostring(L, -1), mode);
+  }
+  free(buf);
+  lua_remove(L, fnameindex);
+  return status;
+#else
   LoadF lf;
   int status, readstatus;
   int c;
@@ -845,6 +935,7 @@ LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename,
   }
   lua_remove(L, fnameindex);
   return status;
+#endif
 }
 
 
@@ -1199,4 +1290,3 @@ LUALIB_API void luaL_checkversion_ (lua_State *L, lua_Number ver, size_t sz) {
     luaL_error(L, "version mismatch: app. needs %f, Lua core provides %f",
                   (LUAI_UACNUMBER)ver, (LUAI_UACNUMBER)v);
 }
-
