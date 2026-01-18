@@ -65,6 +65,23 @@ The platform must be able to read the main script:
 * from a PDS/PDSE member (`HLQ.LUA.APP(MYJOB)`), or
 * from a DDNAME (`LUAIN`).
 
+### 4.1.1. `LUAEXEC` Parameters
+
+`LUAEXEC` accepts startup parameters and script arguments via:
+
+1) **PARM=** (primary for batch).
+   - Short flags/args within PARM length limits.
+2) **LUAIN DD** (main script per RFC 4.1).
+3) **LUACFG DD** (optional config file).
+   - Format: `key=value`, one entry per line.
+   - Example keys: `encoding`, `luapath`, `loglevel`.
+4) **DSN=...** (explicit script path in PARM).
+
+Rules:
+* If `DSN=...` is provided, it takes priority over `LUAIN`.
+* Arguments after `--` are passed to the Lua script as‑is.
+* Parameter errors must use LUZ‑coded diagnostics.
+
 ### 4.2. `require`
 
 `require` must search modules in the `LUAPATH` concatenation (PDS/PDSE) in the specified order.

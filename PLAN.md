@@ -37,12 +37,37 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 
 ## 5) Host APIs (C Core + Lua libs)
 
-- [ ] Implement `tso`, `ds`, `ispf`, `axr` in the C core and expose Lua modules:
-  - `tso.cmd`, `tso.alloc`, `tso.free`, `tso.msg`, `tso.exit`.
-  - `ds.open_dd` stream interface.
-  - `ispf.qry`, `ispf.exec`, `ispf.vget/vput`, minimal LM/TB/FT wrappers.
-  - AXR mode A gateway (`LUAXR` REXX exec) and optional AXREXX helpers.
+- [ ] Implement `tso`, `ds`, `ispf`, `axr`, `tls` in the C core and expose Lua modules.
+  - [ ] **tso module (z/OS-specific):**
+    - [ ] `tso.cmd(cmd, opts)` — run TSO command processor; capture RC, stdout/stderr.
+    - [ ] `tso.alloc/dd`, `tso.free/dd` — DDNAME allocation/free helpers.
+    - [ ] `tso.msg(text, level)` — write to SYSOUT with LUZ prefix.
+    - [ ] `tso.exit(rc)` — controlled termination.
+  - [ ] **ds module (z/OS-specific):**
+    - [ ] `ds.open_dd(ddname, mode)` — DDNAME stream (done).
+    - [ ] `ds.open_dsn(dsn, mode)` — direct DSN open (PS/PDS/PDSE).
+    - [ ] `ds.member(dsn, member)` — PDS/PDSE member helpers.
+    - [ ] `ds.info(dsn)` — dataset metadata (DSORG/RECFM/LRECL/BLKSIZE).
+  - [ ] **ispf module (z/OS-specific):**
+    - [ ] `ispf.qry()` — ISPF active check.
+    - [ ] `ispf.exec(cmdline)` — raw ISPEXEC.
+    - [ ] `ispf.vget/vput/vdefine/vreset` — variable pool.
+    - [ ] `ispf.lm*` — LM services (LMINIT/LMOPEN/LMGET/LMFREE).
+    - [ ] `ispf.tb*` — TB services (TBCREATE/TBOPEN/TBADD/TBGET/TBPUT/TBCLOSE).
+    - [ ] `ispf.ft*` — File tailoring (FTOPEN/FTINCL/FTCLOSE).
+    - [ ] `ispf.libdef` — LIBDEF wrappers.
+  - [ ] **axr module (z/OS-specific):**
+    - [ ] Mode A gateway: REXX `LUAXR` exec -> `LUAEXEC`.
+    - [ ] Optional AXREXX: `axr.exec/cancel/getrexxlib`.
+  - [ ] **tls module (z/OS-specific):**
+    - [ ] `tls.connect/read/write/close` via System SSL (GSK APIs).
+    - [ ] SAF key ring / PKCS#11 selection (`GSK_KEYRING_FILE`).
 - [ ] Wire `luaz_io_dd_register()` into `LUAEXEC` entrypoint init.
+  - [ ] `LUAEXEC` must resolve main script from `LUAIN` DD or `DSN=...` (RFC 4.1).
+  - [ ] Implement `LUAEXEC` PARM parsing (flags + `DSN=...` + `--` args).
+  - [ ] Implement optional `LUACFG` parsing (`key=value` per line).
+  - [ ] Argument/RC propagation and LUZ-prefixed diagnostics.
+  - [ ] Encoding handling per `docs/ENCODING_POLICY.md`.
 
 ## 6) TLS via System SSL
 
