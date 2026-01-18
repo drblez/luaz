@@ -36,6 +36,7 @@ lua-vm/src/lzio.c,LZIO
 src/axr.c,AXR
 src/core.c,CORE
 src/ds.c,DS
+src/dsut.c,DSUT
 src/hashcmp.c,HASHCMP
 src/iodd.c,IODD
 src/ispf.c,ISPF
