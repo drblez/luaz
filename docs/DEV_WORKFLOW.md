@@ -10,7 +10,7 @@ HLQ used in examples: `DRBLEZ`.
 
 ## 2) Build LUAEXEC
 
-- Run `DRBLEZ.LUA.JCL(BUILDLUA)`.
+- Run the incremental build job in `DRBLEZ.LUA.JCL(SUBBUILD)`.
 - Output load module: `DRBLEZ.LUA.LOAD(LUAEXEC)`.
 
 ## 3) Runtime Allocations

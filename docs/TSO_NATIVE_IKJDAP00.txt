@@ -1,0 +1,24 @@
+         MACRO                                                          02000000
+         IKJDAP00                                                       03000000
+DAPB00   DSECT                                                          04000000
+*********************************************************************** 05000000
+* THIS OPERATION  CODE CAUSES A SEARCH OF THE DSE TO BE MADE FOR THE  * 06000000
+* SPECIFIED DSNAME AND SET THE DA00FLG FIELD ACCORDINGLY. IF DDNAME   * 07000000
+* IS REQUESTED INFORMATION IS RETURNED IN DA00FLG INDICATING WHETHER  * 08000000
+* OR NOT THE DDNAME IS ALLOCATED TO THE TERMINAL                      * 09000000
+*********************************************************************** 10000000
+DA00CD   DS    CL2                                                      11000000
+DA00FLG  DS    X        FUNCTIONS TO BE PERFORMED WHEN RET CODE IS 0    12000000
+DA00PERM EQU   X'08'    DSE PERMANENTLY ALLOCATED              M0766    12050000
+DA00DYNM EQU   X'04'    DD IS A DYNAM                          M0766    12100000
+DA00DSE  EQU   X'02'    DSNAME FOUND IN DSE                             13000000
+DA00TERM EQU   X'01'    DDNAME ALLOCATED TO A TERMINAL                  14000000
+         DS    X                                                        15000000
+DA00PDSN DS    A        POINTER TO DSNAME TO BE SEARCHED FOR IN DSE     16000000
+DA00DDN  DS    CL8      DDNAME TO BE SEARCHED FOR IN DSE                17000000
+DA00CTL  DS    X        CONTROL FLAGS FOR SPEC PROCESSING               18000000
+DA00UID  EQU   X'20'    USER ID IS TO BE PREFIXED TO DSNAME             19000000
+         DS    CL2      RESERVED                                        20000000
+DA00DSO  DS    CL1      INDICATES DSORG                                 21000000
+**/                                                                     22000000
+         MEND                                                           23000000

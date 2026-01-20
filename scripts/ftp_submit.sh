@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage:
-  ftp_submit.sh -j <job.jcl> [-o <output.txt>] [--host H] [--port P] [--user U] [--pass W] [--retries N] [--sleep S]
+  ftp_submit.sh -j <job.jcl> [--host H] [--port P] [--user U] [--pass W] [--retries N] [--sleep S]
 
 Env defaults (can override with flags):
   MF_HOST (default 192.168.1.160)
@@ -15,10 +15,9 @@ Env defaults (can override with flags):
 Behavior:
   - Submits JCL via FTP in JES mode.
   - Parses JOBID from FTP response.
-  - Always polls and downloads job spool.
-  - If -o is not provided, saves to jcl/<JOBNAME>_<JOBID>.out.
-  - Also archives a copy under jcl/ even when -o is provided.
   - Downloads per-step outputs as jcl/<JOBNAME>_<JOBID>_<STEP>_<DD>.out.
+  - Builds combined jcl/<JOBNAME>_<JOBID>.out from per-step outputs (excluding SYSUDUMP).
+  - Downloads SYSUDUMP separately (if present) after per-step outputs.
 USAGE
 }
 
@@ -55,6 +54,9 @@ if [[ -z "$USER" || -z "$PASS" ]]; then
   echo "Missing MF_USER/MF_PASS or --user/--pass" >&2
   exit 1
 fi
+if [[ -n "$OUT" ]]; then
+  echo "Warning: -o/--out is ignored; combined spool name is fixed." >&2
+fi
 if [[ ! -f "$JCL" ]]; then
   echo "JCL not found: $JCL" >&2
   exit 1
@@ -88,15 +90,12 @@ if [[ -z "$JOBNAME" ]]; then
 fi
 mkdir -p jcl
 ARCHIVE_OUT="jcl/${JOBNAME}_${JOBID}.out"
-if [[ -z "$OUT" ]]; then
-  OUT="$ARCHIVE_OUT"
-fi
 
-# Poll for job completion and download spool
+# Poll for job completion
 ATTEMPT=1
 SUCCESS="no"
 while [[ $ATTEMPT -le $RETRIES ]]; do
-  if ftp -inv "$HOST" "$PORT" <<EOF_GET >"$TMP_LOG"
+  if ftp -inv "$HOST" "$PORT" <<EOF_DIR >"$TMP_LOG"
 user $USER $PASS
 passive
 epsv4
@@ -104,18 +103,12 @@ quote SITE FILETYPE=JES
 quote SITE JESJOBNAME=*
 quote SITE JESOWNER=*
 quote SITE JESSTATUS=ALL
-get $JOBID $OUT
+dir $JOBID
 bye
-EOF_GET
+EOF_DIR
   then
-    if rg -q "^250 " "$TMP_LOG"; then
-      if [[ "$OUT" != "$ARCHIVE_OUT" ]]; then
-        cp -f "$OUT" "$ARCHIVE_OUT"
-      fi
-      echo "Fetched spool to $OUT"
-      if [[ "$OUT" != "$ARCHIVE_OUT" ]]; then
-        echo "Archived spool to $ARCHIVE_OUT"
-      fi
+    if rg -q "^ *[0-9][0-9][0-9] " "$TMP_LOG"; then
+      echo "Job $JOBID is ready"
       SUCCESS="yes"
       break
     fi
@@ -130,7 +123,7 @@ if [[ "$SUCCESS" != "yes" ]]; then
   exit 1
 fi
 
-# Download per-step outputs for quick navigation
+# Download per-step outputs for quick navigation (excluding SYSUDUMP)
 TMP_DIRLIST="$(mktemp)"
 trap 'rm -f "$TMP_LOG" "$TMP_DIRLIST"' EXIT
 
@@ -147,7 +140,13 @@ bye
 EOF_DIR
 then
   COUNT=0
+  : > "$ARCHIVE_OUT"
+  SYSUDUMP_IDS=()
   while read -r jesid step dd; do
+      if [[ "$dd" == "SYSUDUMP" ]]; then
+        SYSUDUMP_IDS+=("$jesid" "$step")
+        continue
+      fi
       out="jcl/${JOBNAME}_${JOBID}_${step}_${dd}.out"
       if ftp -inv "$HOST" "$PORT" <<EOF_GET >>"$TMP_LOG"
 user $USER $PASS
@@ -161,6 +160,11 @@ bye
 EOF_GET
       then
         if [[ -f "$out" ]]; then
+          {
+            echo "----- ${JOBNAME} ${JOBID} ${step} ${dd} -----"
+            cat "$out"
+            echo
+          } >> "$ARCHIVE_OUT"
           COUNT=$((COUNT+1))
         else
           echo "Warning: missing per-step output $out" >&2
@@ -175,10 +179,37 @@ EOF_GET
         gsub(/[^A-Za-z0-9_$#@]/,"",dd);
         if (step=="" || step=="N/A") step="NA";
         if (dd=="") dd="DD";
-        printf "%s.%s %s %s\n", job, id, step, dd;
+      printf "%s.%s %s %s\n", job, id, step, dd;
       }
     ' "$TMP_DIRLIST")
   echo "Downloaded $COUNT per-step outputs"
+  echo "Built combined spool (without SYSUDUMP) at $ARCHIVE_OUT"
+  if [[ ${#SYSUDUMP_IDS[@]} -gt 0 ]]; then
+    i=0
+    while [[ $i -lt ${#SYSUDUMP_IDS[@]} ]]; do
+      jesid="${SYSUDUMP_IDS[$i]}"
+      step="${SYSUDUMP_IDS[$((i+1))]}"
+      out="jcl/${JOBNAME}_${JOBID}_${step}_SYSUDUMP.out"
+      if ftp -inv "$HOST" "$PORT" <<EOF_DUMP >>"$TMP_LOG"
+user $USER $PASS
+passive
+epsv4
+quote SITE FILETYPE=JES
+quote SITE JESJOBNAME=*
+quote SITE JESOWNER=*
+get $jesid $out
+bye
+EOF_DUMP
+      then
+        if [[ -f "$out" ]]; then
+          echo "Fetched SYSUDUMP to $out"
+        else
+          echo "Warning: missing SYSUDUMP output $out" >&2
+        fi
+      fi
+      i=$((i+2))
+    done
+  fi
 fi
 
 exit 0

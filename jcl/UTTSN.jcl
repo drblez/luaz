@@ -1,0 +1,55 @@
+//* Copyright 2026 drblez AKA Ruslan Stepanenko (drblez@gmail.com)
+//* Purpose: Unit test for native TSO command (IKJEFTSR).
+//* Objects:
+//* +---------+----------------------------------------------+
+//* | CCOMP   | Compile TSNUT                                |
+//* | LKED    | Link TSNUT                                   |
+//* | RUN     | Execute TSNUT                                |
+//* +---------+----------------------------------------------+
+//UTTSN  JOB (ACCT),'UT TSN',CLASS=A,MSGCLASS=H,NOTIFY=&SYSUID,
+//             MSGLEVEL=(1,1),REGION=0M
+//SET1     SET HLQ=DRBLEZ
+// JCLLIB ORDER=&HLQ..LUA.JCL
+//CHKINC  EXEC PGM=IKJEFT01
+//SYSTSPRT DD SYSOUT=*
+//SYSOUT   DD SYSOUT=*
+//SYSTSIN  DD *
+  LISTDS 'DRBLEZ.LUA.INC' MEMBERS
+/*
+//CC1     EXEC CCOMP,INFILE=&HLQ..LUA.SRC(TSNOUT),
+//         OUTMEM=TSNOUT,HLQ=&HLQ
+//CC2     EXEC CCOMP,INFILE=&HLQ..LUA.SRC(TSONATV),
+//         OUTMEM=TSONATV,HLQ=&HLQ
+//* 
+//LKED    EXEC PGM=HEWL,PARM='LIST,MAP,XREF,LET,AC=1',REGION=0M
+//SYSPRINT DD SYSOUT=*
+//SYSUT1   DD UNIT=SYSDA,SPACE=(CYL,(1,1))
+//SYSLMOD  DD DSN=&HLQ..LUA.LOAD(TSNOUT),DISP=SHR
+//SYSLIB   DD DSN=CEE.SCEELKED,DISP=SHR
+//         DD DSN=SYS1.LPALIB,DISP=SHR
+//OBJLIB   DD DSN=&HLQ..LUA.OBJ,DISP=SHR
+//SYSLIN   DD *
+  INCLUDE OBJLIB(TSNOUT)
+  INCLUDE OBJLIB(TSONATV)
+  NAME TSNOUT(R)
+/*
+//* 
+//RUN     EXEC PGM=IKJEFT01,COND=(0,NE,LKED)
+//STEPLIB  DD DSN=&HLQ..LUA.LOAD,DISP=SHR
+//         DD DSN=SYS1.LPALIB,DISP=SHR
+//SYSTSIN  DD *
+  CALL '&HLQ..LUA.LOAD(TSNOUT)'
+/*
+//SYSTSPRT DD DSN=&&RUNSPRT,
+//         DISP=(NEW,PASS),UNIT=SYSDA,
+//         SPACE=(CYL,(1,1)),
+//         DCB=(RECFM=FB,LRECL=133,BLKSIZE=1330)
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=*
+//* 
+//PRTRUN  EXEC PGM=IEBGENER,COND=EVEN
+//SYSUT1   DD DSN=&&RUNSPRT,DISP=(OLD,DELETE),
+//         DCB=(RECFM=FB,LRECL=133,BLKSIZE=1330)
+//SYSUT2   DD SYSOUT=*
+//SYSPRINT DD SYSOUT=*
+//SYSIN    DD DUMMY

@@ -2,12 +2,13 @@
 
 ## Purpose
 
-Validate `tso` module stubs return LUZ-coded errors.
+Validate `tso` module C bindings and REXX bridge.
 
 ## Preconditions
 
 - `DRBLEZ.LUA.SRC(TSOUT)` exists (from `src/tsout.c`).
-- Lua VM objects are already built in `DRBLEZ.LUA.OBJ` (see `jcl/BUILDLUA.jcl`).
+- `DRBLEZ.LUA.REXX(LUTSO)` uploaded and allocated to `SYSEXEC`.
+- Lua VM objects are already built in `DRBLEZ.LUA.OBJ` (incremental build).
 - `DRBLEZ.LUA.JCL(UTBLD)` exists (from `jcl/UTBLD.jcl`).
 - `DRBLEZ.LUA.LOAD` allocated.
 

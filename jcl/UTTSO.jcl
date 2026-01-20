@@ -1,5 +1,5 @@
 //* Copyright 2026 drblez AKA Ruslan Stepanenko (drblez@gmail.com)
-//* Purpose: Unit test for tso module stubs.
+//* Purpose: Unit test for tso module bindings.
 //* Objects:
 //* +---------+----------------------------------------------+
 //* | UTBLD   | Compile TSOUT and TSO                         |
@@ -20,6 +20,7 @@
   INCLUDE OBJLIB(TSOUT)
   INCLUDE OBJLIB(TSO)
   INCLUDE OBJLIB(PATH)
+  INCLUDE OBJLIB(PLATFORM)
   INCLUDE OBJLIB(CORE)
   INCLUDE OBJLIB(LAPI)
   INCLUDE OBJLIB(LAUXLIB)
@@ -56,9 +57,19 @@
   NAME TSOUT(R)
 /*
 //*
-//RUN     EXEC PGM=TSOUT,COND=(0,NE,UTBLD.LKED)
+//RUN     EXEC PGM=IKJEFT01,COND=(0,NE,UTBLD.LKED)
 //STEPLIB DD DSN=&HLQ..LUA.LOAD,DISP=SHR
+//        DD DSN=SYS1.LPALIB,DISP=SHR
+//        DD DSN=SYS1.SAXREXEC,DISP=SHR
+//SYSTSIN  DD *
+  CALL '&HLQ..LUA.LOAD(TSOUT)'
+/*
+//SYSTSPRT DD SYSOUT=*
+//SYSEXEC DD DSN=&HLQ..LUA.REXX,DISP=SHR
+//TSOOUT  DD DSN=&&TSOOUT,DISP=(NEW,PASS),
+//            UNIT=SYSDA,SPACE=(TRK,(5,5)),
+//            RECFM=VB,LRECL=1024,BLKSIZE=0
 //SYSOUT  DD SYSOUT=*
 //SYSPRINT DD SYSOUT=*
-//SYSUDUMP DD SYSOUT=*
+//* SYSUDUMP removed to keep output small during IRXEXEC debug
 //*

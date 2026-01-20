@@ -1,0 +1,80 @@
+//* Copyright 2026 drblez AKA Ruslan Stepanenko (drblez@gmail.com)
+//* Purpose: Authorized stub test (TSOAUTH + TSOEFTR).
+//* Objects:
+//* +---------+----------------------------------------------+
+//* | ASM1    | Assemble TSOAUTH (command processor)         |
+//* | ASM2    | Assemble TSOEFTR                             |
+//* | ASM3    | Assemble TSOWRT                              |
+//* | LKED    | Link TSOAUTH + TSOEFTR + TSOWRT (AC=1)        |
+//* | COPY    | Copy TSOAUTH into SYS1.LINKLIB               |
+//* | RUN     | Execute TSOAUTH                              |
+//* | PRTRUN  | Print RUN SYSTSPRT                            |
+//* +---------+----------------------------------------------+
+//UTTSOAU JOB (ACCT),'UT TSOAUTH',CLASS=A,MSGCLASS=H,NOTIFY=&SYSUID,
+//             MSGLEVEL=(1,1),REGION=0M
+//SET1     SET HLQ=DRBLEZ
+// JCLLIB ORDER=&HLQ..LUA.JCL
+//CHKINC  EXEC PGM=IKJEFT01
+//SYSTSPRT DD SYSOUT=*
+//SYSOUT   DD SYSOUT=*
+//SYSTSIN  DD *
+  LISTDS 'DRBLEZ.LUA.INC' MEMBERS
+/*
+//ASM1    EXEC ASMCOMP,INFILE=&HLQ..LUA.ASM(TSOAUTH),
+//         OUTMEM=TSOAUTH,HLQ=&HLQ
+//ASM2    EXEC ASMCOMP,INFILE=&HLQ..LUA.ASM(TSOEFTR),
+//         OUTMEM=TSOEFTR,HLQ=&HLQ
+//ASM3    EXEC ASMCOMP,INFILE=&HLQ..LUA.ASM(TSOWRT),
+//         OUTMEM=TSOWRT,HLQ=&HLQ
+//* Only link and run when all assembly steps return RC=0.
+// IF (ASM1.ASM.RC LE 4) THEN
+// IF (ASM2.ASM.RC LE 4) THEN
+// IF (ASM3.ASM.RC LE 4) THEN
+//LKED    EXEC PGM=HEWL,PARM='LIST,MAP,XREF,LET',REGION=0M
+//SYSPRINT DD SYSOUT=*
+//SYSUT1   DD UNIT=SYSDA,SPACE=(CYL,(1,1))
+//SYSLMOD  DD DSN=&HLQ..LUA.LOAD(TSOAUTH),DISP=SHR
+//SYSLIB   DD DSN=CEE.SCEELKED,DISP=SHR
+//         DD DSN=SYS1.LPALIB,DISP=SHR
+//OBJLIB   DD DSN=&HLQ..LUA.OBJ,DISP=SHR
+//SYSLIN   DD *
+  INCLUDE OBJLIB(TSOAUTH)
+  INCLUDE OBJLIB(TSOEFTR)
+  INCLUDE OBJLIB(TSOWRT)
+  NAME TSOAUTH(R)
+/*
+//* Copy TSOAUTH to SYS1.LINKLIB only if link succeeded.
+// IF (LKED.RC EQ 0) THEN
+//COPY    EXEC PGM=IEBCOPY
+//SYSPRINT DD SYSOUT=*
+//SYSUT3  DD UNIT=SYSDA,SPACE=(CYL,(1,1))
+//INLIB   DD DSN=&HLQ..LUA.LOAD,DISP=SHR
+//OUTLIB  DD DSN=SYS1.LINKLIB,DISP=SHR
+//SYSIN   DD *
+  COPY OUTDD=OUTLIB,INDD=INLIB
+  SELECT MEMBER=((TSOAUTH,,R))
+/*
+// ENDIF
+//*
+//* Verify IKJEFT01 behavior without TSOAUTH.
+//RUN1    EXEC PGM=IKJEFT01
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  TIME
+/*
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=*
+//* Verify IKJEFT01 behavior with ALLOC STEPLIB + TSOAUTH.
+//RUN2C   EXEC PGM=IKJEFT01,COND=(0,NE,LKED)
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  TSOAUTH TIME
+  TSOAUTH PROFILE
+  TSOAUTH LISTA
+  TSOAUTH LISTDS 'DRBLEZ.*'
+/*
+//SYSOUT   DD SYSOUT=*
+//SYSUDUMP DD SYSOUT=*
+// ENDIF
+// ENDIF
+// ENDIF

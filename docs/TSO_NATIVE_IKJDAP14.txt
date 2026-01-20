@@ -1,0 +1,17 @@
+         MACRO                                                          04000000
+         IKJDAP14                                                       06000000
+DAPB14   DSECT                                                          08000000
+*********************************************************************** 10000000
+* THIS OPERATION CODE RETURNS QUALIFIERS IN THE RETURN AREA FOR THE   * 12000000
+* GIVEN INDEX NAME                                                    * 14000000
+*********************************************************************** 16000000
+DA14CD   DS    CL2      DAIR ENTRY CODE                                 18000000
+DA14FLG  DS    X        FUNCTIONS TO BE PERFORMED WHEN RET CODE IS 0    20000000
+         DS    X                                                        22000000
+DA14PDSN DS    A        POINTER TO DSNAME TO BE SEARCHED IN DSE         24000000
+DA14PRET DS    A        POINTER TO RETURN AREA                          26000000
+DA14CTL  DS    X        CONTROL FLAGS FOR SPECIAL PROCESSING            28000000
+DA14UID  EQU   X'20'    USER ID IS TO BE PREFIXED TO DSNAME             30000000
+         DS    CL3      RESERVED                                        32000000
+**/                                                                     34000000
+         MEND                                                           36000000

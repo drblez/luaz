@@ -1,0 +1,5 @@
+relative_path,member
+src/irxcall.asm,IRXCALL
+src/tsoauth_cp.asm,TSOAUTH
+src/tsoeftr.asm,TSOEFTR
+src/tsowrt.asm,TSOWRT

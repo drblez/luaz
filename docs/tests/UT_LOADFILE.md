@@ -7,7 +7,7 @@ Validate `luaL_loadfile` uses `LUAPATH` on z/OS.
 ## Preconditions
 
 - `DRBLEZ.LUA.SRC(LUAFUT)` exists (from `src/luafut.c`).
-- Lua VM objects are already built in `DRBLEZ.LUA.OBJ` (see `jcl/BUILDLUA.jcl`).
+- Lua VM objects are already built in `DRBLEZ.LUA.OBJ` (incremental build).
 - `DRBLEZ.LUA.JCL(UTBLD)` exists (from `jcl/UTBLD.jcl`).
 - `DRBLEZ.LUA.LOAD` allocated.
 

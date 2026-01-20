@@ -4,11 +4,18 @@
 |------|---------|---------|-------------|-------|
 | LUZ30001 | core init not implemented | src/core.c | Wait for implementation | stub |
 | LUZ30002 | core shutdown not implemented | src/core.c | Wait for implementation | stub |
-| LUZ30003 | tso.cmd not implemented | src/tso.c | Wait for implementation; use JCL/TSO directly | stub |
-| LUZ30004 | tso.alloc not implemented | src/tso.c | Use JCL allocation statements | stub |
-| LUZ30005 | tso.free not implemented | src/tso.c | Free allocations via TSO/JCL | stub |
-| LUZ30024 | tso.msg not implemented | src/tso.c | Write to SYSOUT from JCL/TSO directly | stub |
-| LUZ30025 | tso.exit not implemented | src/tso.c | Use JCL RC handling for batch exit | stub |
+| LUZ30003 | tso.cmd bridge unavailable | src/tso.c | Ensure SYSEXEC includes LUTSO and IRXEXEC is available | internal |
+| LUZ30004 | tso.alloc bridge unavailable | src/tso.c | Ensure SYSEXEC includes LUTSO and IRXEXEC is available | internal |
+| LUZ30005 | tso.free bridge unavailable | src/tso.c | Ensure SYSEXEC includes LUTSO and IRXEXEC is available | internal |
+| LUZ30024 | tso.msg invalid input | src/tso.c | Provide a non-empty message string | validation |
+| LUZ30025 | tso.exit invalid input | src/tso.c | Provide a numeric RC | validation |
+| LUZ30030 | tso.msg output | src/tso.c | None | emitted |
+| LUZ30031 | tso.cmd output line | src/tso.c | Use `tso.cmd` output table to consume lines | emitted |
+| LUZ30032 | tso.cmd failed (irx_rc/rexx_rc in message) | src/tso.c | Check IKJTSOEV init, IRXEXEC availability, and LUTSO in SYSEXEC | runtime |
+| LUZ30033 | tso.alloc failed (irx_rc/rexx_rc in message) | src/tso.c | Check IKJTSOEV init and ALLOC spec | runtime |
+| LUZ30034 | tso.free failed (irx_rc/rexx_rc in message) | src/tso.c | Ensure DDNAME is allocated and IKJTSOEV init succeeded | runtime |
+| LUZ30035 | tso.msg failed (irx_rc/rexx_rc in message) | src/tso.c | Ensure IKJTSOEV init and message string are valid | runtime |
+| LUZ30036 | LUTSO invalid mode | rexx/LUTSO.rexx | Use supported modes CMD/ALLOC/FREE/MSG | validation |
 | LUZ30006 | ds.open_dd not implemented | src/ds.c | Use DDNAME I/O via JCL tools | stub |
 | LUZ30007 | ds.read not implemented | src/ds.c | Use dataset utilities for reads | stub |
 | LUZ30008 | ds.write not implemented | src/ds.c | Use dataset utilities for writes | stub |

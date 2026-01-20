@@ -8,6 +8,7 @@ Lua/TSO is a scripting platform for z/OS aimed at replacing system REXX for auto
 
 - Provide a modern scripting runtime for z/OS automation.
 - Integrate with core services: TSO, ISPF (without panels), datasets, AXR.
+- Run TSO commands under TMP (IKJEFT01) to guarantee command output to SYSTSPRT.
 - Support secure connectivity via z/OS System SSL.
 
 ### Status
@@ -37,6 +38,7 @@ Lua/TSO — это скриптовая платформа для z/OS, пред
 
 - Предоставить современную скриптовую среду для автоматизации на z/OS.
 - Интеграция с базовыми сервисами: TSO, ISPF (без панелей), datasets, AXR.
+- Запуск TSO‑команд под TMP (IKJEFT01) для гарантированного вывода в SYSTSPRT.
 - Безопасные соединения через z/OS System SSL.
 
 ### Статус

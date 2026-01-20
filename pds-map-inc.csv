@@ -42,3 +42,8 @@ lua-vm/src/lzio.h,LZIO
 lua-vm/src/polstb.h,POLSTB
 lua-vm/src/pthstb.h,PTHSTB
 lua-vm/src/timstb.h,TIMSTB
+include/tso_native.h,TSONATV
+include/tso_dair.h,TSODAIR
+include/tso_ikjeftsr.h,IKJEFTSR
+include/tsoeftr.h,TSOEFTR
+include/tsowrt.h,TSOWRT

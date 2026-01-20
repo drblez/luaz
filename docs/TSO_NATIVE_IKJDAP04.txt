@@ -1,0 +1,22 @@
+         MACRO                                                          02000000
+         IKJDAP04                                                       03000000
+DAPB04   DSECT                                                          04000000
+*********************************************************************** 05000000
+* THIS OPERATION CODE CAUSES A SEARCH OF THE DSE TO BE MADE FOR THE   * 06000000
+* SPECIFIED DSNAME. IF IT IS NOT FOUND IN THE DSE THE SYSTEM CATALOG  * 07000000
+* IS ALSO SEARCHED                                                    * 08000000
+DA04CD   DS    CL2      DAIR ENTRY CODE                                 09000000
+DA04CAT  EQU   X'04'    DSNAME FOUND IN  CATLG                          10000000
+*********************************************************************** 11000000
+DA04FLG  DS    X        FUNCTIONS TO BE PERFORMED WHEN RET CODE IS 0    12000000
+DA04DSE  EQU   X'02'    DSNAME FOUND IN  DSE                            13000000
+         DS    X                                                        14000000
+         DS    CL2      RESERVED                                        15000000
+DA04CTRC DS    H                  CATALOG RETURN CODE AREA              16000000
+DA04PDSN DS    A        POINTER TO DSNAME TO BE SEARCHED IN DSE         17000000
+DA04CTL  DS    X        CONTROL FLGS FOR SPECIAL PROCESSING             18000000
+DA04UID  EQU   X'20'    USER ID IS TO BE PREFIXED TO DSNAME             19000000
+         DS    CL2      RESERVED                                        20000000
+DA04DSO  DS    CL1      INDICATES DSORG                                 21000000
+*  */                                                                   22000000
+         MEND                                                           23000000

@@ -6,6 +6,8 @@
  * Object Table:
  * | Object | Kind | Purpose |
  * |--------|------|---------|
+ * | read_dd_to_lines | function | Read DDNAME output into Lua table |
+ * | tso_call_rexx | function | Invoke LUTSO REXX exec via IRXEXEC |
  * | l_tso_cmd | function | Lua wrapper for tso.cmd |
  * | l_tso_alloc | function | Lua wrapper for tso.alloc |
  * | l_tso_free | function | Lua wrapper for tso.free |
@@ -24,33 +26,284 @@
 #include "lua.h"
 #include "lauxlib.h"
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+
+typedef void (*ikjtsoev_fn)(int *, int *, int *, int *, void **);
+typedef struct IRXEXEC_type IRXEXEC_type;
+#pragma linkage(fetch, OS)
+extern void (*fetch(const char *name))();
+typedef int (*irxexec_fn)();
+static int g_last_irx_rc = 0;
+static int g_last_rexx_rc = 0;
+static int g_cppl_addr = 0;
+
+
+typedef struct EVALBLK_type {
+  int EVPADD1;
+  int EVSIZE;
+  int EVLEN;
+  int EVPADD2;
+  char EVDATA[256];
+} EVALBLK_type;
+
+typedef struct EXECBLK_type {
+  char EXECBLK_ACRYN[8];
+  int EXECBLK_LENGTH;
+  int EXECBLK_reserved;
+  char EXECBLK_MEMBER[8];
+  char EXECBLK_DDNAME[8];
+  char EXECBLK_SUBCOM[8];
+  void *EXECBLK_DSNPTR;
+  int EXECBLK_DSNLEN;
+} EXECBLK_type;
+
+typedef struct one_parameter_type {
+  void *ARGSTRING_PTR;
+  int ARGSTRING_LENGTH;
+} one_parameter_type;
+
+typedef struct IRXEXEC_type {
+  EXECBLK_type **execblk_ptr;
+  one_parameter_type **argtable_ptr;
+  int *flags_ptr;
+  int *instblk_ptr;
+  int *cppl_ptr;
+  EVALBLK_type **evalblk_ptr;
+  int *workarea_ptr;
+  int *userfield_ptr;
+  int *envblock_ptr;
+  int *rexx_rc_ptr;
+} IRXEXEC_type;
+
+static int evalblk_to_rc(const EVALBLK_type *evalblk, int *out_rc)
+{
+  int i = 0;
+  int rc = 0;
+  int sign = 1;
+
+  if (evalblk == NULL || out_rc == NULL)
+    return 0;
+  if (evalblk->EVLEN <= 0 || evalblk->EVLEN > (int)sizeof(evalblk->EVDATA))
+    return 0;
+  if (evalblk->EVDATA[0] == (char)0x60) {
+    sign = -1;
+    i = 1;
+  }
+  for (; i < evalblk->EVLEN; i++) {
+    unsigned char c = (unsigned char)evalblk->EVDATA[i];
+    if (c < 0xF0 || c > 0xF9)
+      break;
+    rc = (rc * 10) + (c - 0xF0);
+  }
+  if ((sign == -1 && i == 1) || (sign == 1 && i == 0))
+    return 0;
+  *out_rc = rc * sign;
+  return 1;
+}
+
+static int tso_env_init(void)
+{
+  static int env_state = 0; /* 0=unknown, 1=ready, -1=failed */
+  ikjtsoev_fn ikjtsoev;
+  int parm1 = 0;
+  int rc = 0;
+  int reason = 0;
+  int abend = 0;
+  void *cppl = NULL;
+
+  if (env_state == 1)
+    return 0;
+  if (env_state == -1)
+    return -1;
+
+  ikjtsoev = (ikjtsoev_fn)fetch("IKJTSOEV");
+  if (ikjtsoev == NULL) {
+    env_state = -1;
+    g_last_irx_rc = -2;
+    g_last_rexx_rc = 0;
+    return -1;
+  }
+
+  ikjtsoev(&parm1, &rc, &reason, &abend, &cppl);
+  if (rc == 0) {
+    g_cppl_addr = (int)(uintptr_t)cppl;
+    env_state = 1;
+    return 0;
+  }
+
+  env_state = -1;
+  g_last_irx_rc = rc;
+  g_last_rexx_rc = reason;
+  g_cppl_addr = 0;
+  return -1;
+}
+
+static int read_dd_to_lines(lua_State *L, const char *ddname)
+{
+  char path[32];
+  FILE *fp;
+  char buf[2048];
+  int idx = 0;
+
+  if (ddname == NULL || ddname[0] == '\0')
+    return 0;
+  if (snprintf(path, sizeof(path), "DD:%s", ddname) <= 0)
+    return 0;
+  fp = fopen(path, "rb");
+  if (fp == NULL)
+    return 0;
+
+  lua_newtable(L);
+  while (fgets(buf, sizeof(buf), fp) != NULL) {
+    size_t len = strcspn(buf, "\r\n");
+    lua_pushstring(L, "LUZ30031 ");
+    lua_pushlstring(L, buf, len);
+    lua_concat(L, 2);
+    lua_rawseti(L, -2, ++idx);
+  }
+  fclose(fp);
+  return 1;
+}
+
+static int tso_call_rexx(const char *ddname, const char *member,
+                         const char *mode, const char *payload,
+                         const char *outdd, int errcode)
+{
+  EXECBLK_type execblk;
+  EXECBLK_type *execblk_ptr = &execblk;
+  one_parameter_type args[4];
+  one_parameter_type *argtable = args;
+  IRXEXEC_type parm;
+  int flags = 0;
+  int rexx_rc = 0;
+  int dummy_zero = 0;
+  int eval_rc = 0;
+  EVALBLK_type evalblk;
+  EVALBLK_type *evalblk_ptr = &evalblk;
+  irxexec_fn irxexec;
+  int rc;
+
+  printf("LUZ00015 tso_call_rexx enter dd=%s member=%s mode=%s outdd=%s\n",
+         ddname ? ddname : "", member ? member : "", mode ? mode : "",
+         outdd ? outdd : "");
+  fflush(NULL);
+
+  if (tso_env_init() != 0)
+    return errcode;
+
+  irxexec = (irxexec_fn)fetch("IRXEXEC");
+  if (irxexec == NULL) {
+    g_last_irx_rc = -2;
+    g_last_rexx_rc = 0;
+    return errcode;
+  }
+
+  memset(&execblk, 0, sizeof(execblk));
+  memset(&args, 0, sizeof(args));
+  memset(&parm, 0, sizeof(parm));
+  memset(&evalblk, 0, sizeof(evalblk));
+  evalblk.EVSIZE = 34;
+
+  memcpy(execblk.EXECBLK_ACRYN, "IRXEXECB", 8);
+  execblk.EXECBLK_LENGTH = 48;
+  memset(execblk.EXECBLK_MEMBER, ' ', sizeof(execblk.EXECBLK_MEMBER));
+  memset(execblk.EXECBLK_DDNAME, ' ', sizeof(execblk.EXECBLK_DDNAME));
+  memset(execblk.EXECBLK_SUBCOM, ' ', sizeof(execblk.EXECBLK_SUBCOM));
+  if (member)
+    memcpy(execblk.EXECBLK_MEMBER, member, strlen(member) > 8 ? 8 : strlen(member));
+  if (ddname)
+    memcpy(execblk.EXECBLK_DDNAME, ddname, strlen(ddname) > 8 ? 8 : strlen(ddname));
+  memcpy(execblk.EXECBLK_SUBCOM, "TSO", 3);
+
+  args[0].ARGSTRING_PTR = (void *)(mode ? mode : "");
+  args[0].ARGSTRING_LENGTH = (int)strlen(mode ? mode : "");
+  args[1].ARGSTRING_PTR = (void *)(payload ? payload : "");
+  args[1].ARGSTRING_LENGTH = (int)strlen(payload ? payload : "");
+  args[2].ARGSTRING_PTR = (void *)(outdd ? outdd : "");
+  args[2].ARGSTRING_LENGTH = (int)strlen(outdd ? outdd : "");
+  args[3].ARGSTRING_PTR = (void *)-1;
+  args[3].ARGSTRING_LENGTH = -1;
+
+  parm.execblk_ptr = &execblk_ptr;
+  parm.argtable_ptr = &argtable;
+  parm.flags_ptr = &flags;
+  parm.instblk_ptr = NULL;
+  if (g_cppl_addr != 0)
+    parm.cppl_ptr = (int *)(uintptr_t)g_cppl_addr;
+  else
+    parm.cppl_ptr = NULL;
+  parm.evalblk_ptr = &evalblk_ptr;
+  parm.workarea_ptr = NULL;
+  parm.userfield_ptr = NULL;
+  parm.envblock_ptr = NULL;
+  parm.rexx_rc_ptr = &rexx_rc;
+  parm.rexx_rc_ptr = (int *)((uintptr_t)parm.rexx_rc_ptr | (uintptr_t)0x80000000u);
+
+  flags = 0x40000000;
+  rc = irxexec(parm);
+
+  g_last_irx_rc = rc;
+  if (rc != 0) {
+    g_last_rexx_rc = rexx_rc;
+    printf("LUZ00016 tso_call_rexx irx_rc=%d rexx_rc=%d\n", rc, rexx_rc);
+    fflush(NULL);
+    return errcode;
+  }
+  if (!evalblk_to_rc(&evalblk, &eval_rc)) {
+    g_last_rexx_rc = rexx_rc;
+    printf("LUZ00016 tso_call_rexx eval_rc parse failed rexx_rc=%d\n", rexx_rc);
+    fflush(NULL);
+    return errcode;
+  }
+  g_last_rexx_rc = eval_rc;
+  printf("LUZ00016 tso_call_rexx irx_rc=0 rexx_rc=%d\n", eval_rc);
+  fflush(NULL);
+  return eval_rc;
+}
 
 static int l_tso_cmd(lua_State *L)
 {
   const char *cmd = luaL_checkstring(L, 1);
-  int rc = lua_tso_cmd(cmd);
-  if (rc != 0) {
+  const char *outdd = NULL;
+  int rc;
+
+  if (lua_istable(L, 2)) {
+    lua_getfield(L, 2, "outdd");
+    outdd = lua_tostring(L, -1);
+    lua_pop(L, 1);
+  }
+
+  rc = tso_call_rexx("SYSEXEC", "LUTSO", "CMD", cmd, outdd, LUZ_E_TSO_CMD);
+  if (rc == LUZ_E_TSO_CMD) {
     lua_pushnil(L);
-    lua_pushfstring(L, "LUZ30003 tso.cmd not implemented");
+    lua_pushfstring(L, "LUZ30032 tso.cmd failed irx_rc=%d rexx_rc=%d",
+                    g_last_irx_rc, g_last_rexx_rc);
     lua_pushinteger(L, rc);
     return 3;
   }
-  lua_pushinteger(L, 0);
-  return 1;
+
+  lua_pushinteger(L, rc);
+  if (outdd && outdd[0] != '\0' && read_dd_to_lines(L, outdd))
+    return 2;
+  lua_newtable(L);
+  return 2;
 }
 
 static int l_tso_alloc(lua_State *L)
 {
   const char *spec = luaL_checkstring(L, 1);
   int rc = lua_tso_alloc(spec);
-  if (rc != 0) {
+  if (rc == LUZ_E_TSO_ALLOC) {
     lua_pushnil(L);
-    lua_pushfstring(L, "LUZ30004 tso.alloc not implemented");
+    lua_pushfstring(L, "LUZ30033 tso.alloc failed irx_rc=%d rexx_rc=%d",
+                    g_last_irx_rc, g_last_rexx_rc);
     lua_pushinteger(L, rc);
     return 3;
   }
-  lua_pushinteger(L, 0);
+  lua_pushinteger(L, rc);
   return 1;
 }
 
@@ -58,13 +311,14 @@ static int l_tso_free(lua_State *L)
 {
   const char *spec = luaL_checkstring(L, 1);
   int rc = lua_tso_free(spec);
-  if (rc != 0) {
+  if (rc == LUZ_E_TSO_FREE) {
     lua_pushnil(L);
-    lua_pushfstring(L, "LUZ30005 tso.free not implemented");
+    lua_pushfstring(L, "LUZ30034 tso.free failed irx_rc=%d rexx_rc=%d",
+                    g_last_irx_rc, g_last_rexx_rc);
     lua_pushinteger(L, rc);
     return 3;
   }
-  lua_pushinteger(L, 0);
+  lua_pushinteger(L, rc);
   return 1;
 }
 
@@ -73,28 +327,22 @@ static int l_tso_msg(lua_State *L)
   const char *text = luaL_checkstring(L, 1);
   int level = (int)luaL_optinteger(L, 2, 0);
   int rc = lua_tso_msg(text, level);
-  if (rc != 0) {
+  if (rc == LUZ_E_TSO_MSG) {
     lua_pushnil(L);
-    lua_pushfstring(L, "LUZ30024 tso.msg not implemented");
+    lua_pushfstring(L, "LUZ30035 tso.msg failed irx_rc=%d rexx_rc=%d",
+                    g_last_irx_rc, g_last_rexx_rc);
     lua_pushinteger(L, rc);
     return 3;
   }
-  lua_pushinteger(L, 0);
+  lua_pushinteger(L, rc);
   return 1;
 }
 
 static int l_tso_exit(lua_State *L)
 {
   int code = (int)luaL_optinteger(L, 1, 0);
-  int rc = lua_tso_exit(code);
-  if (rc != 0) {
-    lua_pushnil(L);
-    lua_pushfstring(L, "LUZ30025 tso.exit not implemented");
-    lua_pushinteger(L, rc);
-    return 3;
-  }
-  lua_pushinteger(L, 0);
-  return 1;
+  lua_tso_exit(code);
+  return 0;
 }
 
 int luaopen_tso(lua_State *L)
@@ -113,31 +361,43 @@ int luaopen_tso(lua_State *L)
 
 int lua_tso_cmd(const char *cmd)
 {
-  (void)cmd;
-  return LUZ_E_TSO_CMD;
+  if (cmd == NULL)
+    return LUZ_E_TSO_CMD;
+  return tso_call_rexx("SYSEXEC", "LUTSO", "CMD", cmd, NULL, LUZ_E_TSO_CMD);
 }
 
 int lua_tso_alloc(const char *spec)
 {
-  (void)spec;
-  return LUZ_E_TSO_ALLOC;
+  int rc;
+  if (spec == NULL)
+    return LUZ_E_TSO_ALLOC;
+  rc = tso_call_rexx("SYSEXEC", "LUTSO", "ALLOC", spec, NULL, LUZ_E_TSO_ALLOC);
+  return rc;
 }
 
 int lua_tso_free(const char *spec)
 {
-  (void)spec;
-  return LUZ_E_TSO_FREE;
+  int rc;
+  if (spec == NULL)
+    return LUZ_E_TSO_FREE;
+  rc = tso_call_rexx("SYSEXEC", "LUTSO", "FREE", spec, NULL, LUZ_E_TSO_FREE);
+  return rc;
 }
 
 int lua_tso_msg(const char *text, int level)
 {
-  (void)text;
   (void)level;
-  return LUZ_E_TSO_MSG;
+  if (text == NULL)
+    return LUZ_E_TSO_MSG;
+  if (strncmp(text, "LUZ", 3) == 0 && strlen(text) >= 8)
+    printf("%s\n", text);
+  else
+    printf("LUZ30030 %s\n", text);
+  return 0;
 }
 
 int lua_tso_exit(int rc)
 {
-  (void)rc;
-  return LUZ_E_TSO_EXIT;
+  exit(rc);
+  return 0;
 }

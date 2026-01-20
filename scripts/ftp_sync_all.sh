@@ -12,13 +12,16 @@ Defaults:
 
 Uploads:
   SRC  -> HLQ.LUA.SRC  (src/, lua-vm/src/)
+  ASM  -> HLQ.LUA.ASM  (src/*.asm)
   INC  -> HLQ.LUA.INC  (include/, lua-vm/src/*.h)
   LUA  -> HLQ.LUA.LUA  (lua/)
   JCL  -> HLQ.LUA.JCL  (jcl/)
+  REXX -> HLQ.LUA.REXX (rexx/)
+  TEST -> HLQ.LUA.TEST (tests/integration/lua/)
 
 Notes:
   - Uses rewrite-includes during export for SRC/INC to map to PDS member names.
-  - Requires pds-map-src.csv and pds-map-inc.csv in repo root.
+  - Requires pds-map-src.csv, pds-map-asm.csv, and pds-map-inc.csv in repo root.
 USAGE
 }
 
@@ -45,8 +48,8 @@ if [[ -z "$USER" || -z "$PASS" ]]; then
   exit 1
 fi
 
-if [[ ! -f pds-map-src.csv || ! -f pds-map-inc.csv ]]; then
-  echo "Missing pds-map-src.csv or pds-map-inc.csv. Run scripts/pds_map.py first." >&2
+if [[ ! -f pds-map-src.csv || ! -f pds-map-asm.csv || ! -f pds-map-inc.csv ]]; then
+  echo "Missing pds-map-src.csv, pds-map-asm.csv, or pds-map-inc.csv. Run scripts/pds_map.py first." >&2
   exit 1
 fi
 
@@ -55,9 +58,12 @@ export MF_HOST="$HOST" MF_PORT="$PORT" MF_USER="$USER" MF_PASS="$PASS"
 # SRC/INC: VB/1024, LUA/JCL: FB/80
 scripts/ftp_sync_src.sh --pds "$HLQ.LUA.SRC" --root src --map pds-map-src.csv --use-map --rewrite-includes-map pds-map-inc.csv --recfm VB --lrecl 1024
 scripts/ftp_sync_src.sh --pds "$HLQ.LUA.SRC" --root lua-vm/src --map pds-map-src.csv --use-map --rewrite-includes-map pds-map-inc.csv --recfm VB --lrecl 1024
+scripts/ftp_sync_src.sh --pds "$HLQ.LUA.ASM" --root src --map pds-map-asm.csv --use-map --recfm FB --lrecl 80 --ext .asm
 scripts/ftp_sync_src.sh --pds "$HLQ.LUA.INC" --root include --map pds-map-inc.csv --use-map --rewrite-includes-map pds-map-inc.csv --recfm VB --lrecl 1024
 scripts/ftp_sync_src.sh --pds "$HLQ.LUA.INC" --root lua-vm/src --map pds-map-inc.csv --use-map --rewrite-includes-map pds-map-inc.csv --recfm VB --lrecl 1024
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.LUA" --root lua --recfm FB --lrecl 80
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.JCL" --root jcl --recfm FB --lrecl 80
+scripts/ftp_sync_src.sh --pds "$HLQ.LUA.LUA" --root lua --recfm FB --lrecl 80 --ext .lua
+scripts/ftp_sync_src.sh --pds "$HLQ.LUA.JCL" --root jcl --recfm FB --lrecl 80 --ext .jcl
+scripts/ftp_sync_src.sh --pds "$HLQ.LUA.REXX" --root rexx --map pds-map-rexx.csv --recfm FB --lrecl 80
+scripts/ftp_sync_src.sh --pds "$HLQ.LUA.TEST" --root tests/integration/lua --map pds-map-test.csv --recfm FB --lrecl 80 --ext .lua
 
-echo "Done. Uploaded SRC/INC/LUA/JCL to $HLQ.LUA.*"
+echo "Done. Uploaded SRC/INC/LUA/JCL/REXX/TEST to $HLQ.LUA.*"

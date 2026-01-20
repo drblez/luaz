@@ -1,0 +1,15 @@
+         MACRO                                                          06000000
+         IKJDAP10                                                       09000000
+DAPB10   DSECT                                                          12000000
+*********************************************************************** 15000000
+* THIS OPERATION CODE CAUSES THE PREVIOUSLY CONCATENATED DDNAME  TO   * 18000000
+* BE DECONCATENATED                                                   * 21000000
+*********************************************************************** 24000000
+DA10CD   DS    CL2      DAIR ENTRY CODE                                 27000000
+DA10FLG  DS    X        FUNCTIONS TO BE PERFORMED WHEN RET CODE IS 0    30000000
+         DS    X                                                        33000000
+DA10DARC DS    H        DYN ALLOC RETURN CODE                           36000000
+         DS    CL2      RESERVED                                        39000000
+DA10DDN  DS    CL8      DDNAME TO BE SEARCHED IN DSE                    42000000
+**/                                                                     45000000
+         MEND                                                           48000000

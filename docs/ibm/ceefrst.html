@@ -1,0 +1,418 @@
+<!DOCTYPE html><html lang="en-us"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta charset="UTF-8">
+
+<meta name="dcterms.rights" content="© Copyright IBM Corporation 2021">
+
+
+
+
+<meta name="keywords" content="CEEFRST, heap storage, freeing (CEEFRST), callable services, CEEFRST—free heap storage, storage, freeing, freeing additional heap (CEEFRST), dynamic storage, callable services for, CEEFRST—free heap storage, syntax, heap storage, CEEGTST callable service and, additional heap, reducing the amount of storage you need to run an application">
+<meta name="geo.country" content="ZZ">
+<script>
+    digitalData = {
+      page: {
+        pageInfo: {
+  language: "en-us",
+
+  version: "v18",
+  ibm: {
+  country: "ZZ",
+  type: "CT701"
+  
+         }
+       }
+     }
+   };
+  </script><!-- Licensed Materials - Property of IBM -->
+<!-- US Government Users Restricted Rights -->
+<!-- Use, duplication or disclosure restricted by -->
+<!-- GSA ADP Schedule Contract with IBM Corp. -->
+<link rel="stylesheet" type="text/css" href="ibmdita.css">
+<link rel="Start" href="callref.htm">
+<title>CEEFRST—Free heap storage</title>
+<meta name="robots" content="noindex,follow"><link rel="canonical" href="https://www.ibm.com/docs/en/zos/2.4.0?topic=services-ceefrstfree-heap-storage"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body id="clcfrst"><main role="main"><article role="article" aria-labelledby="d94876e11">
+<h1 class="topictitle1" id="d94876e11">CEEFRST—Free heap storage</h1>
+
+
+<div class="body refbody">
+<div class="section">
+<p>CEEFRST frees storage previously allocated by CEEGTST or by a language intrinsic function.
+Normally, you do not need to call CEEFRST because <span class="keyword">Language Environment</span> automatically returns all heap storage to the
+operating system when the enclave terminates. However, if you are allocating a large amount of heap
+storage, you should free the storage when it is no longer needed. This freed storage then becomes
+available for later requests for heap storage, thus reducing the total amount of storage needed to
+run the application. </p>
+
+<p>All requests for storage are conditional. If storage is not available, the feedback code
+(<span class="ph synph"><span class="ph var">fc</span></span>) is set and returned to you, but the thread does not abend.
+ An attempt to free
+storage that was already marked as free produces no action and returns a non-CEE000 symbolic
+feedback code. An attempt to free storage at anything other than a valid starting address produces
+no action and returns a non-CEE000 symbolic feedback code. The application does not abend.</p>
+
+<p>However, if you call CEEFRST for an invalid address, and you had specified TRAP(OFF), your
+application can abend. The reaction of <span class="keyword">Language Environment</span>
+to this is undefined. Also, partial freeing of an allocated area is not supported.</p>
+
+
+<p>When storage is allocated by CEEGTST, its allocated size is used during free operations. Storage
+allocated by CEEGTST, but not explicitly freed, is automatically freed at enclave termination.</p>
+
+<div class="p">CEEFRST generates a system-level free storage call to return a storage increment to the operating
+system only when: <ul>
+<li>The last heap element within an increment is being freed, and</li>
+
+<li>The HEAP runtime option  or a call to CEECRHP specifies FREE (note that KEEP is the
+IBM-supplied default setting for the initial heap).</li>
+
+</ul>
+ Otherwise, the freed storage is simply added to the free list; it is not returned to the
+operating system until termination. The out-of-storage condition can cause freeing of empty
+increments even when KEEP is specified. <div class="syntaxdiagram"><div class="figgroup syntaxdiagram-piece"><div class="figgroup span"><span><img src="./c.gif" border="0" alt="Read syntax diagram" longdesc="clcfrst_synd3194e133.htm"></span><a href="#skipd94876e134"><img src="./c.gif" border="0" alt="Skip visual syntax diagram"></a><svg contentscripttype="text/ecmascript" zoomAndPan="magnify" contentstyletype="text/css" version="1.0" width="263.22931687235837px" preserveAspectRatio="xMidYMid meet" viewBox="0 0 263.22931687235837 28.16319465637207" height="28.16319465637207px" class="syntaxdiagram"><defs><style type="text/css" xml:space="preserve">
+.arrow, .syntaxarrow { fill: none; stroke: black; }
+.arrowheadStartEnd, .arrowheadRepSep, .arrowheadRepSepReturn { stroke: black; fill: black; }
+.arrowheadSeq, .arrowheadStartChoice, .arrowheadAfterChoice, .arrowheadStartRepGroup, .arrowheadEndRepGroup, .arrowheadRev { stroke: none; fill: none; }
+rect { fill: none; stroke: none; }
+rect.fragref,rect.syntaxfragref { fill: none; stroke: black; }
+text {
+fill: #000000;
+fill-opacity: 1;
+font-family: IBM Plex Sans,Arial Unicode MS,Arial,Helvetica;
+font-style: normal;
+font-weight: normal;
+font-size: 8pt;
+stroke: #000000;
+stroke-width: 0.1;
+}
+text.var, text.syntaxvar {font-style:italic;}
+</style></defs><g transform="translate(5,5)" class="diagram" xml:base="..//">
+<g transform="translate(10,8.902778148651123)" class="boxed syntaxkwd"><g class="text" transform="translate(4,3)"><text class="syntaxkwd">CEEFRST</text></g><rect rx="3" x="0" width="59.52345962524414" height="16.149306297302246" y="-8.902778148651123" class="syntaxkwd"></rect></g>
+
+<g transform="translate(84.52345962524414,8.902778148651123)" class="boxed syntaxdelim"><g class="text" transform="translate(4,3)"><text class="syntaxdelim">(</text></g><rect rx="3" x="0" width="10.442708277702332" height="18.034722328186035" y="-8.774305820465088" class="syntaxdelim"></rect></g>
+<g transform="translate(109.96616790294648,8.902778148651123)" class="boxed syntaxvar"><g class="text" transform="translate(4,3)"><text class="syntaxvar">address</text></g><rect rx="3" x="0" width="47.32370643615723" height="16.02083396911621" y="-8.774305820465088" class="syntaxvar"></rect></g>
+<g transform="translate(172.2898743391037,8.902778148651123)" class="boxed syntaxsep"><g class="text" transform="translate(4,3)"><text class="syntaxsep">,</text></g><rect rx="3" x="0" width="9.177604180574416" height="12.56944453716278" y="-4" class="syntaxsep"></rect></g>
+<g transform="translate(196.4674785196781,8.902778148651123)" class="boxed syntaxvar"><g class="text" transform="translate(4,3)"><text class="syntaxvar">fc</text></g><rect rx="3" x="0" width="16.322775769233704" height="16.055556297302246" y="-8.809028148651123" class="syntaxvar"></rect></g>
+<g transform="translate(227.79025428891183,8.902778148651123)" class="boxed syntaxdelim"><g class="text" transform="translate(4,3)"><text class="syntaxdelim">)</text></g><rect rx="3" x="0" width="10.439062583446503" height="18.034722328186035" y="-8.774305820465088" class="syntaxdelim"></rect></g>
+<polygon class="arrowheadStartEnd" points="0,8.902778148651123 -5,11.402778148651123 -5,6.402778148651123" transform="rotate(0,0,8.902778148651123)"></polygon><polygon class="arrowheadStartEnd" points="5,8.902778148651123 0,11.402778148651123 0,6.402778148651123" transform="rotate(0,5,8.902778148651123)"></polygon><line y2="8.902778148651123" x1="0" x2="10" class="syntaxarrow" y1="8.902778148651123"></line><line y2="8.902778148651123" x1="69.52345962524414" x2="84.52345962524414" class="syntaxarrow" y1="8.902778148651123"></line><polygon class="arrowheadSeq" points="84.52345962524414,8.902778148651123 79.52345962524414,11.402778148651123 79.52345962524414,6.402778148651123" transform="rotate(0,84.52345962524414,8.902778148651123)"></polygon><line y2="8.902778148651123" x1="94.96616790294648" x2="109.96616790294648" class="syntaxarrow" y1="8.902778148651123"></line><polygon class="arrowheadSeq" points="109.96616790294648,8.902778148651123 104.96616790294648,11.402778148651123 104.96616790294648,6.402778148651123" transform="rotate(0,109.96616790294648,8.902778148651123)"></polygon><line y2="8.902778148651123" x1="157.2898743391037" x2="172.2898743391037" class="syntaxarrow" y1="8.902778148651123"></line><polygon class="arrowheadSeq" points="172.2898743391037,8.902778148651123 167.2898743391037,11.402778148651123 167.2898743391037,6.402778148651123" transform="rotate(0,172.2898743391037,8.902778148651123)"></polygon><line y2="8.902778148651123" x1="181.4674785196781" x2="196.4674785196781" class="syntaxarrow" y1="8.902778148651123"></line><polygon class="arrowheadSeq" points="196.4674785196781,8.902778148651123 191.4674785196781,11.402778148651123 191.4674785196781,6.402778148651123" transform="rotate(0,196.4674785196781,8.902778148651123)"></polygon><line y2="8.902778148651123" x1="212.79025428891183" x2="227.79025428891183" class="syntaxarrow" y1="8.902778148651123"></line><polygon class="arrowheadSeq" points="227.79025428891183,8.902778148651123 222.79025428891183,11.402778148651123 222.79025428891183,6.402778148651123" transform="rotate(0,227.79025428891183,8.902778148651123)"></polygon><line y2="8.902778148651123" x1="238.22931687235834" x2="248.22931687235834" class="syntaxarrow" y1="8.902778148651123"></line><polygon class="arrowheadStartEnd" points="248.22931687235834,8.902778148651123 243.22931687235834,11.402778148651123 243.22931687235834,6.402778148651123" transform="rotate(0,248.22931687235834,8.902778148651123)"></polygon><polygon class="arrowheadStartEnd" points="248.22931687235834,8.902778148651123 243.22931687235834,11.402778148651123 243.22931687235834,6.402778148651123" transform="rotate(180,248.22931687235834,8.902778148651123)"></polygon></g></svg><a id="skipd94876e134"></a></div></div></div>
+
+<dl class="parml">
+
+<dt class="pt dlterm"><span class="ph synph"><span class="ph var">address</span></span> (input)</dt>
+
+<dd class="pd">A
+fullword address pointer. <span class="ph synph"><span class="ph var">address</span></span> is the address returned by a previous
+CEEGTST call or a language intrinsic function such as ALLOCATE or <code class="ph codeph">malloc()</code>. The
+storage at this address is deallocated.</dd>
+
+
+
+<dt class="pt dlterm"><span class="ph synph"><span class="ph var">fc</span></span> (output)</dt>
+
+<dd class="pd">A 12-byte feedback code, optional in some languages, that indicates the result of this service.
+If you choose to omit this parameter, refer to <a href="bascls.htm#bascls">Invoking callable services</a> for the appropriate
+syntax to indicate that the feedback code was omitted.
+<div class="p">The following feedback codes can result from this service:
+<div class="tablenoborder"><table summary=""><colgroup><col style="width:11.080022383883604%"><col style="width:13.65416899832121%"><col style="width:19.5858981533296%"><col style="width:55.679910464465586%"></colgroup><thead style="text-align:left;">
+<tr>
+<th id="d94876e202" class="nrule">Code</th>
+
+<th id="d94876e205" class="nrule thcenter">Severity</th>
+
+<th id="d94876e208" class="nrule thcenter">Message number</th>
+
+<th id="d94876e211" class="nrule">Message text</th>
+
+</tr>
+
+</thead>
+<tbody>
+<tr>
+<td headers="d94876e202 " class="nrule">CEE000</td>
+
+<td headers="d94876e205 " class="nrule tdcenter">0</td>
+
+<td headers="d94876e208 " class="nrule tdcenter">—</td>
+
+<td headers="d94876e211 " class="nrule">The service completed successfully.</td>
+
+</tr>
+
+<tr>
+<td headers="d94876e202 " class="nrule">CEE0P2</td>
+
+<td headers="d94876e205 " class="nrule tdcenter">4</td>
+
+<td headers="d94876e208 " class="nrule tdcenter">0802</td>
+
+<td headers="d94876e211 " class="nrule">Heap storage control information was damaged.</td>
+
+</tr>
+
+<tr>
+<td headers="d94876e202 " class="nrule">CEE0PA</td>
+
+<td headers="d94876e205 " class="nrule tdcenter">3</td>
+
+<td headers="d94876e208 " class="nrule tdcenter">0810</td>
+
+<td headers="d94876e211 " class="nrule">The storage address in a free storage (CEEFRST) request was not recognized, or heap storage
+(CEECZST) control information was damaged.</td>
+
+</tr>
+
+</tbody>
+</table>
+</div>
+</div>
+
+</dd>
+
+
+</dl>
+</div>
+
+</div>
+
+<section class="section" role="region" aria-labelledby="d94876e272"><h2 class="sectiontitle" id="d94876e272">Usage notes</h2> <ul>
+<li>If you specify <span class="ph synph"><span class="ph var">heap_free_value</span></span> in the
+STORAGE runtime option, all freed storage is overwritten  with <span class="ph synph"><span class="ph var">heap_free_value</span></span>.
+Otherwise, it is simply marked as available.  <p>Portions of the freed
+storage area can be used to hold internal storage manager control
+information. These areas are overwritten, but not with <span class="ph synph"><span class="ph var">heap_free_value</span></span>.</p>
+</li>
+
+<li>The heap identifier is inferred from the address of the storage
+to be freed. The storage is freed from the heap in which it was allocated.</li>
+
+<li>The address passed as the argument is a dangling pointer after
+a call to CEEFRST. The storage freed by this operation can be reallocated
+on a subsequent CEEGTST call. If the pointer is not reassigned, any
+further use of it causes unpredictable results.</li>
+
+<li><span class="keyword">z/OS UNIX</span> considerations—CEEFRST
+applies to the enclave. One thread can allocate storage, and another
+can free it.</li>
+
+</ul>
+ </section>
+
+<section class="section" role="region" aria-labelledby="d94876e319"><h2 class="sectiontitle" id="d94876e319">For more information</h2> <ul>
+<li>See <a href="clcgtst.htm#clcgtst">CEEGTST—Get heap storage</a> for more information
+about the CEEGTST <span class="keyword">callable service</span>.</li>
+
+<li>See <a href="clheap.htm#clheap">HEAP</a> for further information
+about the HEAP runtime option.</li>
+
+<li>See <a href="clccrhp.htm#clccrhp">CEECRHP—Create new additional heap</a> for more information
+about the CEECRHP <span class="keyword">callable service</span>.</li>
+
+<li>See <a href="clstora.htm#clstora">STORAGE</a> for further information
+about the STORAGE <span class="keyword">runtime option</span>.</li>
+
+</ul>
+ </section>
+
+<div class="example"><h2 class="sectiontitle" id="d94876e364">Examples</h2> <ol>
+<li>An example of CEEFRST called by <span class="keyword">C/C++</span>: <pre class="codeblock"><code>/*Module/File Name: EDCFRST   */
+
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;leawi.h&gt;
+#include &lt;ceeedcct.h&gt;
+
+int main(void) {
+
+   _INT4 heapid, size;
+   _POINTER address;
+   _FEEDBACK fc;
+ /*  .
+     .
+     .  */
+   heapid = 0;    /* get storage from initial heap   */
+   size = 4000;   /* number of bytes of heap storage */
+
+   /* obtain the storage using CEEGTST */
+   CEEGTST(&amp;heapid,&amp;size,&amp;address,&amp;fc);
+
+   /* check the first 4 bytes of the feedback token */
+   /* (0 if successful) */
+   if ( _FBCHECK ( fc , CEE000 ) != 0 ) {
+      printf("CEEGTST failed with message number %d\n",
+             fc.tok_msgno);
+      exit(99);
+   }
+ /*  .
+     .
+     .  */
+
+   /* free the storage that was previously obtained */
+   /* using CEEGTST */
+   CEEFRST(&amp;address,&amp;fc);
+
+   /* check the first 4 bytes of the feedback token */
+   /* (0 if successful) */
+   if ( _FBCHECK ( fc , CEE000 ) != 0 ) {
+      printf("CEEFRST failed with message number %d\n",
+             fc.tok_msgno);
+      exit(99);
+   }
+ /*  .
+     .
+     .  */
+}</code></pre></li>
+
+<li>An example of CEEFRST called by <span class="keyword">COBOL</span>: <pre class="codeblock"><code>CBL LIB,QUOTE
+      *Module/File Name: IGZTFRST
+      ***********************************************
+      **                                           **
+      ** IGZTFRST - Call CEEFRST to free heap      **
+      **            storage                        **
+      **                                           **
+      ** In this example, a call is made to        **
+      ** CEEGTST to obtain 4000 bytes of storage   **
+      ** from the initial heap (HEAPID = 0).       **
+      ** A call is then made to CEEFRST to free    **
+      ** the storage.                              **
+      **                                           **
+      ***********************************************
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. IGZTFRST.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01  HEAPID                  PIC S9(9) BINARY.
+       01  STGSIZE                 PIC S9(9) BINARY.
+       01  ADDRSS                  USAGE IS POINTER.
+       01  FC.
+           02  Condition-Token-Value.
+           COPY  CEEIGZCT.
+               03  Case-1-Condition-ID.
+                   04  Severity    PIC S9(4) BINARY.
+                   04  Msg-No      PIC S9(4) BINARY.
+               03  Case-2-Condition-ID
+                         REDEFINES Case-1-Condition-ID.
+                   04  Class-Code  PIC S9(4) BINARY.
+                   04  Cause-Code  PIC S9(4) BINARY.
+               03  Case-Sev-Ctl    PIC X.
+               03  Facility-ID     PIC XXX.
+           02  I-S-Info            PIC S9(9) BINARY.
+       PROCEDURE DIVISION.
+       PARA-CBLFRST.
+
+      ** Specify 0 to get storage from the initial
+      **    heap.
+      ** Specify 4000 to get 4000 bytes of storage.
+      ** Call CEEGTST to obtain storage.
+           MOVE 0 TO HEAPID.
+           MOVE 4000 TO STGSIZE.
+
+           CALL "CEEGTST" USING HEAPID , STGSIZE ,
+               ADDRSS , FC.
+           IF CEE000 of FC  THEN
+               DISPLAY "Obtained " STGSIZE " bytes of"
+                   " storage at location " ADDRSS
+                   " from heap number " HEAPID
+           ELSE
+               DISPLAY "CEEGTST failed with msg "
+                   Msg-No of FC UPON CONSOLE
+               STOP RUN
+           END-IF.
+      ** To free storage, use the address returned
+      **     by CEECRHP in the call to CEEFRST.
+           CALL "CEEFRST" USING ADDRSS , FC.
+           IF CEE000 of FC THEN
+               DISPLAY "Returned " STGSIZE " bytes of"
+                   " storage at location " ADDRSS
+                   "  to  heap number " HEAPID
+           ELSE
+               DISPLAY "CEEFRST failed with msg "
+                   Msg-No of FC UPON CONSOLE
+           END-IF.
+           GOBACK.</code></pre></li>
+
+<li>An example of CEEFRST called by <span class="keyword">PL/I</span>: <pre class="codeblock"><code>*PROCESS MACRO;
+ /*Module/File Name: IBMFRST                       */
+ /**************************************************/
+ /**                                              **/
+ /** Function: CEEFRST - free heap storage        **/
+ /**                                              **/
+ /** This example calls CEEGTST to obtain storage **/
+ /** from the initial heap, and then calls        **/
+ /** CEEFRST to discard it.                       **/
+ /**                                              **/
+ /**************************************************/
+ PLIFRST: PROC OPTIONS(MAIN);
+
+    %INCLUDE  CEEIBMAW;
+    %INCLUDE  CEEIBMCT;
+
+    DCL ADDRSS   POINTER;
+    DCL HEAPID   REAL FIXED BINARY(31,0);
+    DCL STGSIZE  REAL FIXED BINARY(31,0);
+    DCL 01 FC,                      /* Feedback token */
+           03 MsgSev    REAL FIXED BINARY(15,0),
+           03 MsgNo     REAL FIXED BINARY(15,0),
+           03 Flags,
+              05 Case      BIT(2),
+              05 Severity  BIT(3),
+              05 Control   BIT(3),
+           03 FacID     CHAR(3),    /* Facility ID */
+           03 ISI    /* Instance-Specific Information */
+                        REAL FIXED BINARY(31,0);
+
+    DCL 01 FC2,                     /* Feedback token */
+           03 MsgSev    REAL FIXED BINARY(15,0),
+           03 MsgNo     REAL FIXED BINARY(15,0),
+           03 Flags,
+              05 Case      BIT(2),
+              05 Severity  BIT(3),
+              05 Control   BIT(3),
+           03 FacID     CHAR(3),    /* Facility ID */
+           03 ISI   /* Instance-Specific Information */
+                        REAL FIXED BINARY(31,0);
+
+    HEAPID = 0; /* get storage from the initial heap */
+
+    STGSIZE = 4000;   /* get 4000 bytes of storage   */
+
+    /* Call CEEGTST to obtain the storage            */
+    CALL CEEGTST ( HEAPID, STGSIZE, ADDRSS, FC );
+    IF  FBCHECK( FC, CEE000)  THEN  DO;
+       PUT SKIP LIST( 'Obtained ' || STGSIZE
+          || ' bytes of storage at location '
+          || DECIMAL( UNSPEC( ADDRSS ) )
+          || ' from heap ' || HEAPID );
+       END;
+
+    ELSE  DO;
+       DISPLAY( 'CEEGTST failed with msg '
+          || FC.MsgNo );
+       STOP;
+       END;  /* Call CEEFRST with the address returned from */
+    /*    CEEGTST to free the storage allocated by   */
+    /*    the call to CEEGTST                        */
+    CALL CEEFRST ( ADDRSS, FC2 );
+    IF  FBCHECK( FC2, CEE000)  THEN  DO;
+       PUT SKIP LIST( 'Storage block at location '
+          || DECIMAL( UNSPEC( ADDRSS ) ) || ' freed');
+       END;
+    ELSE  DO;
+       DISPLAY( 'CEEFRST failed with msg '
+          || FC2.MsgNo );
+       STOP;
+       END;
+
+ END PLIFRST;</code></pre></li>
+
+</ol>
+ </div>
+
+</div>
+
+
+<aside role="complementary" aria-labelledby="d94876e11"><nav role="navigation">
+<div class="familylinks">
+<div class="parentlink"><strong>Parent topic:</strong> <a href="callref.htm">Callable services</a></div>
+</div>
+</nav></aside></article></main><script type="text/javascript"  src="/W0xt/W0l1/2E/t3EV/C_Ww/1JhawDbNhrfJGDb1/FAxyGwE/JXJ2Dy/QHS0cB"></script><link rel="stylesheet" type="text/css"  href="/W0xt/W0l1/2E/t3EV/C_Ww/8kha/OkhVGwE/BW5JRh/VXFzdY"><script  src="/W0xt/W0l1/2E/t3EV/C_Ww/8kha/OkhVGwE/OTFiUz/YWXzAq" async defer></script><div id="sec-overlay" style="display:none;"><div id="sec-container"></div></div></body></html>

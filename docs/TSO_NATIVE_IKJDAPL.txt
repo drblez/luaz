@@ -1,0 +1,16 @@
+         MACRO                                                          04000000
+         IKJDAPL                                                        06000000
+*********************************************************************** 08000000
+*    THE DYNAMIC ALLOCATION INTERFACE ROUTINE (DAIR) PARAMETER LIST   * 10000000
+*    (DAPL) IS A LIST OF ADDRESSES PASSED FROM THE INVOKER TO DAIR    * 12000000
+*    VIA REGISTER 1                                                     14000000
+*********************************************************************** 16000000
+DAPL     DSECT                                                          18000000
+         SPACE                                                          20000000
+DAPLUPT  DS    A        PTR TO UPT                                      22000000
+DAPLECT  DS    A        PTR TO ECT                                      24000000
+DAPLECB  DS    A        PTR TO CP'S ECB                                 26000000
+DAPLPSCB DS    A        PTR TO PSCB                                     28000000
+DAPLDAPB DS    A        PTR TO DAIR PARAMETER BLOCK                     30000000
+**/                                                                     32000000
+         MEND                                                           34000000
