@@ -42,19 +42,21 @@ Defaults:
   --port from MF_PORT or 2121
   --user from MF_USER
   --pass from MF_PASS
-  --map  ./pds-map.txt
-  --rewrite-includes-map  (optional) rewrite quoted includes to PDS member names during export
-  --recfm  (default FB)
-  --lrecl  (default 80)
+  --map  (auto: pds-map-*.csv based on --root when present; else ./pds-map.txt)
+  --rewrite-includes-map  (auto: pds-map-inc.csv when present)
+  --recfm/--lrecl  (auto by file type if not provided)
+     - .c/.h/.inc => VB/1024
+     - .asm/.jcl/.lua/.rexx => FB/80
+     - default => FB/80
   --blksize (default 0)
-  --use-map  (use existing CSV map as input; only upload listed files)
+  --use-map  (auto: use existing CSV map when present; otherwise generate)
   --ext  (repeatable; limit files by extension, e.g. --ext .jcl)
 
 Notes:
   - Uses FILETYPE=SEQ with RECFM/LRECL/BLKSIZE as provided.
   - Member names are derived from basename, uppercased, non-alnum => '_', truncated to 8.
   - Collisions are resolved with a 2-hex suffix (first 6 + suffix).
-  - When --rewrite-includes-map is provided, files are staged to a temp dir and rewritten before upload.
+  - Include rewrites are enabled by default when C/INC/H files are present and pds-map-inc.csv exists.
 USAGE
 }
 
@@ -64,12 +66,18 @@ USER="${MF_USER:-}"
 PASS="${MF_PASS:-}"
 ROOT="."
 PDS=""
-MAP="./pds-map.txt"
+MAP=""
+MAP_SET="no"
 REWRITE_MAP=""
-RECFM="FB"
-LRECL="80"
-BLKSIZE="0"
-USE_MAP="no"
+REWRITE_SET="no"
+RECFM=""
+LRECL=""
+BLKSIZE=""
+RECFM_SET="no"
+LRECL_SET="no"
+BLKSIZE_SET="no"
+USE_MAP=""
+USE_MAP_SET="no"
 EXTS=()
 AUTO_REWRITE="no"
 AUTO_ASMFMT="no"
@@ -82,12 +90,12 @@ while [[ $# -gt 0 ]]; do
     --port) PORT="$2"; shift 2;;
     --user) USER="$2"; shift 2;;
     --pass) PASS="$2"; shift 2;;
-    --map) MAP="$2"; shift 2;;
-    --rewrite-includes-map) REWRITE_MAP="$2"; shift 2;;
-    --recfm) RECFM="$2"; shift 2;;
-    --lrecl) LRECL="$2"; shift 2;;
-    --blksize) BLKSIZE="$2"; shift 2;;
-    --use-map) USE_MAP="yes"; shift 1;;
+    --map) MAP="$2"; MAP_SET="yes"; shift 2;;
+    --rewrite-includes-map) REWRITE_MAP="$2"; REWRITE_SET="yes"; shift 2;;
+    --recfm) RECFM="$2"; RECFM_SET="yes"; shift 2;;
+    --lrecl) LRECL="$2"; LRECL_SET="yes"; shift 2;;
+    --blksize) BLKSIZE="$2"; BLKSIZE_SET="yes"; shift 2;;
+    --use-map) USE_MAP="yes"; USE_MAP_SET="yes"; shift 1;;
     --ext) EXTS+=("$2"); shift 2;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown arg: $1" >&2; usage; exit 1;;
@@ -108,15 +116,65 @@ if [[ ! -d "$ROOT" ]]; then
   exit 1
 fi
 
+detect_map_defaults() {
+  local root_norm
+  local base
+  local candidate=""
+  root_norm="${ROOT%/}"
+  base="$(basename "$root_norm")"
+  if [[ "$MAP_SET" != "yes" ]]; then
+    if [[ -z "$MAP" && ${#EXTS[@]} -gt 0 ]]; then
+      for ext in "${EXTS[@]}"; do
+        case "$ext" in
+          .asm) MAP="pds-map-asm.csv"; break ;;
+          .jcl) MAP="pds-map-jcl.csv"; break ;;
+          .inc|.h) MAP="pds-map-inc.csv"; break ;;
+          .c) MAP="pds-map-src.csv"; break ;;
+          .lua) MAP="pds-map-lua.csv"; break ;;
+          .rexx|.rex) MAP="pds-map-rexx.csv"; break ;;
+        esac
+      done
+    fi
+    if [[ -z "$MAP" ]]; then
+      if [[ "$root_norm" == *"/tests/integration/lua" ]]; then
+        candidate="pds-map-test.csv"
+      fi
+      case "$base" in
+        src) candidate="pds-map-src.csv" ;;
+        include) candidate="pds-map-inc.csv" ;;
+        jcl) candidate="pds-map-jcl.csv" ;;
+        lua) candidate="${candidate:-pds-map-lua.csv}" ;;
+        rexx) candidate="pds-map-rexx.csv" ;;
+        *) candidate="" ;;
+      esac
+      if [[ -n "$candidate" ]]; then
+        MAP="$candidate"
+      fi
+    fi
+  fi
+  if [[ -z "$MAP" ]]; then
+    MAP="./pds-map.txt"
+  fi
+  if [[ "$USE_MAP_SET" != "yes" ]]; then
+    if [[ -f "$MAP" ]]; then
+      USE_MAP="yes"
+    else
+      USE_MAP="no"
+    fi
+  fi
+}
+
+detect_map_defaults
+
 if [[ -z "$REWRITE_MAP" ]]; then
   for ext in "${EXTS[@]:-}"; do
-    if [[ "$ext" == ".c" || "$ext" == ".inc" ]]; then
+    if [[ "$ext" == ".c" || "$ext" == ".h" || "$ext" == ".inc" ]]; then
       AUTO_REWRITE="yes"
       break
     fi
   done
   if [[ "$AUTO_REWRITE" != "yes" && ${#EXTS[@]} -eq 0 ]]; then
-    if find "$ROOT" -type f \( -name '*.c' -o -name '*.inc' \) -print -quit | rg -q .; then
+    if find "$ROOT" -type f \( -name '*.c' -o -name '*.h' -o -name '*.inc' \) -print -quit | rg -q .; then
       AUTO_REWRITE="yes"
     fi
   fi
@@ -129,6 +187,49 @@ if [[ -z "$REWRITE_MAP" ]]; then
     fi
   fi
 fi
+
+detect_defaults() {
+  local has_vb="no"
+  local has_fb="no"
+  local desired_mode=""
+  if [[ ${#EXTS[@]} -gt 0 ]]; then
+    for ext in "${EXTS[@]}"; do
+      case "$ext" in
+        .c|.h|.inc) has_vb="yes" ;;
+        .asm|.jcl|.lua|.rexx|.rex) has_fb="yes" ;;
+      esac
+    done
+  else
+    if find "$ROOT" -type f \( -name '*.c' -o -name '*.h' -o -name '*.inc' \) -print -quit | rg -q .; then
+      has_vb="yes"
+    fi
+    if find "$ROOT" -type f \( -name '*.asm' -o -name '*.jcl' -o -name '*.lua' -o -name '*.rexx' -o -name '*.rex' \) -print -quit | rg -q .; then
+      has_fb="yes"
+    fi
+  fi
+  if [[ "$has_vb" == "yes" ]]; then
+    desired_mode="VB"
+  elif [[ "$has_fb" == "yes" ]]; then
+    desired_mode="FB"
+  else
+    desired_mode="FB"
+  fi
+  if [[ "$RECFM_SET" != "yes" ]]; then
+    RECFM="$desired_mode"
+  fi
+  if [[ "$LRECL_SET" != "yes" ]]; then
+    if [[ "$RECFM" == "VB" ]]; then
+      LRECL="1024"
+    else
+      LRECL="80"
+    fi
+  fi
+  if [[ "$BLKSIZE_SET" != "yes" ]]; then
+    BLKSIZE="0"
+  fi
+}
+
+detect_defaults
 
 for ext in "${EXTS[@]:-}"; do
   if [[ "$ext" == ".asm" ]]; then
