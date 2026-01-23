@@ -23,7 +23,11 @@
          PRINT GEN                              Emit assembler listing for debug.
          EXTRN IKJDAIR                          Declare IKJDAIR external entry.
 * -------------------------------------------------------------
-* TSODALC - Allocate private DD and redirect SYSTSPRT to the same DSN.
+* Entry point: TSODALC (LE-conforming, OS linkage).
+* - Purpose: allocate private DD and redirect SYSTSPRT to same DSN.
+* - Input: R1 -> OS plist with 5 entries (cppl, ddname, dair_rc, cat_rc, work).
+* - Output: R15 RC (0 success; 8 DAIR failure; 12-16 invalid inputs).
+* - Notes: ddname points to 8-byte EBCDIC DDNAME; work size >= WORKSIZE.
 * -------------------------------------------------------------
 TSODALC  CEEENTRY PPA=TSDPPA1,MAIN=NO,PLIST=OS,PARMREG=1  Enter LE with OS plist.
 R0       EQU   0                               Define register 0 alias.
@@ -42,6 +46,9 @@ R12      EQU   12                              Define register 12 alias.
 R13      EQU   13                              Define register 13 alias.
 R14      EQU   14                              Define register 14 alias.
 R15      EQU   15                              Define register 15 alias.
+* Algorithm: validate plist entries and map required control blocks.
+* - Validate cppl, ddname, rc pointers, and work pointer.
+* - Map WORKAREA, DAPL, DAPB08, CPPL.
          LARL  R11,TSODALC                     Load CSECT base for TSODALC.
          USING TSODALC,R11                     Establish CSECT base register.
          USING CEECAA,R12                      Enable CAA addressability.
@@ -74,6 +81,8 @@ R15      EQU   15                              Define register 15 alias.
          USING DAPL,R8                         Map DAPL fields with base.
          LA    R6,DAPB08AREA                   Load DAPB08 base address.
          USING DAPB08,R6                       Map DAPB08 fields with base.
+* Algorithm: build DAPL/DAPB08 for private DD allocation.
+* - Construct DSNAME &&LZ<DDNAME>, set attributes from SYSTSPRT.
          XC    0(WORKSIZE,R9),0(R9)            Clear work area to defaults.
          MVC   DDNAME(8),0(R3)                 Copy caller DDNAME (8 chars).
          MVC   DSNBUF+2(44),BLANKS             Blank-fill DSNAME area.
@@ -111,6 +120,8 @@ R15      EQU   15                              Define register 15 alias.
          ST    R0,0(R5)                        Store catalog RC for caller.
          CHI   R7,0                            Test DAIR RC for success.
          BNE   TDALC_FAILRC                    Branch if allocation failed.
+* Algorithm: redirect SYSTSPRT to private DD.
+* - Reuse DAPB08 to allocate SYSTSPRT pointing to private DD DSN.
          MVC   DA08DDN,SYSDDN                  Set DDNAME to SYSTSPRT.
          MVI   DA08DPS2,DA08KEEP               Keep on unallocate (SYSTSPRT).
          LA    R1,DAPLAREA                     Load DAPL address into R1.
@@ -126,6 +137,7 @@ R15      EQU   15                              Define register 15 alias.
          B     TDALC_DONE                      Branch to epilog.
 TDALC_FAILRC L  R15,=F'8'                      Set nonzero return code.
          B     TDALC_DONE                      Branch to epilog.
+* Algorithm: on SYSTSPRT allocation failure, free private DD (DAPB18).
 TDALC_FAILSPR LA  R6,DAPB18AREA                Load DAPB18 base address.
          USING DAPB18,R6                       Map DAPB18 fields with base.
          XC    0(DAPB18_LEN,R6),0(R6)          Clear DAPB18 request block.
@@ -149,9 +161,15 @@ TDALC_FAIL_CATRC L  R15,=F'15'                 Set RC=15 for NULL CAT RC pointer
 TDALC_FAIL_WORK L  R15,=F'16'                  Set RC=16 for NULL work area pointer.
 TDALC_DONE CEETERM RC=(R15)                    Return to caller with RC.
 * -------------------------------------------------------------
-* TSODFRE - Free SYSTSPRT and the private DD allocation.
+* Entry point: TSODFRE (LE-conforming, OS linkage).
+* - Purpose: free SYSTSPRT and the private DD allocation.
+* - Input: R1 -> OS plist with 5 entries (cppl, ddname, dair_rc, cat_rc, work).
+* - Output: R15 RC (0 success; 8 DAIR failure; 12 invalid inputs).
 * -------------------------------------------------------------
 TSODFRE  CEEENTRY PPA=TSDPPA2,MAIN=NO,PLIST=OS,PARMREG=1  Enter LE with OS plist.
+* Algorithm: validate plist entries and map required control blocks.
+* - Validate cppl, ddname, rc pointers, and work pointer.
+* - Map WORKAREA, DAPL, DAPB18, CPPL.
          LARL  R11,TSODFRE                     Load CSECT base for TSODFRE.
          USING TSODFRE,R11                     Establish CSECT base register.
          USING CEECAA,R12                      Enable CAA addressability.
@@ -184,6 +202,7 @@ TSODFRE  CEEENTRY PPA=TSDPPA2,MAIN=NO,PLIST=OS,PARMREG=1  Enter LE with OS plist
          USING DAPL,R8                         Map DAPL fields with base.
          LA    R6,DAPB18AREA                   Load DAPB18 base address.
          USING DAPB18,R6                       Map DAPB18 fields with base.
+* Algorithm: free SYSTSPRT allocation (DAPB18).
          XC    0(WORKSIZE,R9),0(R9)            Clear work area to defaults.
          MVC   DDNAME(8),0(R3)                 Copy caller DDNAME (8 chars).
          LR    R10,R2                          Copy CPPL pointer to base.
@@ -208,6 +227,7 @@ TSODFRE  CEEENTRY PPA=TSDPPA2,MAIN=NO,PLIST=OS,PARMREG=1  Enter LE with OS plist
          ST    R0,0(R5)                        Store catalog RC for caller.
          CHI   R7,0                            Test DAIR RC for success.
          BNE   TDFRE_FAILRC                    Branch if free failed.
+* Algorithm: free private DD allocation (DAPB18).
          MVC   DA18DDN,DDNAME                  Set DDNAME to private DD.
          MVI   DA18DPS2,DA18DEL                Delete on unallocate (private DD).
          LA    R1,DAPLAREA                     Load DAPL address into R1.

@@ -18,6 +18,14 @@
 * - EBCDIC: DDNAME and command buffers are EBCDIC.
 * - DDNAME I/O: SYSTSPRT redirection via DAIR.
 *
+* Entry point: TSOCMD (LE-conforming, OS linkage).
+* - Purpose: allocate private DD, run IKJEFTSR, capture output, return RC.
+* - Input: R1 -> OS plist; plist[0] -> address of parameter block pointer.
+* - Parameter block (CMDPARM): CPPL, CMD, CMD_LEN, OUTDD, REASON, ABEND,
+*   DAIR_RC, CAT_RC, WORK.
+* - Output: R15 RC (IKJEFTSR RC on success; negative on validation errors).
+* - RC values: -10..-19 for parameter/DAIR/EFTSI failures; 0+ from IKJEFTSR.
+* - Notes: HOB may be set on plist entries; code clears HOB before deref.
 * Define entry point control section.
 TSOCMD  CEEENTRY PPA=TSCPPA,MAIN=NO,PLIST=OS,PARMREG=1  Enter LE, OS linkage.
 * Register aliases.
@@ -47,6 +55,8 @@ R15      EQU   15                                  Define register 15 alias.
          USING CEEDSA,R13                           Map DSA via R13.
 * Enable base addressability.
          USING TSOCMD,R11                           Map CSECT via R11.
+* Algorithm: validate plist and parameter block pointers before use.
+* - Verify plist addressable, slot addressable, and parameter block range.
 * Preserve caller parameter list pointer.
          LR    R8,R1                                Save plist pointer in R8.
 * Validate caller parameter list pointer.
@@ -133,6 +143,8 @@ CMD_PB_READY DS   0H                                Anchor for parameter-ready p
          XC    512(256,R9),0(R9)                    Zero third 256 bytes.
 * Clear work area block 4/4.
          XC    768(256,R9),0(R9)                    Zero fourth 256 bytes.
+* Algorithm: allocate private DD and redirect SYSTSPRT via TSODALC.
+* - Build TSODALC plist from local slots and call TSODALC.
 * Preserve parameter block pointer across external calls.
 * External entry points are not required to preserve R2.
          ST    R2,PBPTRSV                           Save parameter block pointer.
@@ -187,6 +199,8 @@ CMD_PB_READY DS   0H                                Anchor for parameter-ready p
 * Reload CPPL pointer after external call.
          L     R3,CMD_CPPL                          Reload CPPL pointer.
 *
+* Algorithm: initialize IKJEFTSI to obtain an IKJEFTSR token.
+* - Build IKJEFTSI parameter list in EFTSIWA and call IKJTSFI.
 * Initialize unauthorized TSO service facility environment (IKJEFTSI) and
 * obtain a token for the subsequent IKJEFTSR/IKJEFTST calls.
          LA    R10,EFTSIWA                          Address IKJEFTSI work area.
@@ -226,6 +240,8 @@ CMD_RSN_OK DS 0H                                    Anchor for reason pointer se
          BNZ   CMD_ABN_OK                           Branch if abend pointer set.
          LA    R0,ABENDV                            Use local abend slot.
 CMD_ABN_OK DS 0H                                    Anchor for abend pointer set.
+* Algorithm: build IKJEFTSR plist and invoke via TSVTASF.
+* - Use caller work slice EFTRWORK for plist and CPPL work area.
 * Build IKJEFTSR parameter list in the caller-provided work slice.
          LA    R6,EFTRWORK                          Address IKJEFTSR work slice.
          USING EFTSRWA,R6                           Map IKJEFTSR work layout.
@@ -270,6 +286,8 @@ CMD_ABN_OK DS 0H                                    Anchor for abend pointer set
          L     R15,TSVTASF-TSVT(,R15)               Load TSVTASF entry.
          BALR  R14,R15                              Call IKJEFTSR via TSVTASF.
 *
+* Algorithm: terminate IKJEFTST using token from IKJEFTSI.
+* - Build IKJEFTST parameter list and call IKJTSFT.
 * Terminate unauthorized TSO service facility environment (IKJEFTST) using
 * the token returned by IKJEFTSI.
          LA    R7,EFTSTWA                           Address IKJEFTST work area.

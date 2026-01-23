@@ -42,6 +42,8 @@
 | LUZ30067 | tso_native TSOCMD rc=%d | src/tso_native.c | Check TSOCMD parameter block validation | diagnostic |
 | LUZ30068 | tso_native TSOCMD dbg parms=%08X cppl=%08X cmd=%08X outdd=%08X dair=%08X work=%08X | src/tso_native.c | Inspect TSOCMD debug snapshot (parameter block, CPPL, CMD ptr, DDNAME, DAIR ptr, work ptr) | diagnostic |
 | LUZ30069 | tso_native TSOCMD r1=%08X parms=%08X match=%d | src/tso_native.c | Compare incoming R1 with parameter block address (OS PLIST vs direct) | diagnostic |
+| LUZ30070 | ITLUACMD ok LUAZ_MODE=TSO | tests/integration/lua/ITLUACMD.lua | None | diagnostic |
+| LUZ30071 | ITLUACMD expected LUAZ_MODE=TSO got=%s | tests/integration/lua/ITLUACMD.lua | Run via LUACMD under IKJEFT01 and ensure MODE=TSO is enforced | validation |
 | LUZ30060 | LUAZ_MODE debug output | tests/integration/lua/ITTSO.lua | None | diagnostic |
 | LUZ30006 | ds.open_dd not implemented | src/ds.c | Use DDNAME I/O via JCL tools | stub |
 | LUZ30007 | ds.read not implemented | src/ds.c | Use dataset utilities for reads | stub |

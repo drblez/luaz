@@ -20,7 +20,12 @@
 * - EBCDIC: command buffer and literals.
 * - DDNAME I/O: relies on SYSTSPRT for output.
 *
-* Entry point for LUACMD CP.
+* Entry point: LUACMD (TSO command processor).
+* - Purpose: parse CPPL command buffer and dispatch to LE bridge (LUACMDL).
+* - Input: R1 points to CPPL control block; CPPLCBUF contains length/offset.
+* - Output: R15 return code propagated from LUAEXRUN (typically 0/8).
+* - Special cases: no operands or short buffer -> pass NULL/0 operands.
+* - Notes: LUACMD is non-LE; LUACMDL performs LE-conforming work.
 LUACMD  CSECT                                 Define LUACMD control section.
 * Use 31-bit addressing mode.
 LUACMD  AMODE 31                              Set 31-bit addressing mode.
@@ -65,6 +70,9 @@ R15     EQU   15                              Define register 15 alias.
 * Point to work area.
          LA    R9,WORKAREA                    Point to work area.
          USING WORKAREA,R9                    Map work area fields.
+* Algorithm: parse CPPL command buffer to derive operand pointer/length.
+* - If CPPLCBUF is NULL or too short, clear PARMPTR/PARMLENFW.
+* - Otherwise compute operand pointer/length from header fields.
 * Load command buffer pointer.
          L     R2,CPPLCBUF                    Load CPPL command buffer pointer.
 * Validate command buffer pointer.
@@ -93,6 +101,9 @@ ONLYPFX  XC    PARMPTR,PARMPTR                Clear parm pointer.
          B     CALLLE                         Branch to LE bridge.
 CMDREADY ST    R4,PARMPTR                     Store parm pointer.
          ST    R3,PARMLENFW                   Store parm length.
+* Algorithm: enter LE bridge to call LUAEXRUN (TSO mode enforced).
+* - Drop CPPL/WORKAREA mappings before CEEENTRY.
+* - Call LUACMDL and return its RC to the caller.
 * Debug: CP reached before LE bridge.
 CALLLE   WTO   'LUZ30047 LUACMD before LE bridge'  Emit debug before LE bridge.
 * Drop CPPL/WORKAREA addressability before LE entry.
@@ -119,6 +130,12 @@ CPPLPTR  DS    F                              CPPL pointer cell.
 LEPLIST  DC    A(DUMMY)                       LE plist pointer placeholder.
 DUMMY    DC    F'0'                           Dummy parameter storage.
 *
+* Entry point: LUACMDL (LE bridge).
+* - Purpose: set CPPL in native backend and call LUAEXRUN with OS plist.
+* - Input: no parameters (PLIST=NONE); uses LUACMD storage (CPPLPTR/PARMPTR).
+* - Output: R15 return code from LUAEXRUN (0/8 typical).
+* - Special cases: NULL PARMPTR or zero length is allowed.
+* - Notes: forces MODE=TSO by passing MODETSO pointer.
 * LE bridge entry (CEEENTRY) for C runner.
 *
 LUACMDL CEEENTRY PPA=LUCPPA,MAIN=YES,PLIST=NONE,PARMREG=1  Enter LE bridge.
@@ -133,6 +150,9 @@ LUACMDL CEEENTRY PPA=LUCPPA,MAIN=YES,PLIST=NONE,PARMREG=1  Enter LE bridge.
          USING LUACMD,R11                     Map LUACMD shared storage.
 * Debug: LE entry reached.
          WTO   'LUZ30048 LUACMDL after CEEENTRY'   Emit debug after CEEENTRY.
+* Algorithm: pass CPPL pointer to native backend via TSONCPPL.
+* - Build a one-entry OS plist pointing to CPPLARG cell.
+* - Call TSONCPPL to cache CPPL pointer in C.
 * Prepare CPPL pointer for native backend.
          L     R7,CPPLPTR                     Load CPPL pointer.
          ST    R7,CPPLARG                     Store CPPL argument value.
@@ -145,6 +165,10 @@ LUACMDL CEEENTRY PPA=LUCPPA,MAIN=YES,PLIST=NONE,PARMREG=1  Enter LE bridge.
          BALR  R14,R15                        Call CPPL setter.
 * Debug: returned from CPPL setter.
          WTO   'LUZ30058 LUACMDL after TSONCPPL'   Emit debug after TSONCPPL.
+* Algorithm: build OS plist for LUAEXRUN and invoke LUAEXEC runner.
+* - ARG1: line pointer (may be NULL).
+* - ARG2: line length (fullword).
+* - ARG3: MODE pointer (\"TSO\").
 * Build OS plist for LUAEXRUN.
          L     R7,PARMPTR                     Load line pointer.
          ST    R7,ARG1VAL                     Store line pointer value.
