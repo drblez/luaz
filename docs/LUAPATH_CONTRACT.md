@@ -2,7 +2,7 @@
 
 ## Scope
 
-`require()`, `loadfile()`, and `dofile()` resolve modules from datasets allocated to DDNAME `LUAPATH`. Only PDS/PDSE datasets are searched via `LUAPATH`. Sequential datasets (PS) are not searched unless explicitly requested via a DSN form (future work).
+`require()` resolves modules from datasets allocated to DDNAME `LUAPATH`. `loadfile()` and `dofile()` do the same unless the filename starts with `DD:` or `//DD:`, in which case the DDNAME stream is read directly (no LUAMAP/LUAPATH). Only PDS/PDSE datasets are searched via `LUAPATH`. Sequential datasets (PS) are not searched unless explicitly requested via a DSN form (future work).
 
 ## Name Mapping Rules
 

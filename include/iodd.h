@@ -15,6 +15,11 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Register DDNAME-based LUAPATH hooks for Lua runtime.
+ *
+ * @return 0 on success, or nonzero on failure.
+ */
 int luaz_io_dd_register(void);
 
 #ifdef __cplusplus

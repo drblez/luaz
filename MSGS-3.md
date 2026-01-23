@@ -11,11 +11,38 @@
 | LUZ30025 | tso.exit invalid input | src/tso.c | Provide a numeric RC | validation |
 | LUZ30030 | tso.msg output | src/tso.c | None | emitted |
 | LUZ30031 | tso.cmd output line | src/tso.c | Use `tso.cmd` output table to consume lines | emitted |
-| LUZ30032 | tso.cmd failed (irx_rc/rexx_rc in message) | src/tso.c | Check IKJTSOEV init, IRXEXEC availability, and LUTSO in SYSEXEC | runtime |
+| LUZ30032 | tso.cmd failed (native reason/abend/dair_rc or irx_rc/rexx_rc in message) | src/tso.c | Check TMP/DAIR setup or IRXEXEC/LUTSO fallback status | runtime |
 | LUZ30033 | tso.alloc failed (irx_rc/rexx_rc in message) | src/tso.c | Check IKJTSOEV init and ALLOC spec | runtime |
 | LUZ30034 | tso.free failed (irx_rc/rexx_rc in message) | src/tso.c | Ensure DDNAME is allocated and IKJTSOEV init succeeded | runtime |
 | LUZ30035 | tso.msg failed (irx_rc/rexx_rc in message) | src/tso.c | Ensure IKJTSOEV init and message string are valid | runtime |
 | LUZ30036 | LUTSO invalid mode | rexx/LUTSO.rexx | Use supported modes CMD/ALLOC/FREE/MSG | validation |
+| LUZ30040 | LUAEXEC init failed | src/luaexec.c | Verify LE runtime availability and memory | runtime |
+| LUZ30041 | LUAEXEC DSN in PARM not implemented | src/luaexec.c | Use LUAIN DD until DSN parsing is implemented | validation |
+| LUZ30042 | LUAEXEC load failed: %s | src/luaexec.c | Check LUAIN DD allocation and script syntax | runtime |
+| LUZ30043 | LUAEXEC run failed: %s | src/luaexec.c | Inspect script error and LUAPATH configuration | runtime |
+| LUZ30044 | LUAEXEC dd register failed | src/luaexec.c | Verify LUAPATH DDNAME allocation | runtime |
+| LUZ30045 | tso.* not available in PGM mode | src/tso.c | Run under TSO mode (LUACMD) or enable TSO environment | runtime |
+| LUZ30046 | LUAEXEC invalid MODE in PARM | src/luaexec.c | Use MODE=PGM or MODE=TSO | validation |
+| LUZ30047 | LUACMD before LE bridge (debug) | src/luacmd.asm | None | diagnostic |
+| LUZ30048 | LUACMDL after CEEENTRY (debug) | src/luacmd.asm | None | diagnostic |
+| LUZ30049 | LUAEXRUN entry (debug) | src/luaexec.c | None | diagnostic |
+| LUZ30050 | LUACMD after LE bridge (debug) | src/luacmd.asm | None | diagnostic |
+| LUZ30051 | LUACMDL before LUAEXRUN (debug) | src/luacmd.asm | None | diagnostic |
+| LUZ30052 | LUACMDL after LUAEXRUN (debug) | src/luacmd.asm | None | diagnostic |
+| LUZ30053 | LUAEXRUN invalid line length | src/luaexec.c | Check CPPL operand length parsing | validation |
+| LUZ30054 | LUAEXRUN line pointer is NULL | src/luaexec.c | Verify CPPL operand pointer calculation | validation |
+| LUZ30057 | LUACMDL before TSONCPPL (debug) | src/luacmd.asm | None | diagnostic |
+| LUZ30058 | LUACMDL after TSONCPPL (debug) | src/luacmd.asm | None | diagnostic |
+| LUZ30061 | tso_native_env_init failed | src/tso_native.c | Ensure IKJTSOEV is available and CPPL is initialized | diagnostic |
+| LUZ30062 | tso_native CPPL unavailable | src/tso_native.c | Ensure LUACMD passes CPPL via TSONCPPL | diagnostic |
+| LUZ30063 | tso_native DDNAME allocation failed | src/tso_native.c | Check internal DDNAME generator and outdd buffer | diagnostic |
+| LUZ30064 | tso_native work buffer allocation failed | src/tso_native.c | Check 31-bit storage availability | diagnostic |
+| LUZ30065 | tso_native TSOCMD failed (dair_rc/cat_rc) | src/tso_native.c | Check DAIR parms, APF, and DDNAME constraints | diagnostic |
+| LUZ30066 | tso_native TSOEFTR failed (rc/reason/abend) | src/tso_native.c | Check TSOEFTR call and TSO command status | diagnostic |
+| LUZ30067 | tso_native TSOCMD rc=%d | src/tso_native.c | Check TSOCMD parameter block validation | diagnostic |
+| LUZ30068 | tso_native TSOCMD dbg parms=%08X cppl=%08X cmd=%08X outdd=%08X dair=%08X work=%08X | src/tso_native.c | Inspect TSOCMD debug snapshot (parameter block, CPPL, CMD ptr, DDNAME, DAIR ptr, work ptr) | diagnostic |
+| LUZ30069 | tso_native TSOCMD r1=%08X parms=%08X match=%d | src/tso_native.c | Compare incoming R1 with parameter block address (OS PLIST vs direct) | diagnostic |
+| LUZ30060 | LUAZ_MODE debug output | tests/integration/lua/ITTSO.lua | None | diagnostic |
 | LUZ30006 | ds.open_dd not implemented | src/ds.c | Use DDNAME I/O via JCL tools | stub |
 | LUZ30007 | ds.read not implemented | src/ds.c | Use dataset utilities for reads | stub |
 | LUZ30008 | ds.write not implemented | src/ds.c | Use dataset utilities for writes | stub |

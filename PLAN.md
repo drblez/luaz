@@ -17,6 +17,7 @@ This plan targets the RFC in `docs/RFC_MAIN.md` / `docs/RFC_MAIN_EN.md` and prep
 - [x] Implement PDSE hash-based incremental compile (HASHCMP tool + JCL PROC).
 - [x] Validate incremental build on MF (compile only changed modules, update hashes, link OK).
 - [x] Provide FTP scripts for submit/sync and per‑step spool extraction.
+- [x] Auto-format HLASM sources before FTP sync (TAB->spaces, comment wrapping).
 
 ## 3) Platform Abstraction Layer
 
@@ -42,25 +43,37 @@ This section replaces the REXX bridge and focuses only on native TSO services.
 - [~] **Docs & contracts (IBM sources)**
   - [x] Record core IBM references for IKJEFTSR, DAIR/DAIRFAIL, IKJTBLS, GETMSG, IKJTSOEV.
   - [~] Extract parameter‑list layouts and required control blocks into `docs/TSO_NATIVE.md`.
+  - [x] Extract `IKJCPPL` macro from SYS1.MACLIB and capture in `docs/`.
   - [~] Extract DAIR parameter list from `SYS1.MACLIB(IKJDAIR)` and codify structs.
     - [x] Add JCL to print `IKJDAIR` and `IKJEFFDF` from `SYS1.MACLIB`.
     - [x] Run JCL on MF and capture macro content into `docs/`.
       - [x] Extracted `IKJDAPL`, `IKJDAP00/04/08/10/14/18`, `IKJEFFDF` to `docs/`.
   - [~] Define C structs/prototypes in `include/` with explicit field sizes and AMODE notes.
+  - [x] Document non-XPLINK C(LE) ↔ HLASM OS-linkage rules in `docs/LE_C_HLASM_RULES.md`.
 - [~] **Core environment bootstrap**
   - [~] Implement `tso_native_env_init()` to validate TMP context (IKJEFT01).
   - [ ] Emit a clear LUZ error when no TMP context is available.
   - [~] Add UT JCL to validate TMP detection without command execution (UTTSNENV).
 - [~] **TSO command execution (IKJEFTSR)**
-  - [~] Implement `tso_native_cmd()` using IKJEFTSR.
+  - [x] Implement `tso_native_cmd()` using IKJEFTSR.
     - [~] Add unit test program + JCL (TSNUT/UTTSN).
-  - [ ] Output capture strategy (TMP required):
-    - [ ] Route command output to DD and read back into Lua (preferred).
+  - [x] Remove `TSOEFTR` dependency: execute IKJEFTSR (TSO service facility) inside `TSOCMD` using caller-provided work buffer.
+  - [x] Output capture strategy (TMP required):
+    - [x] Allocate a private, unique DDNAME in C, redirect `SYSTSPRT` to it via DAIR, then read `DD:<ddname>` into Lua.
+    - [x] Free/restore `SYSTSPRT` allocation after output is consumed (cleanup is separate from execution).
+    - [x] No user‑supplied `outdd` (internal DD only).
     - [ ] Optional: GETMSG buffer fallback for message capture.
-  - [ ] Map IKJEFTSR RC/RSN to LUZ codes and Lua errors.
+  - [ ] Map IKJEFTSR RC/RSN/ABEND to LUZ codes and Lua errors.
   - [ ] UT JCL: `TIME`, `LISTCAT`, verify non‑empty output.
+  - [~] Interim CP path: use `TSOAUTH` in SYS1.LINKLIB for tests before `LUAEXEC`.
+  - [~] Add LUACMD TSO command processor wrapper for `LUAEXEC`.
+    - [~] Switch LUACMD -> LE bridge (`CEEENTRY`) and call `LUAEXRUN` directly (no IKJEFTSR program-mode).
+  - [~] Link `LUAEXEC`/`LUACMD` directly into `SYS1.LINKLIB` with `AC=1` (for AUTH* search).
+    - [ ] Resolve format mismatch: `SYS1.LINKLIB` is PDS (load modules only), but `LUAEXEC` link uses program-object features (LONGNAME). Decide: switch to PDSE in LNKLST/APF or build load-module format (drop LONGNAME and verify name collisions).
 - [ ] **Dynamic allocation (DAIR/DAIRFAIL)**
-  - [ ] Implement `tso_native_alloc()` and `tso_native_free()` via DAIR.
+  - [~] Implement DAIR via ASM macro wrappers (IKJDAPL/IKJDAP08/IKJDAP18); avoid C-struct field mapping.
+  - [x] Provide ASM entrypoints for temp DD allocation and DD free (for `SYSTSPRT` capture).
+  - [ ] Implement `tso_native_alloc()` and `tso_native_free()` via ASM DAIR wrappers.
   - [ ] Normalize allocation options parsing (DD, DSN, DISP, RECFM, LRECL, BLKSIZE, SPACE).
   - [ ] Convert DAIR/DAIRFAIL RC/RSN to LUZ codes with user actions.
   - [ ] UT JCL: ALLOC/FREE temp datasets, verify DD existence.
@@ -68,7 +81,7 @@ This section replaces the REXX bridge and focuses only on native TSO services.
   - [ ] Implement `tso_native_msg()` to emit to SYSTSPRT/SYSOUT.
   - [ ] Ensure `LUZNNNNN` prefix enforcement and catalog entries.
 - [ ] **Lua module wiring**
-  - [ ] Wire native backend into `tso.*` behind a build flag/policy switch.
+  - [~] Wire native backend into `tso.*` behind a build flag/policy switch.
   - [ ] Keep REXX path present but disabled by default.
 - [ ] **Tests & diagnostics**
   - [ ] Add UT JCL for `tso.cmd`, `tso.alloc/free`, `tso.msg`.
@@ -96,15 +109,16 @@ This section replaces the REXX bridge and focuses only on native TSO services.
   - [ ] **tls module (z/OS-specific):**
     - [ ] `tls.connect/read/write/close` via System SSL (GSK APIs).
     - [ ] SAF key ring / PKCS#11 selection (`GSK_KEYRING_FILE`).
-- [ ] Wire `luaz_io_dd_register()` into `LUAEXEC` entrypoint init.
-  - [ ] `LUAEXEC` must resolve main script from `LUAIN` DD or `DSN=...` (RFC 4.1).
+- [x] Wire `luaz_io_dd_register()` into `LUAEXEC` entrypoint init.
+  - [~] `LUAEXEC` must resolve main script from `LUAIN` DD or `DSN=...` (RFC 4.1).
   - [ ] Argument/RC propagation and LUZ-prefixed diagnostics.
   - [ ] Encoding handling per `docs/ENCODING_POLICY.md`.
 
 ## 12) Deferred / TBD
 
-- [ ] Define `LUAEXEC` PARM syntax and supported flags.
-- [ ] Implement `LUAEXEC` PARM parsing (flags + `DSN=...` + `--` args).
+- [x] Define `LUAEXEC` PARM syntax and supported flags.
+- [~] Implement `LUAEXEC` PARM parsing (MODE=TSO/PGM, DSN= stub, `--` args).
+- [~] Define `LUACMD` CP contract (CPPL buffer -> `LUAEXRUN` line, `MODE=TSO` forced).
 - [ ] Implement optional `LUACFG` parsing (`key=value` per line).
 
 ## 6) TLS via System SSL
@@ -129,6 +143,7 @@ This section replaces the REXX bridge and focuses only on native TSO services.
 - [ ] Add unit/integration/regression suites for datasets, TSO, ISPF, AXR, TLS.
 - [~] Define and document z/OS batch testing standard (UT/IT/RT JCL).
 - [x] Add dedicated MF JCL “unit test” jobs for host runtime helpers (e.g., HASHCMP, LUAPATH).
+  - [x] Add UT_HASHCMP_FORMATS to validate FB/VB hash behavior.
   - [~] Add Lua integration tests (`tests/integration/lua/`) with IT JCL wrappers.
   - [ ] Each Lua integration test must validate LUZ outputs and RCs.
 

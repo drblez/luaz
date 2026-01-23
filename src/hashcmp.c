@@ -35,6 +35,7 @@
 #define LUZ40013 "LUZ40013 hash mismatch"
 #define LUZ40014 "LUZ40014 unable to update hash member"
 #define LUZ40015 "LUZ40015 hash record format invalid"
+#define LUZ40016 "LUZ40016 object member missing"
 
 static uint32_t crc32_table[256];
 static int crc32_table_ready = 0;
@@ -158,6 +159,12 @@ int main(int argc, char **argv) {
   fclose(src);
 
   if (mode[0] == 'C' || mode[0] == 'c') {
+    FILE *objfp = fopen("DD:OBJIN", "rb");
+    if (objfp == NULL) {
+      fprintf(stderr, "%s: %s\n", LUZ40016, member);
+      return 4;
+    }
+    fclose(objfp);
     hashfp = fopen("DD:HASHIN", "rb");
     if (hashfp == NULL) {
       fprintf(stderr, "%s: %s\n", LUZ40012, member);

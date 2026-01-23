@@ -1,0 +1,84 @@
+*        %GOTO CPPLBSL ;  /*                                                    
+         MACRO                                                                  
+         IKJCPPL                                                                
+.* A 0-999999                                                    S20031         
+*** START OF SPECIFICATIONS *******************************************         
+*                                                                     *         
+*01* PROPRIETARY STATEMENT=                                           *         
+*****PROPRIETARY_STATEMENT*********************************************         
+*                                                                     *         
+*                                                                     *         
+*   LICENSED MATERIALS - PROPERTY OF IBM                              *         
+*   5650-ZOS COPYRIGHT IBM CORP. 1981, 2015                           *         
+*                                                                     *         
+*   STATUS= HTE77A0                                                   *         
+*                                                                     *         
+*****END_OF_PROPRIETARY_STATEMENT**************************************         
+*                                                                     *         
+*01* EXTERNAL CLASSIFICATION: PI                                      *         
+*01* END OF EXTERNAL CLASSIFICATION:                                  *         
+*                                                                     *         
+*01* MACRO NAME: IKJCPPL                                              *         
+*                                                                     *         
+*01* DESCRIPTIVE NAME: TSO/E Command Processor Parameter List         *         
+*                                                                     *         
+*01* DSECT NAME: CPPL                                                 *         
+*                                                                     *         
+*01* COMPONENT:  TSO/E Scheduler (28502)                              *         
+*                                                                     *         
+*01* EYE-CATCHER: None                                                *         
+*02*  OFFSET: N/A                                                     *         
+*02*  LENGTH: N/A                                                     *         
+*                                                                     *         
+*01* STORAGE ATTRIBUTES:                                              *         
+*02*  SUBPOOL: 1                                                      *         
+*02*  KEY: 8                                                          *         
+*02*  RESIDENCY:                                                      *         
+*02*  MAIN STORAGE:                                                   *         
+*02*  AUXILIARY STORAGE:                                              *         
+*02*  VIRTUAL STORAGE:                                                *         
+*                                                                     *         
+*01* SIZE: 16 bytes                                                   *         
+*                                                                     *         
+*01* CREATED BY: IKJEFT01                                             *         
+*                                                                     *         
+*01* POINTED TO BY: Register 1 on entry to command processor          *         
+*                                                                     *         
+*01* SERIALIZATION: None                                              *         
+*                                                                     *         
+*01* FUNCTION: Parameter list passed to the command processor,        *         
+*              containing pointers to the UPT, PSCB, ECB, and         *         
+*              the command buffer.                                    *         
+*                                                                     *         
+*01* METHOD OF ACCESS:                                                *         
+*02*  ASM: USING on DSECT CPPL                                        *         
+*                                                                     *         
+*02*  PL/X: %INCLUDE SYSLIB(IKJCPPL)                                  *         
+*                                                                     *         
+*    THE COMMAND PROCESSOR PARAMETER LIST (CPPL) IS A LIST OF         *         
+*    ADDRESSES PASSED FROM THE TMP TO THE CP VIA REGISTER 1           *         
+*                                                                     *         
+*01* CHANGE ACTIVITY = NONE                                           *         
+*                                                                     *         
+*** END OF SPECIFICATIONS *********************************************         
+CPPL     DSECT                                                                  
+CPPLCBUF DS    A        PTR TO COMMAND BUFFER                                   
+CPPLUPT  DS    A        PTR TO UPT                                              
+CPPLPSCB DS    A        PTR TO PSCB                                             
+CPPLECT  DS    A        PTR TO ECT                                              
+**/                                                                             
+         MEND                                                                   
+* %CPPLBSL: ;                                                                   
+* %IF CPPLSTOR='' %THEN              /*                     @ZMC2111 */         
+*   %CPPLSTOR='BASED(CPPLPTR)';      /*                     @ZMC2111 */         
+* /* *************************************************************** */         
+* /* THE COMMAND PROCESSOR PARAMETER LIST (CPPL) IS A LIST OF        */         
+* /* ADDRESSES PASSED FROM THE TMP TO THE CP VIA REGISTER 1          */         
+* /* *************************************************************** */         
+* DECLARE                                                                       
+*   1 CPPL CPPLSTOR,                 /*                     @ZMC2111 */         
+*    2 CPPLCBUF PTR(31),             /* PTR TO COMMAND BUFFER        */         
+*    2 CPPLUPT  PTR(31),             /* PTR TO UPT                   */         
+*    2 CPPLPSCB PTR(31),             /* PTR TO PSCB                  */         
+*    2 CPPLECT  PTR(31);             /* PTR TO ECT                   */         
+*                                                                               

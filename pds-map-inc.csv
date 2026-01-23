@@ -47,3 +47,5 @@ include/tso_dair.h,TSODAIR
 include/tso_ikjeftsr.h,IKJEFTSR
 include/tsoeftr.h,TSOEFTR
 include/tsowrt.h,TSOWRT
+include/tso_dair_asm.h,TSODASM
+include/tso_cmd_asm.h,TSOCMDA

@@ -11,6 +11,7 @@
 ## Module Name Mapping
 
 - Module names follow Lua conventions: `a.b.c` (applies to `require`, `loadfile`, and `dofile`).
+- `DD:`/`//DD:` paths bypass LUAMAP/LUAPATH and are read directly from DDNAME.
 - Normalize name:
   - Uppercase.
   - Replace `.` with `$`.

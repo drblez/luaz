@@ -121,7 +121,7 @@ CMDREADY ST    R3,CMDLEN                         Store cmd length.
          L     R3,CPPLUPT                        Load UPT ptr.
          L     R4,CPPLECT                        Load ECT ptr.
 * PUTLINE execute form with continuation indicator.
-         PUTLINE PARM=PUTPARM,UPT=(R3),ECT=(R4),ECB=ECBADS,            X
+         PUTLINE PARM=PUTPARM,UPT=(R3),ECT=(R4),ECB=ECBADS,  X
                OUTPUT=(OUTLINE,TERM,SINGLE,DATA),MF=(E,IOPLADS)
          L     R15,RCCODE                        Return rc.
          B     EPILOG                            Exit.

@@ -18,11 +18,12 @@
 extern "C" {
 #endif
 
-#define TSOEFTR_WORKSIZE 148
+#define TSOEFTR_WORKSIZE 152
 
 #pragma linkage(tsoeftr_call, OS)
 #pragma map(tsoeftr_call, "TSOEFTR")
-void tsoeftr_call(const char *cmd, int *cmd_len, int *rc, int *reason, void *work);
+void tsoeftr_call(const char *cmd, int *cmd_len, int *rc, int *reason, int *abend,
+                  void *work);
 
 #ifdef __cplusplus
 }

@@ -21,7 +21,11 @@ local function expect_rc(label, rc)
 end
 
 local function main()
-  local rc, lines = tso.cmd("LISTCAT LEVEL(DRBLEZ.LUA)", { outdd = "TSOOUT" })
+  print("LUZ30060 LUAZ_MODE=" .. tostring(LUAZ_MODE))
+  local rc, lines, errcode = tso.cmd("LISTCAT LEVEL(DRBLEZ.LUA)", { outdd = "TSOOUT" })
+  if rc == nil then
+    fail("tso.cmd failed: " .. tostring(lines) .. " err=" .. tostring(errcode))
+  end
   expect_rc("tso.cmd", rc)
   if type(lines) ~= "table" or #lines == 0 then
     fail("tso.cmd empty output")

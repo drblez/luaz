@@ -808,13 +808,111 @@ static int skipcomment (FILE *f, int *cp) {
 }
 
 
+#if defined(LUAZ_ZOS)
+/* Read a stream into a growable buffer. */
+static int read_stream_alloc(FILE *f, char **out, size_t *out_len) {
+  char *buf = NULL;
+  size_t cap = 0;
+  size_t total = 0;
+
+  if (out == NULL || out_len == NULL)
+    return -1;
+
+  for (;;) {
+    char tmp[4096];
+    size_t n = fread(tmp, 1, sizeof(tmp), f);
+    if (n == 0) {
+      if (ferror(f)) {
+        free(buf);
+        return -1;
+      }
+      break;
+    }
+    if (total + n < total)
+      {
+        free(buf);
+        return -1;
+      }
+    if (total + n > cap) {
+      size_t next = cap == 0 ? 8192 : cap * 2;
+      while (next < total + n)
+        next *= 2;
+      {
+        char *nbuf = (char *)realloc(buf, next);
+        if (nbuf == NULL) {
+          free(buf);
+          return -1;
+        }
+        buf = nbuf;
+        cap = next;
+      }
+    }
+    memcpy(buf + total, tmp, n);
+    total += n;
+  }
+
+  *out = buf;
+  *out_len = total;
+  return 0;
+}
+
+/* Return nonzero if filename references a DDNAME path. */
+static int is_ddname_path(const char *filename) {
+  if (filename == NULL)
+    return 0;
+  return (strncmp(filename, "DD:", 3) == 0 ||
+          strncmp(filename, "//DD:", 5) == 0);
+}
+
+/* Load a Lua chunk from a DDNAME path without LUAMAP resolution. */
+static int load_ddname(lua_State *L, const char *filename, int fnameindex,
+                       const char *mode) {
+  char path[128];
+  const char *open_path = filename;
+  FILE *f;
+  char *buf = NULL;
+  size_t len = 0;
+  int status;
+
+  if (strncmp(filename, "//DD:", 5) != 0) {
+    int rc = snprintf(path, sizeof(path), "//DD:%s", filename + 3);
+    if (rc <= 0 || (size_t)rc >= sizeof(path)) {
+      lua_pushfstring(L, "cannot open %s", filename);
+      lua_remove(L, fnameindex);
+      return LUA_ERRFILE;
+    }
+    open_path = path;
+  }
+
+  f = fopen(open_path, "r");
+  if (f == NULL)
+    return errfile(L, "open", fnameindex);
+
+  if (read_stream_alloc(f, &buf, &len) != 0) {
+    fclose(f);
+    free(buf);
+    lua_pushfstring(L, "cannot read %s", filename);
+    lua_remove(L, fnameindex);
+    return LUA_ERRFILE;
+  }
+  fclose(f);
+
+  status = luaL_loadbufferx(L, buf, len, filename, mode);
+  free(buf);
+  if (status == LUA_OK)
+    return LUA_OK;
+  lua_remove(L, fnameindex);
+  return status;
+}
+#endif
+
 LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename,
                                              const char *mode) {
 #if defined(LUAZ_ZOS)
   int status;
   int fnameindex = lua_gettop(L) + 1;  /* index of filename on the stack */
   char member[9];
-  unsigned long mlen = sizeof(member) - 1;
+  unsigned long mlen = sizeof(member);
   unsigned long buflen = 0;
   char *buf = NULL;
   char *work = NULL;
@@ -828,6 +926,9 @@ LUALIB_API int luaL_loadfilex (lua_State *L, const char *filename,
   }
 
   lua_pushfstring(L, "@%s", filename);
+  if (is_ddname_path(filename))
+    return load_ddname(L, filename, fnameindex, mode);
+
   if (luaz_path_resolve(filename, member, &mlen) != 0) {
     lua_pushfstring(L, "LUZ47002 LUAMAP entry not found for '%s'", filename);
     lua_remove(L, fnameindex);

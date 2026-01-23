@@ -22,6 +22,7 @@
  */
 #include "tso.h"
 #include "errors.h"
+#include "tso_native.h"
 
 #include "lua.h"
 #include "lauxlib.h"
@@ -31,16 +32,20 @@
 #include <stdint.h>
 #include <string.h>
 
+/* IKJTSOEV function signature for environment probing. */
 typedef void (*ikjtsoev_fn)(int *, int *, int *, int *, void **);
+/* Forward declaration for IRXEXEC parameter block. */
 typedef struct IRXEXEC_type IRXEXEC_type;
 #pragma linkage(fetch, OS)
+/* LE service resolver for dynamic entry points (IKJTSOEV/IRXEXEC). */
 extern void (*fetch(const char *name))();
 typedef int (*irxexec_fn)();
-static int g_last_irx_rc = 0;
-static int g_last_rexx_rc = 0;
-static int g_cppl_addr = 0;
+static int g_last_irx_rc = 0; /* Last IRXEXEC return code. */
+static int g_last_rexx_rc = 0; /* Last REXX return code. */
+static int g_cppl_addr = 0; /* Cached CPPL address (31-bit). */
 
 
+/* REXX evaluation block layout for IRXEXEC. */
 typedef struct EVALBLK_type {
   int EVPADD1;
   int EVSIZE;
@@ -49,6 +54,7 @@ typedef struct EVALBLK_type {
   char EVDATA[256];
 } EVALBLK_type;
 
+/* REXX exec block layout for IRXEXEC. */
 typedef struct EXECBLK_type {
   char EXECBLK_ACRYN[8];
   int EXECBLK_LENGTH;
@@ -60,11 +66,13 @@ typedef struct EXECBLK_type {
   int EXECBLK_DSNLEN;
 } EXECBLK_type;
 
+/* REXX single parameter descriptor. */
 typedef struct one_parameter_type {
   void *ARGSTRING_PTR;
   int ARGSTRING_LENGTH;
 } one_parameter_type;
 
+/* IRXEXEC parameter block layout (pointers to parameter areas). */
 typedef struct IRXEXEC_type {
   EXECBLK_type **execblk_ptr;
   one_parameter_type **argtable_ptr;
@@ -78,6 +86,13 @@ typedef struct IRXEXEC_type {
   int *rexx_rc_ptr;
 } IRXEXEC_type;
 
+/**
+ * @brief Convert an IRXEXEC EVALBLK payload into an integer RC.
+ *
+ * @param evalblk Pointer to EVALBLK_type returned by IRXEXEC.
+ * @param out_rc Output location for parsed integer RC.
+ * @return 1 when RC was parsed, or 0 when parsing failed.
+ */
 static int evalblk_to_rc(const EVALBLK_type *evalblk, int *out_rc)
 {
   int i = 0;
@@ -104,6 +119,11 @@ static int evalblk_to_rc(const EVALBLK_type *evalblk, int *out_rc)
   return 1;
 }
 
+/**
+ * @brief Ensure a TSO environment is active and cache CPPL address.
+ *
+ * @return 0 on success, or -1 on failure (g_last_irx_rc/g_last_rexx_rc set).
+ */
 static int tso_env_init(void)
 {
   static int env_state = 0; /* 0=unknown, 1=ready, -1=failed */
@@ -141,6 +161,13 @@ static int tso_env_init(void)
   return -1;
 }
 
+/**
+ * @brief Read DDNAME output into a Lua table with LUZ-prefixed lines.
+ *
+ * @param L Lua state.
+ * @param ddname DDNAME to read (EBCDIC, 1-8 chars).
+ * @return 1 on success, 0 on failure.
+ */
 static int read_dd_to_lines(lua_State *L, const char *ddname)
 {
   char path[32];
@@ -168,6 +195,17 @@ static int read_dd_to_lines(lua_State *L, const char *ddname)
   return 1;
 }
 
+/**
+ * @brief Invoke the LUTSO REXX exec via IRXEXEC for TSO command processing.
+ *
+ * @param ddname DDNAME containing the REXX exec library.
+ * @param member REXX exec member name.
+ * @param mode Execution mode string (TSO/PGM).
+ * @param payload Command payload string.
+ * @param outdd Output DDNAME for command output capture.
+ * @param errcode Error RC to return on failure.
+ * @return 0 on success, or errcode on failure.
+ */
 static int tso_call_rexx(const char *ddname, const char *member,
                          const char *mode, const char *payload,
                          const char *outdd, int errcode)
@@ -264,16 +302,63 @@ static int tso_call_rexx(const char *ddname, const char *member,
   return eval_rc;
 }
 
+/**
+ * @brief Lua binding for tso.cmd (execute a TSO command).
+ *
+ * @param L Lua state.
+ * @return Number of Lua return values pushed.
+ */
 static int l_tso_cmd(lua_State *L)
 {
   const char *cmd = luaL_checkstring(L, 1);
   const char *outdd = NULL;
+  char native_dd[9];
+  int native_reason = 0;
+  int native_abend = 0;
+  int native_dair_rc = 0;
+  int native_cat_rc = 0;
+  int native_rc = LUZ_E_TSO_CMD;
   int rc;
+
+  lua_getglobal(L, "LUAZ_MODE");
+  if (!lua_isstring(L, -1) || strcmp(lua_tostring(L, -1), "TSO") != 0) {
+    lua_pop(L, 1);
+    lua_pushnil(L);
+    lua_pushstring(L, "LUZ30045 tso.cmd not available in PGM mode");
+    lua_pushinteger(L, LUZ_E_TSO_CMD);
+    return 3;
+  }
+  lua_pop(L, 1);
 
   if (lua_istable(L, 2)) {
     lua_getfield(L, 2, "outdd");
     outdd = lua_tostring(L, -1);
     lua_pop(L, 1);
+  }
+
+  if (tso_native_env_init() == 0) {
+    native_rc = tso_native_cmd_cp(cmd, native_dd, sizeof(native_dd),
+                                  &native_reason, &native_abend,
+                                  &native_dair_rc, &native_cat_rc);
+    if (native_rc != LUZ_E_TSO_CMD) {
+      lua_pushinteger(L, native_rc);
+      if (read_dd_to_lines(L, native_dd)) {
+        tso_native_cmd_cleanup(native_dd);
+        return 2;
+      }
+      tso_native_cmd_cleanup(native_dd);
+      lua_newtable(L);
+      return 2;
+    }
+    if (native_dd[0] != '\0')
+      tso_native_cmd_cleanup(native_dd);
+    lua_pushnil(L);
+    lua_pushfstring(L,
+                    "LUZ30032 tso.cmd failed native reason=%d abend=%d"
+                    " dair_rc=%d cat_rc=%d",
+                    native_reason, native_abend, native_dair_rc, native_cat_rc);
+    lua_pushinteger(L, LUZ_E_TSO_CMD);
+    return 3;
   }
 
   rc = tso_call_rexx("SYSEXEC", "LUTSO", "CMD", cmd, outdd, LUZ_E_TSO_CMD);
@@ -292,9 +377,24 @@ static int l_tso_cmd(lua_State *L)
   return 2;
 }
 
+/**
+ * @brief Lua binding for tso.alloc (dynamic allocation).
+ *
+ * @param L Lua state.
+ * @return Number of Lua return values pushed.
+ */
 static int l_tso_alloc(lua_State *L)
 {
   const char *spec = luaL_checkstring(L, 1);
+  lua_getglobal(L, "LUAZ_MODE");
+  if (!lua_isstring(L, -1) || strcmp(lua_tostring(L, -1), "TSO") != 0) {
+    lua_pop(L, 1);
+    lua_pushnil(L);
+    lua_pushstring(L, "LUZ30045 tso.alloc not available in PGM mode");
+    lua_pushinteger(L, LUZ_E_TSO_ALLOC);
+    return 3;
+  }
+  lua_pop(L, 1);
   int rc = lua_tso_alloc(spec);
   if (rc == LUZ_E_TSO_ALLOC) {
     lua_pushnil(L);
@@ -307,9 +407,24 @@ static int l_tso_alloc(lua_State *L)
   return 1;
 }
 
+/**
+ * @brief Lua binding for tso.free (dynamic deallocation).
+ *
+ * @param L Lua state.
+ * @return Number of Lua return values pushed.
+ */
 static int l_tso_free(lua_State *L)
 {
   const char *spec = luaL_checkstring(L, 1);
+  lua_getglobal(L, "LUAZ_MODE");
+  if (!lua_isstring(L, -1) || strcmp(lua_tostring(L, -1), "TSO") != 0) {
+    lua_pop(L, 1);
+    lua_pushnil(L);
+    lua_pushstring(L, "LUZ30045 tso.free not available in PGM mode");
+    lua_pushinteger(L, LUZ_E_TSO_FREE);
+    return 3;
+  }
+  lua_pop(L, 1);
   int rc = lua_tso_free(spec);
   if (rc == LUZ_E_TSO_FREE) {
     lua_pushnil(L);
@@ -322,10 +437,25 @@ static int l_tso_free(lua_State *L)
   return 1;
 }
 
+/**
+ * @brief Lua binding for tso.msg (emit a TSO message).
+ *
+ * @param L Lua state.
+ * @return Number of Lua return values pushed.
+ */
 static int l_tso_msg(lua_State *L)
 {
   const char *text = luaL_checkstring(L, 1);
   int level = (int)luaL_optinteger(L, 2, 0);
+  lua_getglobal(L, "LUAZ_MODE");
+  if (!lua_isstring(L, -1) || strcmp(lua_tostring(L, -1), "TSO") != 0) {
+    lua_pop(L, 1);
+    lua_pushnil(L);
+    lua_pushstring(L, "LUZ30045 tso.msg not available in PGM mode");
+    lua_pushinteger(L, LUZ_E_TSO_MSG);
+    return 3;
+  }
+  lua_pop(L, 1);
   int rc = lua_tso_msg(text, level);
   if (rc == LUZ_E_TSO_MSG) {
     lua_pushnil(L);
@@ -338,13 +468,34 @@ static int l_tso_msg(lua_State *L)
   return 1;
 }
 
+/**
+ * @brief Lua binding for tso.exit (terminate with RC).
+ *
+ * @param L Lua state.
+ * @return Number of Lua return values pushed.
+ */
 static int l_tso_exit(lua_State *L)
 {
   int code = (int)luaL_optinteger(L, 1, 0);
+  lua_getglobal(L, "LUAZ_MODE");
+  if (!lua_isstring(L, -1) || strcmp(lua_tostring(L, -1), "TSO") != 0) {
+    lua_pop(L, 1);
+    lua_pushnil(L);
+    lua_pushstring(L, "LUZ30045 tso.exit not available in PGM mode");
+    lua_pushinteger(L, LUZ_E_TSO_EXIT);
+    return 3;
+  }
+  lua_pop(L, 1);
   lua_tso_exit(code);
   return 0;
 }
 
+/**
+ * @brief Lua module entrypoint for tso.* functions.
+ *
+ * @param L Lua state.
+ * @return 1 on success (module table on stack).
+ */
 int luaopen_tso(lua_State *L)
 {
   static const luaL_Reg lib[] = {
@@ -359,6 +510,12 @@ int luaopen_tso(lua_State *L)
   return 1;
 }
 
+/**
+ * @brief Execute a TSO command and return a status code.
+ *
+ * @param cmd NUL-terminated TSO command string (EBCDIC).
+ * @return 0 on success, or LUZ_E_TSO_CMD on failure.
+ */
 int lua_tso_cmd(const char *cmd)
 {
   if (cmd == NULL)
@@ -366,6 +523,12 @@ int lua_tso_cmd(const char *cmd)
   return tso_call_rexx("SYSEXEC", "LUTSO", "CMD", cmd, NULL, LUZ_E_TSO_CMD);
 }
 
+/**
+ * @brief Allocate a dataset or DD using native TSO services.
+ *
+ * @param spec Allocation specification string.
+ * @return 0 on success, or LUZ_E_TSO_ALLOC on failure.
+ */
 int lua_tso_alloc(const char *spec)
 {
   int rc;
@@ -375,6 +538,12 @@ int lua_tso_alloc(const char *spec)
   return rc;
 }
 
+/**
+ * @brief Free a dataset or DD allocation using native TSO services.
+ *
+ * @param spec Deallocation specification string.
+ * @return 0 on success, or LUZ_E_TSO_FREE on failure.
+ */
 int lua_tso_free(const char *spec)
 {
   int rc;
@@ -384,6 +553,13 @@ int lua_tso_free(const char *spec)
   return rc;
 }
 
+/**
+ * @brief Emit a TSO message through the native backend.
+ *
+ * @param text Message text.
+ * @param level Message severity/level.
+ * @return 0 on success, or LUZ_E_TSO_MSG on failure.
+ */
 int lua_tso_msg(const char *text, int level)
 {
   (void)level;
@@ -396,6 +572,12 @@ int lua_tso_msg(const char *text, int level)
   return 0;
 }
 
+/**
+ * @brief Exit the caller with a specified return code.
+ *
+ * @param rc Return code to propagate.
+ * @return rc unchanged.
+ */
 int lua_tso_exit(int rc)
 {
   exit(rc);

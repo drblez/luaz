@@ -37,6 +37,7 @@ All tests are batch‑friendly and validate return codes explicitly.
 
 - Run **UT** tests before every commit.
 - Run **IT** tests before any release or integration milestone.
+- Before running any **IT** job, execute the incremental build (`jcl/BUILDINC.jcl`).
 - Run **RT** tests when a related bug fix is changed or refactored.
 
 ## Documentation Template

@@ -35,3 +35,4 @@
 | LUZ40013 | hash mismatch | src/hashcmp.c | Recompile module to refresh hash | build |
 | LUZ40014 | unable to update hash member | src/hashcmp.c | Verify HASHOUT DD, PDSE allocation, and write access | build |
 | LUZ40015 | hash record format invalid | src/hashcmp.c | Regenerate hash member or delete it to force rebuild | build |
+| LUZ40016 | object member missing | src/hashcmp.c | Ensure OBJ PDS is allocated and member exists | build |

@@ -9,5 +9,5 @@
 //LUABATCH EXEC PGM=IKJEFT01
 //SYSTSPRT DD SYSOUT=*
 //SYSTSIN  DD *
-  /* TODO: Add TSO commands for LUAEXEC invocation */
+  /* Example: CALL 'HLQ.LUA.LOAD(LUAEXEC)' */
 /*

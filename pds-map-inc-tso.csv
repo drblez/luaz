@@ -1,2 +1,3 @@
 relative_path,member
 include/tsoeftr.h,TSOEFTR
+include/tso_dair_asm.h,TSODASM

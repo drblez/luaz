@@ -1,9 +1,11 @@
 //* Copyright 2026 drblez AKA Ruslan Stepanenko (drblez@gmail.com)
 //* Purpose: Unit test for native TSO command (IKJEFTSR).
+//* Notes: Requires TSOAUTH in SYS1.LINKLIB for CP-based command path.
 //* Objects:
 //* +---------+----------------------------------------------+
 //* | CCOMP   | Compile TSNUT                                |
-//* | LKED    | Link TSNUT                                   |
+//* | ASM1    | Assemble TSODAIR (DAIR wrappers)             |
+//* | LKED    | Link TSNUT + TSODAIR                          |
 //* | RUN     | Execute TSNUT                                |
 //* +---------+----------------------------------------------+
 //UTTSN  JOB (ACCT),'UT TSN',CLASS=A,MSGCLASS=H,NOTIFY=&SYSUID,
@@ -20,6 +22,8 @@
 //         OUTMEM=TSNOUT,HLQ=&HLQ
 //CC2     EXEC CCOMP,INFILE=&HLQ..LUA.SRC(TSONATV),
 //         OUTMEM=TSONATV,HLQ=&HLQ
+//ASM1    EXEC ASMCOMP,INFILE=&HLQ..LUA.ASM(TSODAIR),
+//         OUTMEM=TSODAIR,HLQ=&HLQ
 //* 
 //LKED    EXEC PGM=HEWL,PARM='LIST,MAP,XREF,LET,AC=1',REGION=0M
 //SYSPRINT DD SYSOUT=*
@@ -31,6 +35,7 @@
 //SYSLIN   DD *
   INCLUDE OBJLIB(TSNOUT)
   INCLUDE OBJLIB(TSONATV)
+  INCLUDE OBJLIB(TSODAIR)
   NAME TSNOUT(R)
 /*
 //* 

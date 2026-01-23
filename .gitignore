@@ -42,6 +42,7 @@ third_party/*
 
 # Local secrets
 CREDENTIAL.md
+.env
 
 # Job outputs
 jcl/*.out

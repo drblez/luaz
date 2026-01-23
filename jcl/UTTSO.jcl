@@ -2,7 +2,8 @@
 //* Purpose: Unit test for tso module bindings.
 //* Objects:
 //* +---------+----------------------------------------------+
-//* | UTBLD   | Compile TSOUT and TSO                         |
+//* | ASM1    | Assemble TSODAIR (DAIR wrappers)             |
+//* | UTBLD   | Compile TSOUT, TSO, TSONATV                  |
 //* | RUN     | Execute TSOUT                                |
 //* +---------+----------------------------------------------+
 //UTTSO   JOB (ACCT),'UT TSO',CLASS=A,MSGCLASS=H,NOTIFY=&SYSUID,
@@ -10,15 +11,20 @@
 //SET1     SET HLQ=DRBLEZ
 // JCLLIB ORDER=&HLQ..LUA.JCL
 //*
+//ASM1   EXEC ASMCOMP,HLQ=&HLQ,
+//         INFILE=&HLQ..LUA.ASM(TSODAIR),
+//         OUTMEM=TSODAIR
 //UTBLD  EXEC UTBLD,HLQ=&HLQ,
 //         IN1MEM=TSOUT,OUT1=TSOUT,
 //         USE2=1,IN2MEM=TSO,OUT2=TSO,
-//         USE3=0,IN3MEM=ZZZ2,OUT3=ZZZ2,
+//         USE3=1,IN3MEM=TSONATV,OUT3=TSONATV,
 //         USE4=0,IN4MEM=ZZZ3,OUT4=ZZZ3,
 //         LMEM=TSOUT
 //LKED.SYSLIN DD *
   INCLUDE OBJLIB(TSOUT)
   INCLUDE OBJLIB(TSO)
+  INCLUDE OBJLIB(TSONATV)
+  INCLUDE OBJLIB(TSODAIR)
   INCLUDE OBJLIB(PATH)
   INCLUDE OBJLIB(PLATFORM)
   INCLUDE OBJLIB(CORE)

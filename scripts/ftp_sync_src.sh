@@ -1,5 +1,33 @@
 #!/usr/bin/env bash
+# Copyright 2026 drblez AKA Ruslan Stepanenko (drblez@gmail.com)
+#
+# Sync local sources to a z/OS PDS via FTP.
+#
+# Object Table:
+# | Object | Kind | Purpose |
+# |--------|------|---------|
+# | ftp_sync_src.sh | script | Upload files from a directory to a PDS |
+# | usage | function | Print CLI help |
+# | cleanup | function | Remove temp files/dirs |
+#
+# Notes:
+# - Supports staging (copy + include rewrites) before upload.
+# - Automatically formats HLASM sources before upload:
+#   - replace TAB with spaces
+#   - wrap long `* ...` comment records
+#   - move long trailing remarks (after opcode) to `* ...` records above
+#
 set -euo pipefail
+
+# Load optional repo-local environment (.env) with MF_* defaults.
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$SCRIPT_DIR/../.env"
+if [[ -f "$ENV_FILE" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "$ENV_FILE"
+  set +a
+fi
 
 usage() {
   cat <<'USAGE'
@@ -43,6 +71,8 @@ LRECL="80"
 BLKSIZE="0"
 USE_MAP="no"
 EXTS=()
+AUTO_REWRITE="no"
+AUTO_ASMFMT="no"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -78,6 +108,40 @@ if [[ ! -d "$ROOT" ]]; then
   exit 1
 fi
 
+if [[ -z "$REWRITE_MAP" ]]; then
+  for ext in "${EXTS[@]:-}"; do
+    if [[ "$ext" == ".c" || "$ext" == ".inc" ]]; then
+      AUTO_REWRITE="yes"
+      break
+    fi
+  done
+  if [[ "$AUTO_REWRITE" != "yes" && ${#EXTS[@]} -eq 0 ]]; then
+    if find "$ROOT" -type f \( -name '*.c' -o -name '*.inc' \) -print -quit | rg -q .; then
+      AUTO_REWRITE="yes"
+    fi
+  fi
+  if [[ "$AUTO_REWRITE" == "yes" ]]; then
+    if [[ -f "pds-map-inc.csv" ]]; then
+      REWRITE_MAP="pds-map-inc.csv"
+    else
+      echo "Rewrite map not found: pds-map-inc.csv" >&2
+      exit 1
+    fi
+  fi
+fi
+
+for ext in "${EXTS[@]:-}"; do
+  if [[ "$ext" == ".asm" ]]; then
+    AUTO_ASMFMT="yes"
+    break
+  fi
+done
+if [[ "$AUTO_ASMFMT" != "yes" && ${#EXTS[@]} -eq 0 ]]; then
+  if find "$ROOT" -type f -name '*.asm' -print -quit | rg -q .; then
+    AUTO_ASMFMT="yes"
+  fi
+fi
+
 STAGE_ROOT="$ROOT"
 STAGE_DIR=""
 TMP_FTP=""
@@ -88,14 +152,21 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if [[ -n "$REWRITE_MAP" ]]; then
+if [[ -n "$REWRITE_MAP" || "$AUTO_ASMFMT" == "yes" ]]; then
   if [[ ! -f "$REWRITE_MAP" ]]; then
-    echo "Rewrite map not found: $REWRITE_MAP" >&2
-    exit 1
+    if [[ -n "$REWRITE_MAP" ]]; then
+      echo "Rewrite map not found: $REWRITE_MAP" >&2
+      exit 1
+    fi
   fi
   STAGE_DIR="$(mktemp -d)"
   cp -R "$ROOT"/. "$STAGE_DIR"/
-  scripts/rewrite_includes.py --map "$REWRITE_MAP" --root "$STAGE_DIR" >/dev/null
+  if [[ -n "$REWRITE_MAP" ]]; then
+    scripts/rewrite_includes.py --map "$REWRITE_MAP" --root "$STAGE_DIR" >/dev/null
+  fi
+  if [[ "$AUTO_ASMFMT" == "yes" ]]; then
+    python3 scripts/asmfmt.py --root "$STAGE_DIR" --ext .asm --quiet
+  fi
   STAGE_ROOT="$STAGE_DIR"
 fi
 
@@ -119,9 +190,10 @@ if use_map == "yes" and os.path.exists(map_path):
             rel = row['relative_path']
             mem = row['member']
             rel_norm = os.path.normpath(rel)
-            if not rel_norm.startswith(orig_root + os.sep) and rel_norm != orig_root:
-                continue
-            rel_tail = rel_norm[len(orig_root) + 1:] if rel_norm.startswith(orig_root + os.sep) else ""
+            if orig_root in (".", ""):
+                rel_tail = rel_norm
+            else:
+                rel_tail = rel_norm[len(orig_root) + 1:] if rel_norm.startswith(orig_root + os.sep) else rel_norm
             if exts and os.path.splitext(rel_tail)[1].lower() not in exts:
                 continue
             map_entries.append((rel_tail, mem))

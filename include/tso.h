@@ -19,10 +19,41 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Execute a TSO command and return a status code.
+ *
+ * @param cmd NUL-terminated TSO command string (EBCDIC).
+ * @return 0 on success, or LUZ_E_TSO_CMD on failure.
+ */
 int lua_tso_cmd(const char *cmd);
+/**
+ * @brief Allocate a dataset or DD using native TSO services.
+ *
+ * @param spec Allocation specification string.
+ * @return 0 on success, or LUZ_E_TSO_ALLOC on failure.
+ */
 int lua_tso_alloc(const char *spec);
+/**
+ * @brief Free a dataset or DD allocation using native TSO services.
+ *
+ * @param spec Deallocation specification string.
+ * @return 0 on success, or LUZ_E_TSO_FREE on failure.
+ */
 int lua_tso_free(const char *spec);
+/**
+ * @brief Emit a TSO message through the native backend.
+ *
+ * @param text Message text.
+ * @param level Message severity/level.
+ * @return 0 on success, or LUZ_E_TSO_MSG on failure.
+ */
 int lua_tso_msg(const char *text, int level);
+/**
+ * @brief Exit the caller with a specified return code.
+ *
+ * @param rc Return code to propagate.
+ * @return rc unchanged.
+ */
 int lua_tso_exit(int rc);
 
 #ifdef __cplusplus

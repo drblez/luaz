@@ -38,6 +38,7 @@ int main(void)
     int cmd_len = 4;
     int work_len = TSOEFTR_WORKSIZE;
     int reason = 0;
+    int abend = 0;
     rc = 0;
     workbuf = (unsigned char *)__malloc31(TSOEFTR_WORKSIZE);
     if (workbuf == NULL) {
@@ -53,8 +54,8 @@ int main(void)
       free(workbuf);
       return 8;
     }
-    tsoeftr_call("TIME", &cmd_len, &rc, &reason, workbuf);
-    printf("LUZ00029 TSOAUTH rc=%d reason=%d\n", rc, reason);
+    tsoeftr_call("TIME", &cmd_len, &rc, &reason, &abend, workbuf);
+    printf("LUZ00029 TSOAUTH rc=%d reason=%d abend=%d\n", rc, reason, abend);
   }
   if (rc != 0) {
     printf("LUZ00027 TSOAUTH failed rc=%d\n", rc);

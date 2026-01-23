@@ -35,6 +35,10 @@
    - Register Lua modules: `tso`, `ds`, `ispf`, `axr`, `tls`.
    - Implemented: optional preload gated by `LUAZ_WITH_*` flags (see `docs/patches/linit_luazlibs.md`).
 
+5. `lauxlib.c`
+   - Ensure `DD:`/`//DD:` loadfile reads bypass LUAMAP/LUAPATH.
+   - Implemented: DDNAME loadfile bypass and mlen fix (see `docs/patches/lauxlib_dd_loadfile.md`).
+
 ## Patch Delivery
 
 - Store each patch under `patches/` with a short rationale.

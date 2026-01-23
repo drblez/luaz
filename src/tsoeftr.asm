@@ -61,43 +61,61 @@ R15      EQU   15                               Register 15 alias.
          USING TSOEFTR,R11                        Base addressability.
 * Preserve caller parameter list pointer.
          LR    R8,R1                              Save plist ptr.
-* Load command pointer address from parm list.
-         L     R2,0(R8)                           Load cmd slot.
+* Clear internal work area pointer.
+         XR    R10,R10                            Clear heap ptr.
+* Clear result pointers for failure path.
+         XR    R4,R4                              Clear rc pointer.
+         XR    R5,R5                              Clear reason pointer.
 * Load command pointer from caller slot.
+         L     R2,0(R8)                           Load cmd slot.
+         LTR   R2,R2                              Check for NULL.
+         BZ    FAIL_NOHEAP                        Fail on NULL.
          L     R2,0(R2)                           Load cmd pointer.
-* Load command length pointer address from list.
-         L     R3,4(R8)                           Load len slot.
 * Load command length pointer from caller slot.
+         L     R3,4(R8)                           Load len slot.
+         LTR   R3,R3                              Check for NULL.
+         BZ    FAIL_NOHEAP                        Fail on NULL.
          L     R3,0(R3)                           Load len pointer.
-* Load rc pointer address from parm list.
-         L     R4,8(R8)                           Load rc slot.
 * Load rc pointer from caller slot.
-         L     R4,0(R4)                           Load rc pointer.
-* Load reason pointer address from parm list.
-         L     R5,12(R8)                          Load reason slot.
+         L     R0,8(R8)                           Load rc slot.
+         LTR   R0,R0                              Check for NULL.
+         BZ    FAIL_NOHEAP                        Fail on NULL.
+         L     R4,0(R0)                           Load rc pointer.
 * Load reason pointer from caller slot.
-         L     R5,0(R5)                           Load reason pointer.
-* Load work area pointer address from parm list.
-         L     R6,16(R8)                          Load work slot.
-* Clear end-of-plist high bit on last slot.
+         L     R0,12(R8)                          Load reason slot.
+         LTR   R0,R0                              Check for NULL.
+         BZ    FAIL_NOHEAP                        Fail on NULL.
+         L     R5,0(R0)                           Load reason pointer.
+* Load abend pointer from caller slot.
+         L     R7,16(R8)                          Load abend slot.
+         LTR   R7,R7                              Check for NULL.
+         BZ    FAIL_NOHEAP                        Fail on NULL.
+         L     R7,0(R7)                           Load abend pointer.
+* Load work pointer from caller slot (optional).
+         L     R6,20(R8)                          Load work slot.
          N     R6,=X'7FFFFFFF'                    Clear HOB.
-* Load work area pointer from caller slot.
-         L     R6,0(R6)                           Load work pointer.
-* Validate work area pointer from caller.
          LTR   R6,R6                              Check for NULL.
-         BZ    FAIL_NOHEAP                        Fail if no work area.
-* Save work area address in base register.
-         LR    R9,R6                              Use caller work area.
+         BZ    EFTR_NWORK                         No work pointer.
+         L     R6,0(R6)                           Load work pointer.
+EFTR_NWORK DS 0H
+* Allocate internal work area for this call.
+         STORAGE OBTAIN,LENGTH=WORKSIZE,SP=131,KEY=8,LOC=31
+         LR    R10,R1                             Save heap ptr.
+         LR    R9,R1                              Save work base.
 * Establish work area base register.
-         USING WORKAREA,R9                       Use work area base.
+         USING WORKAREA,R9                        Use work area base.
 * Clear work area for clean defaults.
-         XC    0(WORKSIZE,R9),0(R9)              Clear work area.
+         XC    0(WORKSIZE,R9),0(R9)               Clear work area.
+* Save command pointer for later use.
+         ST    R2,CMDPTR(R9)
 * Save length pointer for later use.
-         ST    R3,CMDLENP(R9)                    Store length pointer.
+         ST    R3,CMDLENP(R9)
 * Save rc pointer for later use.
-         ST    R4,RCPTR(R9)                      Store rc pointer.
+         ST    R4,RCPTR(R9)
 * Save reason pointer for later use.
-         ST    R5,REASONP(R9)                    Store reason pointer.
+         ST    R5,REASONP(R9)
+* Save abend pointer for later use.
+         ST    R7,ABENDP(R9)
 * Proceed to IKJEFTSR parameter setup (TMP already active).
 * Reload cmd pointer for IKJEFTSR.
          L     R2,CMDPTR(R9)                     Reload cmd ptr.
@@ -121,8 +139,13 @@ R15      EQU   15                               Register 15 alias.
          ST    R4,12(R6)                         Store rc pointer.
 * Store parm5 (reason pointer).
          ST    R5,16(R6)                         Store reason pointer.
-* Prepare IKJEFTSR abend code.
-         LA    R7,SR_ABEND(R9)                   Point to abend code.
+* Prepare IKJEFTSR abend code pointer.
+         L     R7,ABENDP(R9)
+* Use local abend storage if caller did not provide pointer.
+         LTR   R7,R7
+         BNZ   SRABNDOK
+         LA    R7,SR_ABEND(R9)
+SRABNDOK DS 0H
 * Mark last parm in list per LE.
          O     R7,=X'80000000'                   Mark last parameter.
 * Store parm6 (abend code).
@@ -161,8 +184,12 @@ FAILNH_RSN LTR   R5,R5                           Test reason pointer.
          L     R7,=F'-1'                         Load generic reason.
 * Store reason for caller.
          ST    R7,0(R5)                          Store reason value.
+* Free internal work area.
+DONE     LTR   R10,R10                            Check heap ptr.
+         BZ    DONE_RET                           Skip free if none.
+         STORAGE RELEASE,LENGTH=WORKSIZE,ADDR=(R10),SP=131,KEY=8
 * Return via LE epilog.
-DONE     CEETERM RC=0                            LE epilog and return.
+DONE_RET CEETERM RC=0                            LE epilog and return.
 * Emit literal pool for constants.
          LTORG                                  Emit literal pool.
 * Define LE PPA for this routine.
@@ -177,6 +204,8 @@ CMDLENP  DS   F                                 Saved length pointer.
 RCPTR    DS   F                                 Saved rc pointer.
 * Saved reason pointer.
 REASONP  DS   F                                 Saved reason pointer.
+* Saved abend pointer.
+ABENDP   DS   F                                 Saved abend pointer.
 * Reserved local rc storage.
 LOCALRC  DS   F                                 Local rc storage.
 * Reserved local reason storage.

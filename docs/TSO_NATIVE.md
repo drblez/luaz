@@ -21,9 +21,12 @@ Links (IBM Docs):
 
 - `tso.cmd` -> IKJEFTSR (TSO/E Service Facility)
   - Execute TSO commands directly from C.
-  - Capture output via DD (preferred) or message retrieval service.
+  - Capture output via internal DD (DAIR, SYSTSPRT redirect) or message retrieval service.
+  - Interim testing may route commands through `TSOAUTH` (command processor) before `LUAEXEC` is ready.
+  - `TSOAUTH` must be in `SYS1.LINKLIB` and authorized when using the CP path.
 - `tso.alloc` / `tso.free` -> DAIR + DAIRFAIL
   - Dynamic allocation interface with diagnostic mapping.
+  - DAIR calls use ASM macro wrappers (IKJDAPL/IKJDAP08/IKJDAP18) to avoid C struct drift.
 - `tso.msg` -> SYSTSPRT (or message service)
   - Optional GETMSG for buffered message retrieval when needed.
 
@@ -63,10 +66,18 @@ Local macro extracts:
 - `docs/TSO_NATIVE_IKJDAP14.txt`
 - `docs/TSO_NATIVE_IKJDAP18.txt`
 - `docs/TSO_NATIVE_IKJEFFDF.txt`
+- `docs/TSO_NATIVE_IKJCPPL.txt`
 
 Key DAIR request blocks (from the extracted macros):
 - **DAPB08 (IKJDAP08)**: allocate dataset (new/old/mod/shr) with space, unit, volser, dsorg, etc.
 - **DAPB18 (IKJDAP18)**: unallocate dataset or DDNAME with optional disposition override.
+
+## Implementation notes
+
+- DSNAME buffer format: 2-byte length followed by 44-byte blank-padded name (see IBM docs for DAIR entry code X'00').
+- DA08PQTY/DA08SQTY field format and DA08CD/DA18CD entry codes must be verified against IBM DAIR docs before finalizing production defaults.
+- ASM wrappers: `TSODALC`/`TSODFRE` in `src/tsodair.asm` manage DAIR allocation for SYSTSPRT capture.
+- `TSODALC` uses `DA08ALN=SYSTSPRT` with `DA08ATRL` to inherit DCB attributes; confirm with IBM DAIR docs.
 
 ## Notes
 

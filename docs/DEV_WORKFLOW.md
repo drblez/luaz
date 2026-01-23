@@ -24,3 +24,9 @@ HLQ used in examples: `DRBLEZ`.
 
 - Use IKJEFT01 with `SYSTSIN` to invoke LUAEXEC.
 - For ISPF services, use ISPSTART with proper ISPF dataset allocations.
+
+## 5) LUAEXEC PARM (current)
+
+- `MODE=TSO` or `MODE=PGM` (default: `PGM`).
+- `DSN=...` detected but not implemented yet.
+- `--` ends control parsing; tokens after it become Lua `arg[]`.

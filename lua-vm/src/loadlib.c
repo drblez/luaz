@@ -578,7 +578,7 @@ static int checkload (lua_State *L, int stat, const char *filename) {
 static int searcher_Lua (lua_State *L) {
   const char *name = luaL_checkstring(L, 1);
   char member[9];
-  unsigned long mlen = sizeof(member) - 1;
+  unsigned long mlen = sizeof(member);
   unsigned long buflen = 0;
   char *buf;
   if (luaz_path_resolve(name, member, &mlen) != 0)

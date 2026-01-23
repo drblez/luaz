@@ -14,6 +14,14 @@
 #include <stdio.h>
 #include <string.h>
 
+/**
+ * @brief Read a full stream into a caller buffer or count required size.
+ *
+ * @param fp Open file stream to read.
+ * @param buf Output buffer or NULL to only compute total length.
+ * @param len In/out length: capacity on input, bytes read on output.
+ * @return 0 on success, or -1 on failure (insufficient buffer or bad args).
+ */
 static int read_stream(FILE *fp, char *buf, unsigned long *len)
 {
   unsigned long cap;
@@ -45,6 +53,13 @@ static int read_stream(FILE *fp, char *buf, unsigned long *len)
   return 0;
 }
 
+/**
+ * @brief Open a LUAPATH DDNAME member for reading.
+ *
+ * @param member Member name in the LUAPATH concatenation.
+ * @param out Output FILE pointer on success.
+ * @return 0 on success, or -1 on failure.
+ */
 static int luaz_dd_open(const char *member, FILE **out)
 {
   char path[128];
@@ -61,6 +76,13 @@ static int luaz_dd_open(const char *member, FILE **out)
   return (*out == NULL) ? -1 : 0;
 }
 
+/**
+ * @brief Read the LUAMAP member from LUAPATH into a buffer.
+ *
+ * @param buf Output buffer or NULL to only compute length.
+ * @param len In/out length: capacity on input, bytes read on output.
+ * @return 0 on success, or -1 on failure.
+ */
 static int luaz_luamap_read(char *buf, unsigned long *len)
 {
   FILE *fp = NULL;
@@ -74,6 +96,14 @@ static int luaz_luamap_read(char *buf, unsigned long *len)
   return rc;
 }
 
+/**
+ * @brief Read a LUAPATH member into a buffer.
+ *
+ * @param member Member name to read.
+ * @param buf Output buffer or NULL to only compute length.
+ * @param len In/out length: capacity on input, bytes read on output.
+ * @return 0 on success, or -1 on failure.
+ */
 static int luaz_member_read(const char *member, char *buf, unsigned long *len)
 {
   FILE *fp = NULL;
@@ -89,6 +119,11 @@ static int luaz_member_read(const char *member, char *buf, unsigned long *len)
   return rc;
 }
 
+/**
+ * @brief Register DDNAME-based LUAPATH hooks with the platform layer.
+ *
+ * @return 0 on success, or nonzero on failure.
+ */
 int luaz_io_dd_register(void)
 {
   struct luaz_platform_ops ops;
