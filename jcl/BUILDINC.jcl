@@ -44,6 +44,8 @@
 //SYSUT2   DD DSN=&HLQ..LUA.CTL,DISP=SHR
 //* Note: &HLQ is not substituted inside CTL members on this system.
 //*       Use hard-coded HLQ in CTLUPD so IDCAMS SYSIN is valid.
+//* CCOPTS listing trimmed to SOURCE/XREF only to avoid ASM-like output in
+//* C listings; see jcl/ICOMP.md#cc-options.
 //SYSIN    DD *,SYMBOLS=JCLONLY
 ./ ADD NAME=AXR,LIST=ALL
   DELETE DRBLEZ.LUA.OBJ(AXR) PURGE
@@ -201,6 +203,17 @@
 ./ ADD NAME=TSOCMD,LIST=ALL
   DELETE DRBLEZ.LUA.OBJ(TSOCMD) PURGE
   SET MAXCC=0
+./ ADD NAME=CCOPTS,LIST=ALL
+  TERM
+  RENT
+  LANGLVL(EXTC99)
+  LONGNAME
+  NOASM
+  NOGENASM
+  NOXPLINK
+  DEFINE(LUAZ_ZOS)
+  SOURCE
+  XREF
 ./ ENDUP
 /*
 //* 

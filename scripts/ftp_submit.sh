@@ -15,6 +15,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   ftp_submit.sh -j <job.jcl> [--host H] [--port P] [--user U] [--pass W]
+                [--hlq HLQ] [--rebuild LIST] [--rebuild-file FILE]
                 [--retries N] [--sleep S] [--spool-retries N] [--spool-sleep S] [--debug]
 
 Env defaults (can override with flags):
@@ -22,6 +23,7 @@ Env defaults (can override with flags):
   MF_PORT (default 2121)
   MF_USER
   MF_PASS
+  MF_HLQ  (default DRBLEZ)
 
 Behavior:
   - Submits JCL via FTP in JES mode.
@@ -32,6 +34,8 @@ Behavior:
   - Deletes job output after download only when SYSUDUMP is absent.
   - Prints JOBID, wait start, newly появившиеся spool entries, completion, and overall RC.
   - Fails if any spool entry (except SYSUDUMP) is not downloaded.
+  - Optional rebuild list deletes OBJ/HASH members before submit.
+    Prefix each member with C: (SRC.HASHES) or A: (ASM.HASHES).
 USAGE
 }
 
@@ -39,12 +43,15 @@ HOST="${MF_HOST:-192.168.1.160}"
 PORT="${MF_PORT:-2121}"
 USER="${MF_USER:-}"
 PASS="${MF_PASS:-}"
+HLQ="${MF_HLQ:-DRBLEZ}"
 JCL=""
 RETRIES=100
 SLEEP=5
 SPOOL_RETRIES=3
 SPOOL_SLEEP=2
 DEBUG="no"
+REBUILD_ITEMS=()
+REBUILD_FILE=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -53,6 +60,9 @@ while [[ $# -gt 0 ]]; do
     --port) PORT="$2"; shift 2;;
     --user) USER="$2"; shift 2;;
     --pass) PASS="$2"; shift 2;;
+    --hlq) HLQ="$2"; shift 2;;
+    --rebuild) REBUILD_ITEMS+=("$2"); shift 2;;
+    --rebuild-file) REBUILD_FILE="$2"; shift 2;;
     --retries) RETRIES="$2"; shift 2;;
     --sleep) SLEEP="$2"; shift 2;;
     --spool-retries) SPOOL_RETRIES="$2"; shift 2;;
@@ -78,11 +88,35 @@ if [[ ! -f "$JCL" ]]; then
 fi
 
 TMP_LOG="$(mktemp)"
+TMP_REBUILD_LOG="$(mktemp)"
 KEEP_TMP="no"
 if [[ "$DEBUG" == "yes" ]]; then
   KEEP_TMP="yes"
 fi
-trap 'if [[ "$KEEP_TMP" != "yes" ]]; then rm -f "$TMP_LOG"; fi' EXIT
+trap 'if [[ "$KEEP_TMP" != "yes" ]]; then rm -f "$TMP_LOG" "$TMP_REBUILD_LOG"; fi' EXIT
+
+if [[ ${#REBUILD_ITEMS[@]} -gt 0 || -n "$REBUILD_FILE" ]]; then
+  if [[ "$DEBUG" == "yes" ]]; then
+    echo "DEBUG: invoking ftp_rebuild_delete.sh"
+  fi
+  rebuild_args=()
+  for item in "${REBUILD_ITEMS[@]}"; do
+    rebuild_args+=(--rebuild "$item")
+  done
+  if [[ -n "$REBUILD_FILE" ]]; then
+    rebuild_args+=(--rebuild-file "$REBUILD_FILE")
+  fi
+  if [[ "$DEBUG" == "yes" ]]; then
+    rebuild_args+=(--debug)
+  fi
+  scripts/ftp_rebuild_delete.sh \
+    --host "$HOST" \
+    --port "$PORT" \
+    --user "$USER" \
+    --pass "$PASS" \
+    --hlq "$HLQ" \
+    "${rebuild_args[@]}"
+fi
 
 # Submit JCL
 ftp -inv "$HOST" "$PORT" <<EOF_FTP >"$TMP_LOG"
@@ -121,6 +155,7 @@ user $USER $PASS
 passive
 epsv4
 quote SITE FILETYPE=JES
+quote site notrailingblanks
 quote SITE JESJOBNAME=*
 quote SITE JESOWNER=*
 quote SITE JESSTATUS=ALL
@@ -189,6 +224,7 @@ user $USER $PASS
 passive
 epsv4
 quote SITE FILETYPE=JES
+quote site notrailingblanks
 quote SITE JESJOBNAME=*
 quote SITE JESOWNER=*
 quote SITE JESSTATUS=ALL
@@ -211,6 +247,7 @@ user $USER $PASS
 passive
 epsv4
 quote SITE FILETYPE=JES
+quote site notrailingblanks
 quote SITE JESJOBNAME=*
 quote SITE JESOWNER=*
 delete $id
@@ -227,11 +264,13 @@ EOF_DEL
     while [[ $attempt -le $SPOOL_RETRIES ]]; do
       tmp_get="$(mktemp)"
       echo "DEBUG: FETCH $id -> $out (attempt $attempt)" >>"$TMP_LOG"
+      echo "SPOOL-DOWNLOAD: id=$id out=$out attempt=$attempt"
       ftp -inv "$HOST" "$PORT" <<EOF_GET >"$tmp_get" 2>&1 || true
 user $USER $PASS
 passive
 epsv4
 quote SITE FILETYPE=JES
+quote site notrailingblanks
 quote SITE JESJOBNAME=*
 quote SITE JESOWNER=*
 get $id $out
@@ -357,6 +396,31 @@ EOF_GET
     job_rc="UNKNOWN"
   fi
   echo "RC=$job_rc"
+  # Change note: accept RC=4 only when it originates from HCMP steps.
+  # Problem: HASHCMP uses RC=4 for rebuilds; job RC=4 was treated as failure.
+  # Expected effect: rebuild-only runs succeed while non-HCMP RC=4 still fail.
+  # Impact: return code normalization is based on JESYSMSG content.
+  if [[ "$job_rc" == "4" && -n "$JESYSMSG_FILE" && -f "$JESYSMSG_FILE" ]]; then
+    if awk '
+      /COND CODE/ {
+        cc=-1;
+        for (i=1; i<=NF; i++) {
+          if ($i=="CODE" && (i+1)<=NF) { cc=$(i+1)+0; break; }
+        }
+        step=$3;
+        if (cc>=4) {
+          if (step=="HCMP") hcmp=1;
+          else bad=1;
+        }
+      }
+      END { exit (hcmp && !bad) ? 0 : 1; }
+    ' "$JESYSMSG_FILE"; then
+      if [[ "$DEBUG" == "yes" ]]; then
+        echo "DEBUG: RC=4 from HCMP only; treating as RC=0"
+      fi
+      job_rc="0"
+    fi
+  fi
   if [[ "$job_rc" == "ABEND" || "$job_rc" == "UNKNOWN" ]]; then
     exit 1
   fi

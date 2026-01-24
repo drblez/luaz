@@ -13,7 +13,17 @@
 *
 * Emit assembler listing for debugging.
          PRINT GEN
+* Change note: move AMODE/RMODE into CEEENTRY and align with
+* LE_C_HLASM_RULES for CSECT/base/HOB.
+* Problem: standalone AMODE/RMODE conflicts with CEEENTRY expansion
+* (ASMA186E) and literal-based HOB masking.
+* Expected effect: ASMA90 RC=0 with stable addressability and correct
+* plist pointer handling.
+* Impact: TSOWRT uses CEEENTRY base and NILF for HOB.
+* Ref: src/tsowrt.md#ceeentry-amode-rmode
 * Define entry point control section via LE entry macro.
+* Define TSOWRT control section.
+TSOWRT  CSECT
 * Register name aliases.
 R0       EQU   0
 * Register name aliases.
@@ -46,32 +56,25 @@ R13      EQU   13
 R14      EQU   14
 * Register name aliases.
 R15      EQU   15
-* LE prolog with PPA registration.
-TSOWRT   CEEENTRY PPA=TSWPPA,MAIN=NO
-* Set base register to this CSECT.
-         LARL  R11,TSOWRT
+* LE prolog with PPA registration (OS plist, AMODE/RMODE via CEEENTRY).
+TSOWRT   CEEENTRY PPA=TSWPPA,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),     X
+               AMODE=31,RMODE=ANY
 * CAA addressability for LE services.
          USING CEECAA,R12
 * DSA addressability for LE services.
          USING CEEDSA,R13
-* CSECT base addressability.
+* CSECT base addressability from CEEENTRY.
          USING TSOWRT,R11
 * Preserve caller parameter list pointer.
          LR    R8,R1
-* Load buffer pointer address from parm list.
-         L     R2,0(R8)                           Load buf slot.
-* Load buffer pointer from caller slot.
-         L     R2,0(R2)                           Load buf pointer.
-* Load length pointer address from parm list.
-         L     R3,4(R8)                           Load len slot.
-* Load length pointer from caller slot.
-         L     R3,0(R3)                           Load len pointer.
-* Load rc pointer address from parm list.
-         L     R4,8(R8)                           Load rc slot.
-* Clear high bit on last slot address.
-         N     R4,=X'7FFFFFFF'                    Clear HOB.
-* Load rc pointer from caller slot.
-         L     R4,0(R4)                           Load rc pointer.
+* Load buffer pointer from plist entry.
+         L     R2,0(R8)                           Load buf pointer.
+* Load length pointer from plist entry.
+         L     R3,4(R8)                           Load len pointer.
+* Load rc pointer from plist entry.
+         L     R4,8(R8)                           Load rc pointer.
+* Clear high bit on last plist entry.
+         NILF  R4,X'7FFFFFFF'                     Clear HOB via NILF.
 * Validate buffer pointer is nonzero.
          LTR   R2,R2
 * Branch if buffer pointer is NULL.

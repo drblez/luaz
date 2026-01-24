@@ -40,6 +40,16 @@
 
 Отправляет JCL на мейнфрейм через FTP и ждёт завершения job.  
 Условия: `MF_*`, доступ к FTP, JCL в `jcl/`.  
+Опции: `--rebuild`/`--rebuild-file` удаляют OBJ/HASH членов перед сабмитом  
+(`C:MOD` -> SRC.HASHES, `A:MOD` -> ASM.HASHES, без префикса удаляются оба),  
+`--hlq` задаёт HLQ (по умолчанию `MF_HLQ` или `DRBLEZ`).  
+Связанные документы: `docs/DEV_WORKFLOW.md`.
+
+### ftp_rebuild_delete.sh
+
+Удаляет OBJ/HASH члены перед BUILDINC через FTP.  
+Условия: `MF_*`, доступ к FTP.  
+Опции: `--rebuild`/`--rebuild-file` (поддерживает `C:`/`A:`), `--debug`.  
 Связанные документы: `docs/DEV_WORKFLOW.md`.
 
 ### ftp_sync_all.sh

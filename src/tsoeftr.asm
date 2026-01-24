@@ -14,9 +14,20 @@
 *
 * Emit assembler listing for debugging.
          PRINT GEN                              Listing on.
+* Change note: move AMODE/RMODE into CEEENTRY and align with
+* LE_C_HLASM_RULES for CSECT/base/HOB.
+* Problem: standalone AMODE/RMODE conflicts with CEEENTRY expansion
+* (ASMA186E) and literal-based HOB masking.
+* Expected effect: ASMA90 RC=0 with stable addressability and correct
+* plist pointer handling.
+* Impact: TSOEFTR uses CEEENTRY base and NILF for HOB.
+* Ref: src/tsoeftr.md#ceeentry-amode-rmode
 * Define entry point control section.
-TSOEFTR  CEEENTRY PPA=TSOPPA,MAIN=NO,PLIST=OS,PARMREG=1  LE entry.
-* Use default AMODE/RMODE from CEEENTRY.
+TSOEFTR  CSECT                                  Entry point CSECT.
+* Enter LE with OS plist (AMODE/RMODE set via CEEENTRY).
+TSOEFTR  CEEENTRY PPA=TSOPPA,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),     X
+               AMODE=31,RMODE=ANY
+* LE entry point for TSOEFTR.
 * Register name aliases.
 R0       EQU   0                                Register 0 alias.
 * Register name aliases.
@@ -51,13 +62,11 @@ R14      EQU   14                               Register 14 alias.
 R15      EQU   15                               Register 15 alias.
 * External entry points.
          EXTRN IKJEFTSR                          External IKJEFTSR.
-* Set base register to this CSECT.
-         LARL  R11,TSOEFTR                        Load base register.
 * CAA addressability for LE services.
          USING CEECAA,R12                         CAA addressability.
 * DSA addressability for LE services.
          USING CEEDSA,R13                         DSA addressability.
-* CSECT base addressability.
+* CSECT base addressability from CEEENTRY.
          USING TSOEFTR,R11                        Base addressability.
 * Preserve caller parameter list pointer.
          LR    R8,R1                              Save plist ptr.
@@ -67,37 +76,33 @@ R15      EQU   15                               Register 15 alias.
          XR    R4,R4                              Clear rc pointer.
 * Clear reason pointer.
          XR    R5,R5
-* Load command pointer from caller slot.
-         L     R2,0(R8)                           Load cmd slot.
+* Load command pointer from plist entry.
+         L     R2,0(R8)                           Load cmd pointer.
          LTR   R2,R2                              Check for NULL.
          BZ    FAIL_NOHEAP                        Fail on NULL.
-         L     R2,0(R2)                           Load cmd pointer.
-* Load command length pointer from caller slot.
-         L     R3,4(R8)                           Load len slot.
+* Load command length pointer from plist entry.
+         L     R3,4(R8)                           Load len pointer.
          LTR   R3,R3                              Check for NULL.
          BZ    FAIL_NOHEAP                        Fail on NULL.
-         L     R3,0(R3)                           Load len pointer.
-* Load rc pointer from caller slot.
-         L     R0,8(R8)                           Load rc slot.
+* Load rc pointer from plist entry.
+         L     R0,8(R8)                           Load rc pointer.
          LTR   R0,R0                              Check for NULL.
          BZ    FAIL_NOHEAP                        Fail on NULL.
-         L     R4,0(R0)                           Load rc pointer.
-* Load reason pointer from caller slot.
-         L     R0,12(R8)                          Load reason slot.
+         LR    R4,R0                              Save rc pointer.
+* Load reason pointer from plist entry.
+         L     R0,12(R8)                          Load reason pointer.
          LTR   R0,R0                              Check for NULL.
          BZ    FAIL_NOHEAP                        Fail on NULL.
-         L     R5,0(R0)                           Load reason pointer.
-* Load abend pointer from caller slot.
-         L     R7,16(R8)                          Load abend slot.
+         LR    R5,R0                              Save reason pointer.
+* Load abend pointer from plist entry.
+         L     R7,16(R8)                          Load abend pointer.
          LTR   R7,R7                              Check for NULL.
          BZ    FAIL_NOHEAP                        Fail on NULL.
-         L     R7,0(R7)                           Load abend pointer.
-* Load work pointer from caller slot (optional).
-         L     R6,20(R8)                          Load work slot.
-         N     R6,=X'7FFFFFFF'                    Clear HOB.
+* Load work pointer from plist entry (optional).
+         L     R6,20(R8)                          Load work pointer.
+         NILF  R6,X'7FFFFFFF'                    Clear HOB via NILF.
          LTR   R6,R6                              Check for NULL.
          BZ    EFTR_NWORK                         No work pointer.
-         L     R6,0(R6)                           Load work pointer.
 EFTR_NWORK DS 0H
 * Allocate internal work area for this call.
          STORAGE OBTAIN,LENGTH=WORKSIZE,SP=131,KEY=8,LOC=31

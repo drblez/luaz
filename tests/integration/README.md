@@ -7,7 +7,7 @@ and their interaction with datasets and JCL in batch mode.
 
 ## Scope
 
-- `tso` module (cmd/alloc/free/msg/exit).
+- `tso` module (cmd/msg/exit).
 - `ds` module (open_dd/open_dsn/member/info).
 - `ispf` module (exec/qry/vget/vput/LM/TB/FT/LIBDEF).
 - `axr` gateway (LUAXR -> LUAEXEC).
@@ -31,7 +31,7 @@ and their interaction with datasets and JCL in batch mode.
 
 - `tso.cmd` returns RC and captures output.
 - `tso.cmd` output lines are prefixed with `LUZ30031`.
-- `tso.alloc/free` create and release DD allocations.
+-- `tso.alloc/free` are out of scope until direct TSO allocation is implemented.
 - `tso.msg` emits LUZ‑prefixed output.
 - `tso.exit` terminates with requested RC.
 - `ds.open_dd/open_dsn` read/write paths work end‑to‑end.

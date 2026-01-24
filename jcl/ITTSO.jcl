@@ -14,11 +14,22 @@
 //SYSTSIN  DD *
   LUACMD
 /*
-//SYSEXEC DD DSN=&HLQ..LUA.REXX,DISP=SHR
+//CEEDUMP DD SYSOUT=*
+//SYSABEND DD SYSOUT=*
+//* Change: enable LE TRACE and force CEEDUMP (no SYSMDUMP).
+//* Problem: TERMTHDACT(DUMP) attempts IEATDUMP and can skip CEEDUMP.
+//* Expected effect: CEEDUMP includes LE trace table and traceback.
+//* Impact: CEEDUMP appears in spool with TRACE data for analysis.
+//* See: jcl/ITTSO.md#ceeopts-trace
+//CEEOPTS DD *
+  RPTOPTS(ON),
+  RPTSTG(ON),
+  TRAP(ON,SPIE),
+  ABTERMENC(ABEND),
+  TERMTHDACT(UADUMP),
+  TRACE(ON,256K,DUMP,LE=1)
+/*
 //LUAIN   DD DSN=&HLQ..LUA.TEST(ITTSO),DISP=SHR
-//TSOOUT  DD DSN=&&TSOOUT,DISP=(NEW,PASS),
-//            UNIT=SYSDA,SPACE=(TRK,(5,5)),
-//            RECFM=VB,LRECL=1024,BLKSIZE=0
 //SYSOUT  DD SYSOUT=*
 //SYSPRINT DD SYSOUT=*
 //SYSUDUMP DD SYSOUT=*

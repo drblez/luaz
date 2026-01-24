@@ -17,4 +17,4 @@
 
 ## Logging
 
-All user‑visible output must include `LUZ-NNNNN` and be cataloged in `MSGS-N.md`.
+All user‑visible output must include `LUZNNNNN` and be cataloged in `MSGS-N.md`.

@@ -111,7 +111,7 @@ This section replaces the REXX bridge and focuses only on native TSO services.
     - [ ] SAF key ring / PKCS#11 selection (`GSK_KEYRING_FILE`).
 - [x] Wire `luaz_io_dd_register()` into `LUAEXEC` entrypoint init.
   - [~] `LUAEXEC` must resolve main script from `LUAIN` DD or `DSN=...` (RFC 4.1).
-  - [ ] Argument/RC propagation and LUZ-prefixed diagnostics.
+  - [ ] Argument/RC propagation and LUZNNNNN-prefixed diagnostics.
   - [ ] Encoding handling per `docs/ENCODING_POLICY.md`.
 
 ## 12) Deferred / TBD
@@ -130,7 +130,7 @@ This section replaces the REXX bridge and focuses only on native TSO services.
 ## 7) Encoding & EBCDIC
 
 - [ ] Define conversion policy for script sources and output messages.
-- [ ] Ensure all user/log output uses `LUZ-NNNNN` prefixes and is registered in `MSGS-N.md`.
+- [ ] Ensure all user/log output uses `LUZNNNNN` prefixes and is registered in `MSGS-N.md`.
 
 ## 8) ISPF in Batch & JCL Support
 
@@ -163,9 +163,9 @@ This section replaces the REXX bridge and focuses only on native TSO services.
 ## Pre‑mainframe Work (no MF access)
 
 - [x] Design the platform abstraction layer and define C headers for TSO/ISPF/AXR/TLS hooks.
-- [x] Draft stub implementations and Lua module skeletons with clear contracts and `LUZ-*` messages.
+- [x] Draft stub implementations and Lua module skeletons with clear contracts and `LUZNNNNN` messages.
 - [x] Prepare build scripts and compiler/linker flags for z/OS C/LE (documented, even if not runnable).
-- [x] Create `MSGS-N.md` catalogs for all planned `LUZ-*` messages.
+- [x] Create `MSGS-N.md` catalogs for all planned `LUZNNNNN` messages.
 - [x] Write JCL templates for IKJEFT01/ISPSTART and dataset allocations.
 - [x] Define EBCDIC/ASCII conversion policy and annotate all I/O touchpoints.
 - [x] Produce a test plan and fixture layout for batch‑mode execution.

@@ -24,6 +24,14 @@
          PRINT GEN
 * Declare IKJDAIR external entry.
          EXTRN IKJDAIR
+* Change note: move AMODE/RMODE into CEEENTRY and align with
+* LE_C_HLASM_RULES.
+* Problem: standalone AMODE/RMODE conflicts with CEEENTRY expansion
+* (ASMA186E) and HOB literals.
+* Expected effect: ASMA90 RC=0 with stable base addressability and
+* correct pointer handling.
+* Impact: DAIR wrappers use CEEENTRY base and NILF for HOB.
+* Ref: src/tsodair.md#ceeentry-amode-rmode
 * -------------------------------------------------------------
 * Entry point: TSODALC (LE-conforming, OS linkage).
 * - Purpose: allocate private DD and redirect SYSTSPRT to same DSN.
@@ -33,8 +41,11 @@
 * - Notes: ddname points to 8-byte EBCDIC DDNAME; work size >=
 * WORKSIZE.
 * -------------------------------------------------------------
-* Enter LE with OS plist.
-TSODALC  CEEENTRY PPA=TSDPPA1,MAIN=NO,PLIST=OS,PARMREG=1
+* Define TSODALC control section.
+TSODALC  CSECT
+* Enter LE with OS plist (AMODE/RMODE set via CEEENTRY).
+TSODALC  CEEENTRY PPA=TSDPPA1,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),    X
+               AMODE=31,RMODE=ANY
 * Define register 0 alias.
 R0       EQU   0
 * Define register 1 alias.
@@ -70,9 +81,7 @@ R15      EQU   15
 * Algorithm: validate plist entries and map required control blocks.
 * - Validate cppl, ddname, rc pointers, and work pointer.
 * - Map WORKAREA, DAPL, DAPB08, CPPL.
-* Load CSECT base for TSODALC.
-         LARL  R11,TSODALC
-* Establish CSECT base register.
+* Establish CSECT base register from CEEENTRY.
          USING TSODALC,R11
 * Enable CAA addressability.
          USING CEECAA,R12
@@ -80,41 +89,31 @@ R15      EQU   15
          USING CEEDSA,R13
 * Preserve caller plist pointer.
          LR    R8,R1
-         L     R2,0(R8)                        Load CPPL slot address.
-* Load CPPL pointer value.
-         L     R2,0(R2)
+         L     R2,0(R8)                        Load CPPL pointer value.
          LTR   R2,R2                           Validate CPPL pointer.
 * Branch if CPPL pointer is NULL.
          BZ    TDALC_FAIL_CPPL
-* Load DDNAME slot address.
-         L     R3,4(R8)
 * Load DDNAME pointer value.
-         L     R3,0(R3)
+         L     R3,4(R8)
 * Validate DDNAME pointer.
          LTR   R3,R3
 * Branch if DDNAME pointer is NULL.
          BZ    TDALC_FAIL_DDNAME
-* Load DAIR RC slot address.
-         L     R4,8(R8)
 * Load DAIR RC pointer value.
-         L     R4,0(R4)
+         L     R4,8(R8)
 * Validate DAIR RC pointer.
          LTR   R4,R4
 * Branch if DAIR RC pointer is NULL.
          BZ    TDALC_FAIL_DAIRRC
-* Load CAT RC slot address.
-         L     R5,12(R8)
 * Load CAT RC pointer value.
-         L     R5,0(R5)
+         L     R5,12(R8)
 * Validate CAT RC pointer.
          LTR   R5,R5
 * Branch if CAT RC pointer is NULL.
          BZ    TDALC_FAIL_CATRC
-         L     R6,16(R8)                       Load work slot address.
-* Clear end-of-plist high bit.
-         N     R6,=X'7FFFFFFF'
-* Load work pointer value.
-         L     R6,0(R6)
+         L     R6,16(R8)                       Load work pointer value.
+* Clear end-of-plist high bit on work pointer.
+         NILF  R6,X'7FFFFFFF'                  Clear HOB via NILF.
 * Check work pointer for NULL.
          LTR   R6,R6
 * Branch if work area pointer is NULL.
@@ -267,6 +266,26 @@ TDALC_FAIL_CATRC L  R15,=F'15'
 TDALC_FAIL_WORK L  R15,=F'16'
 * Return to caller with RC.
 TDALC_DONE CEETERM RC=(R15)
+* Emit literal pool for TSODALC.
+         LTORG
+* Drop TSODALC addressability before the next entry point.
+         DROP TSODALC
+* Drop WORKAREA addressability.
+         DROP WORKAREA
+* Drop DAPL addressability.
+         DROP DAPL
+* Change note: do not DROP DAPB08 when no active USING.
+* Problem: ASMA307E when DAPB08 is inactive after LTORG.
+* Expected effect: no ASMA307E; runtime behavior unchanged.
+* Impact: DAPB08 is already inactive by the time of drops.
+* Drop DAPB18 addressability.
+         DROP DAPB18
+* Drop CPPL addressability.
+         DROP CPPL
+* Drop CAA addressability.
+         DROP CEECAA
+* Drop DSA addressability.
+         DROP CEEDSA
 * -------------------------------------------------------------
 * Entry point: TSODFRE (LE-conforming, OS linkage).
 * - Purpose: free SYSTSPRT and the private DD allocation.
@@ -275,12 +294,11 @@ TDALC_DONE CEETERM RC=(R15)
 * - Output: R15 RC (0 success; 8 DAIR failure; 12 invalid inputs).
 * -------------------------------------------------------------
 * Enter LE with OS plist.
-TSODFRE  CEEENTRY PPA=TSDPPA2,MAIN=NO,PLIST=OS,PARMREG=1
+TSODFRE  CEEENTRY PPA=TSDPPA2,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),    X
+               AMODE=31,RMODE=ANY
 * Algorithm: validate plist entries and map required control blocks.
 * - Validate cppl, ddname, rc pointers, and work pointer.
 * - Map WORKAREA, DAPL, DAPB18, CPPL.
-* Load CSECT base for TSODFRE.
-         LARL  R11,TSODFRE
 * Establish CSECT base register.
          USING TSODFRE,R11
 * Enable CAA addressability.
@@ -289,40 +307,30 @@ TSODFRE  CEEENTRY PPA=TSDPPA2,MAIN=NO,PLIST=OS,PARMREG=1
          USING CEEDSA,R13
 * Preserve caller plist pointer.
          LR    R8,R1
-         L     R2,0(R8)                        Load CPPL slot address.
-* Load CPPL pointer value.
-         L     R2,0(R2)
+         L     R2,0(R8)                        Load CPPL pointer value.
          LTR   R2,R2                           Validate CPPL pointer.
          BZ    TDFRE_FAIL                      Branch if CPPL is NULL.
-* Load DDNAME slot address.
-         L     R3,4(R8)
 * Load DDNAME pointer value.
-         L     R3,0(R3)
+         L     R3,4(R8)
 * Validate DDNAME pointer.
          LTR   R3,R3
 * Branch if DDNAME is NULL.
          BZ    TDFRE_FAIL
-* Load DAIR RC slot address.
-         L     R4,8(R8)
 * Load DAIR RC pointer value.
-         L     R4,0(R4)
+         L     R4,8(R8)
 * Validate DAIR RC pointer.
          LTR   R4,R4
 * Branch if DAIR RC pointer is NULL.
          BZ    TDFRE_FAIL
-* Load CAT RC slot address.
-         L     R5,12(R8)
 * Load CAT RC pointer value.
-         L     R5,0(R5)
+         L     R5,12(R8)
 * Validate CAT RC pointer.
          LTR   R5,R5
 * Branch if CAT RC pointer is NULL.
          BZ    TDFRE_FAIL
-         L     R6,16(R8)                       Load work slot address.
+         L     R6,16(R8)                       Load work pointer value.
 * Clear end-of-plist high bit.
-         N     R6,=X'7FFFFFFF'
-* Load work pointer value.
-         L     R6,0(R6)
+         NILF  R6,X'7FFFFFFF'                  Clear HOB via NILF.
 * Check work pointer for NULL.
          LTR   R6,R6
          BZ    TDFRE_FAIL                      Branch if no work area.
@@ -412,13 +420,31 @@ TDFRE_FAILRC L  R15,=F'8'
 TDFRE_FAIL L  R15,=F'12'
 * Return to caller with RC.
 TDFRE_DONE CEETERM RC=(R15)
+* Emit literal pool for TSODFRE.
+         LTORG
+* Drop TSODFRE addressability.
+         DROP TSODFRE
+* Drop WORKAREA addressability.
+         DROP WORKAREA
+* Drop DAPL addressability.
+         DROP DAPL
+* Drop DAPB18 addressability.
+         DROP DAPB18
+* Drop CPPL addressability.
+         DROP CPPL
+* Drop CAA addressability.
+         DROP CEECAA
+* Drop DSA addressability.
+         DROP CEEDSA
 * -------------------------------------------------------------
 * Common data areas and DSECT mappings.
 * -------------------------------------------------------------
-* Define LE PPA block for TSODALC.
-TSDPPA1  CEEPPA
-* Define LE PPA block for TSODFRE.
-TSDPPA2  CEEPPA
+* IBM doc reference for multi-entry PPA layout.
+* Ref: src/tsodair.md#ceeppa-multi-entry
+* Define LE PPA block for TSODALC (primary entry).
+TSDPPA1  CEEPPA EPNAME=TSODALC,PEP=YES,PPA2=YES
+* Define LE PPA block for TSODFRE (secondary entry).
+TSDPPA2  CEEPPA EPNAME=TSODFRE,PEP=NO,PPA2=NO
 BLANKS  DC    44C' '                          Blank fill for DSNAME.
 * DSNAME prefix for temp dataset.
 DSNPFX  DC    CL4'&&LZ'
@@ -426,8 +452,14 @@ SYSALN  DC    CL8'SYSTSPRT'                   DCB source DDNAME.
 * SYSTSPRT DDNAME constant.
 SYSDDN  DC    CL8'SYSTSPRT'
 SPACE1  DC    CL4'0001'                       Default space quantity.
-         CEECAA                               Define LE CAA DSECT.
-         CEEDSA                               Define LE DSA DSECT.
+* Define LE CAA DSECT anchor.
+CEECAA  DSECT
+* Map CAA fields via macro.
+         CEECAA
+* Define LE DSA DSECT anchor.
+CEEDSA  DSECT
+* Map DSA fields via macro.
+         CEEDSA
 * Define DAPL DSECT anchor.
 DAPL     DSECT
 * Map DAPL fields via macro.

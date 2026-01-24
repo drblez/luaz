@@ -14,7 +14,7 @@
 ## Touchpoints
 
 - `loadfile`/`dofile`/`require` paths from DDNAME.
-- `tso.msg` and other user‑visible output (must include `LUZ-*` prefix).
+- `tso.msg` and other user‑visible output (must include `LUZNNNNN` prefix).
 - `ds.open_dd` read/write streams.
 
 ## Observations (FTP Sync)

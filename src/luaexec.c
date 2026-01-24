@@ -191,7 +191,12 @@ cleanup:
  * @param argc Argument count.
  * @param argv Argument vector.
  * @param mode Default execution mode string (TSO/PGM).
- * @return 0 on success, or 8 on failure (LUZ-prefixed diagnostics emitted).
+ * @return 0 on success, or 8 on failure (LUZNNNNN-prefixed diagnostics emitted).
+ *
+ * Change note: align prefix format to LUZNNNNN.
+ * Problem: prior wording used LUZNNNNN formatting inconsistently in docs.
+ * Expected effect: documentation matches emitted message format.
+ * Impact: comment-only change; no runtime behavior is altered.
  */
 static int luaexec_run(int argc, char **argv, const char *mode)
 {

@@ -162,7 +162,12 @@ static int tso_env_init(void)
 }
 
 /**
- * @brief Read DDNAME output into a Lua table with LUZ-prefixed lines.
+ * @brief Read DDNAME output into a Lua table with LUZNNNNN-prefixed lines.
+ *
+ * Change note: align prefix format to LUZNNNNN.
+ * Problem: prior wording used LUZNNNNN formatting inconsistently in docs.
+ * Expected effect: documentation matches emitted message format.
+ * Impact: comment-only change; no runtime behavior is altered.
  *
  * @param L Lua state.
  * @param ddname DDNAME to read (EBCDIC, 1-8 chars).
@@ -173,23 +178,66 @@ static int read_dd_to_lines(lua_State *L, const char *ddname)
   char path[32];
   FILE *fp;
   char buf[2048];
+  char *rec = NULL;
+  size_t rec_cap = 32760u;
+  int record_io = 0;
   int idx = 0;
 
   if (ddname == NULL || ddname[0] == '\0')
     return 0;
   if (snprintf(path, sizeof(path), "DD:%s", ddname) <= 0)
     return 0;
-  fp = fopen(path, "rb");
+  /* Change note: prefer record I/O for DD output capture.
+   * Problem: stream I/O can mis-handle fixed record datasets (FB/VB).
+   * Expected effect: read records via fread and normalize line endings.
+   * Impact: tso.cmd output works for FB/VB SYSTSPRT datasets.
+   * Ref: src/tso.md#read-dd-record-io
+   */
+  fp = fopen(path, "rb,type=record");
+  if (fp != NULL) {
+    record_io = 1;
+  } else {
+    fp = fopen(path, "rb");
+  }
   if (fp == NULL)
     return 0;
 
   lua_newtable(L);
-  while (fgets(buf, sizeof(buf), fp) != NULL) {
-    size_t len = strcspn(buf, "\r\n");
-    lua_pushstring(L, "LUZ30031 ");
-    lua_pushlstring(L, buf, len);
-    lua_concat(L, 2);
-    lua_rawseti(L, -2, ++idx);
+  if (record_io) {
+    rec = (char *)malloc(rec_cap);
+    if (rec == NULL) {
+      fclose(fp);
+      return 0;
+    }
+    while (1) {
+      size_t n = fread(rec, 1u, rec_cap, fp);
+      if (n == 0) {
+        if (ferror(fp)) {
+          free(rec);
+          fclose(fp);
+          return 0;
+        }
+        break;
+      }
+      while (n > 0 &&
+             (rec[n - 1] == ' ' || rec[n - 1] == '\0' ||
+              rec[n - 1] == '\r' || rec[n - 1] == '\n')) {
+        n--;
+      }
+      lua_pushstring(L, "LUZ30031 ");
+      lua_pushlstring(L, rec, n);
+      lua_concat(L, 2);
+      lua_rawseti(L, -2, ++idx);
+    }
+    free(rec);
+  } else {
+    while (fgets(buf, sizeof(buf), fp) != NULL) {
+      size_t len = strcspn(buf, "\r\n");
+      lua_pushstring(L, "LUZ30031 ");
+      lua_pushlstring(L, buf, len);
+      lua_concat(L, 2);
+      lua_rawseti(L, -2, ++idx);
+    }
   }
   fclose(fp);
   return 1;
@@ -320,14 +368,12 @@ static int tso_call_rexx(const char *ddname, const char *member,
 static int l_tso_cmd(lua_State *L)
 {
   const char *cmd = luaL_checkstring(L, 1);
-  const char *outdd = NULL;
   char native_dd[9];
   int native_reason = 0;
   int native_abend = 0;
   int native_dair_rc = 0;
   int native_cat_rc = 0;
   int native_rc = LUZ_E_TSO_CMD;
-  int rc;
 
   lua_getglobal(L, "LUAZ_MODE");
   if (!lua_isstring(L, -1) || strcmp(lua_tostring(L, -1), "TSO") != 0) {
@@ -339,56 +385,47 @@ static int l_tso_cmd(lua_State *L)
   }
   lua_pop(L, 1);
 
-  if (lua_istable(L, 2)) {
-    lua_getfield(L, 2, "outdd");
-    outdd = lua_tostring(L, -1);
-    lua_pop(L, 1);
-  }
+  /* Change note: ignore outdd option in direct TSO path.
+   * Problem: native TSOCMD always uses internal DDNAME capture.
+   * Expected effect: callers do not expect outdd to be honored here.
+   * Impact: outdd from Lua is ignored when using native path.
+   */
 
-  if (tso_native_env_init() == 0) {
-    native_rc = tso_native_cmd_cp(cmd, native_dd, sizeof(native_dd),
-                                  &native_reason, &native_abend,
-                                  &native_dair_rc, &native_cat_rc);
-    if (native_rc != LUZ_E_TSO_CMD) {
-      lua_pushinteger(L, native_rc);
-      if (read_dd_to_lines(L, native_dd)) {
-        tso_native_cmd_cleanup(native_dd);
-        return 2;
-      }
-      tso_native_cmd_cleanup(native_dd);
-      lua_newtable(L);
-      return 2;
-    }
-    if (native_dd[0] != '\0')
-      tso_native_cmd_cleanup(native_dd);
+  /* Change note: enforce direct TSO path (no REXX fallback).
+   * Problem: REXX execution is out of scope without explicit approval.
+   * Expected effect: tso.cmd uses native IKJEFTSR path only.
+   * Impact: tso.cmd returns an error if native TSO is unavailable.
+   */
+  if (tso_native_env_init() != 0) {
     lua_pushnil(L);
-    lua_pushfstring(L,
-                    "LUZ30032 tso.cmd failed native reason=%d abend=%d"
-                    " dair_rc=%d cat_rc=%d",
-                    native_reason, native_abend, native_dair_rc, native_cat_rc);
+    lua_pushstring(L, "LUZ30047 tso.cmd native TSO unavailable");
     lua_pushinteger(L, LUZ_E_TSO_CMD);
     return 3;
   }
 
-  /* Change note: mark REXX fallback as legacy-only.
-   * Problem: REXX-based execution must not be extended without approval.
-   * Expected effect: developers avoid touching fallback unless requested.
-   * Impact: documents policy; runtime behavior unchanged.
-   */
-  rc = tso_call_rexx("SYSEXEC", "LUTSO", "CMD", cmd, outdd, LUZ_E_TSO_CMD);
-  if (rc == LUZ_E_TSO_CMD) {
-    lua_pushnil(L);
-    lua_pushfstring(L, "LUZ30032 tso.cmd failed irx_rc=%d rexx_rc=%d",
-                    g_last_irx_rc, g_last_rexx_rc);
-    lua_pushinteger(L, rc);
-    return 3;
-  }
-
-  lua_pushinteger(L, rc);
-  if (outdd && outdd[0] != '\0' && read_dd_to_lines(L, outdd))
+  native_dd[0] = '\0';
+  native_rc = tso_native_cmd_cp(cmd, native_dd, sizeof(native_dd),
+                                &native_reason, &native_abend,
+                                &native_dair_rc, &native_cat_rc);
+  if (native_rc != LUZ_E_TSO_CMD) {
+    lua_pushinteger(L, native_rc);
+    if (read_dd_to_lines(L, native_dd)) {
+      tso_native_cmd_cleanup(native_dd);
+      return 2;
+    }
+    tso_native_cmd_cleanup(native_dd);
+    lua_newtable(L);
     return 2;
-  lua_newtable(L);
-  return 2;
+  }
+  if (native_dd[0] != '\0')
+    tso_native_cmd_cleanup(native_dd);
+  lua_pushnil(L);
+  lua_pushfstring(L,
+                  "LUZ30032 tso.cmd failed native reason=%d abend=%d"
+                  " dair_rc=%d cat_rc=%d",
+                  native_reason, native_abend, native_dair_rc, native_cat_rc);
+  lua_pushinteger(L, LUZ_E_TSO_CMD);
+  return 3;
 }
 
 /**
@@ -409,16 +446,15 @@ static int l_tso_alloc(lua_State *L)
     return 3;
   }
   lua_pop(L, 1);
-  /* Change note: REXX alloc/free remains legacy-only.
-   * Problem: direct TSO is the active development path.
-   * Expected effect: do not modify REXX alloc/free without approval.
-   * Impact: documents policy; runtime behavior unchanged.
+  /* Change note: enforce direct TSO allocation path (no REXX).
+   * Problem: REXX execution is out of scope without explicit approval.
+   * Expected effect: tso.alloc uses native TSO path only.
+   * Impact: tso.alloc returns native failure when not implemented.
    */
-  int rc = lua_tso_alloc(spec);
+  int rc = tso_native_alloc(spec);
   if (rc == LUZ_E_TSO_ALLOC) {
     lua_pushnil(L);
-    lua_pushfstring(L, "LUZ30033 tso.alloc failed irx_rc=%d rexx_rc=%d",
-                    g_last_irx_rc, g_last_rexx_rc);
+    lua_pushfstring(L, "LUZ30033 tso.alloc failed native rc=%d", rc);
     lua_pushinteger(L, rc);
     return 3;
   }
@@ -444,16 +480,15 @@ static int l_tso_free(lua_State *L)
     return 3;
   }
   lua_pop(L, 1);
-  /* Change note: REXX alloc/free remains legacy-only.
-   * Problem: direct TSO is the active development path.
-   * Expected effect: do not modify REXX alloc/free without approval.
-   * Impact: documents policy; runtime behavior unchanged.
+  /* Change note: enforce direct TSO deallocation path (no REXX).
+   * Problem: REXX execution is out of scope without explicit approval.
+   * Expected effect: tso.free uses native TSO path only.
+   * Impact: tso.free returns native failure when not implemented.
    */
-  int rc = lua_tso_free(spec);
+  int rc = tso_native_free(spec);
   if (rc == LUZ_E_TSO_FREE) {
     lua_pushnil(L);
-    lua_pushfstring(L, "LUZ30034 tso.free failed irx_rc=%d rexx_rc=%d",
-                    g_last_irx_rc, g_last_rexx_rc);
+    lua_pushfstring(L, "LUZ30034 tso.free failed native rc=%d", rc);
     lua_pushinteger(L, rc);
     return 3;
   }
@@ -542,14 +577,28 @@ int luaopen_tso(lua_State *L)
  */
 int lua_tso_cmd(const char *cmd)
 {
+  char native_dd[9];
+  int native_reason = 0;
+  int native_abend = 0;
+  int native_dair_rc = 0;
+  int native_cat_rc = 0;
+  int native_rc = LUZ_E_TSO_CMD;
   if (cmd == NULL)
     return LUZ_E_TSO_CMD;
-  /* Change note: REXX path is legacy-only.
-   * Problem: direct TSO is the active development path.
-   * Expected effect: avoid modifying REXX fallback unless requested.
-   * Impact: documents policy; runtime behavior unchanged.
+  /* Change note: enforce direct TSO path for C API (no REXX).
+   * Problem: REXX execution is out of scope without explicit approval.
+   * Expected effect: C API mirrors native IKJEFTSR path.
+   * Impact: returns LUZ_E_TSO_CMD when native env is unavailable.
    */
-  return tso_call_rexx("SYSEXEC", "LUTSO", "CMD", cmd, NULL, LUZ_E_TSO_CMD);
+  if (tso_native_env_init() != 0)
+    return LUZ_E_TSO_CMD;
+  native_dd[0] = '\0';
+  native_rc = tso_native_cmd_cp(cmd, native_dd, sizeof(native_dd),
+                                &native_reason, &native_abend,
+                                &native_dair_rc, &native_cat_rc);
+  if (native_dd[0] != '\0')
+    tso_native_cmd_cleanup(native_dd);
+  return native_rc;
 }
 
 /**
@@ -563,12 +612,12 @@ int lua_tso_alloc(const char *spec)
   int rc;
   if (spec == NULL)
     return LUZ_E_TSO_ALLOC;
-  /* Change note: REXX path is legacy-only.
-   * Problem: direct TSO is the active development path.
-   * Expected effect: avoid modifying REXX fallback unless requested.
-   * Impact: documents policy; runtime behavior unchanged.
+  /* Change note: enforce direct TSO allocation path (no REXX).
+   * Problem: REXX execution is out of scope without explicit approval.
+   * Expected effect: use native DAIR path when implemented.
+   * Impact: returns LUZ_E_TSO_ALLOC until native path is implemented.
    */
-  rc = tso_call_rexx("SYSEXEC", "LUTSO", "ALLOC", spec, NULL, LUZ_E_TSO_ALLOC);
+  rc = tso_native_alloc(spec);
   return rc;
 }
 
@@ -583,12 +632,12 @@ int lua_tso_free(const char *spec)
   int rc;
   if (spec == NULL)
     return LUZ_E_TSO_FREE;
-  /* Change note: REXX path is legacy-only.
-   * Problem: direct TSO is the active development path.
-   * Expected effect: avoid modifying REXX fallback unless requested.
-   * Impact: documents policy; runtime behavior unchanged.
+  /* Change note: enforce direct TSO deallocation path (no REXX).
+   * Problem: REXX execution is out of scope without explicit approval.
+   * Expected effect: use native DAIR path when implemented.
+   * Impact: returns LUZ_E_TSO_FREE until native path is implemented.
    */
-  rc = tso_call_rexx("SYSEXEC", "LUTSO", "FREE", spec, NULL, LUZ_E_TSO_FREE);
+  rc = tso_native_free(spec);
   return rc;
 }
 

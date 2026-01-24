@@ -10,14 +10,18 @@
 //SRCIN    DD  DSN=&SRCPDS(&OUTMEM),DISP=SHR
 //OBJIN    DD  DSN=&HLQ..LUA.OBJ(&OUTMEM),DISP=SHR
 //HASHIN   DD  DSN=&HASHPDS(&OUTMEM),DISP=SHR
+//* Change: move CCNDRVR options into OPTFILE (CTL member).
+//* Problem: long EXEC PARM caused IEFC642 length errors in BUILDINC.
+//* Expected effect: stable JCL parsing and richer compiler listings.
+//* See: jcl/ICOMP.md#cc-options
 //CC      EXEC PGM=CCNDRVR,REGION=192M,
 //         COND=(4,NE,HCMP),
-//         PARM='TERM,RENT,LANGLVL(EXTC99),LONGNAME,NOASM,
-//              NOGENASM,NOXPLINK,DEFINE(LUAZ_ZOS)'
+//         PARM='OPTFILE(DD:CCOPTS)'
 //STEPLIB  DD  DSN=CEE.SCEERUN2,DISP=SHR
 //        DD  DSN=CBC.SCCNCMP,DISP=SHR
 //        DD  DSN=CEE.SCEERUN,DISP=SHR
 //SYSMSGS  DD  DUMMY
+//CCOPTS   DD  DSN=&HLQ..LUA.CTL(CCOPTS),DISP=SHR
 //SYSIN    DD  DSN=&INFILE,DISP=SHR
 //SYSLIB   DD  DSN=&HLQ..LUA.INC,DISP=SHR
 //        DD  DSN=CEE.SCEEH.H,DISP=SHR
@@ -45,6 +49,10 @@
 //             DCB=(RECFM=FB,LRECL=3200,BLKSIZE=12800)
 //SYSUT17  DD  UNIT=SYSALLDA,SPACE=(32000,(30,30)),
 //             DCB=(RECFM=FB,LRECL=3200,BLKSIZE=12800)
+//* Change: allow HCMP RC=4 to propagate; ftp_submit.sh decides acceptance.
+//* Problem: local MAXCC reset masked non-HCMP RC handling.
+//* Expected effect: job RC remains 4 for rebuild-only runs.
+//* Impact: tooling decides if RC=4 is acceptable (HCMP-only).
 //* Change: delete OBJ member on any nonzero compile RC.
 //* Problem: failed compile can leave stale object for link-edit.
 //* Expected effect: force rebuild instead of reusing bad OBJ.

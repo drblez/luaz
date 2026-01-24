@@ -25,4 +25,4 @@ This document describes the planned configuration policy dataset.
 
 ## Notes
 
-- Validate all keys at startup and emit `LUZ-*` messages on errors.
+- Validate all keys at startup and emit `LUZNNNNN` messages on errors.

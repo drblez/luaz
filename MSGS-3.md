@@ -12,8 +12,8 @@
 | LUZ30030 | tso.msg output | src/tso.c | None | emitted |
 | LUZ30031 | tso.cmd output line | src/tso.c | Use `tso.cmd` output table to consume lines | emitted |
 | LUZ30032 | tso.cmd failed (native reason/abend/dair_rc or irx_rc/rexx_rc in message) | src/tso.c | Check TMP/DAIR setup or IRXEXEC/LUTSO fallback status | runtime |
-| LUZ30033 | tso.alloc failed (irx_rc/rexx_rc in message) | src/tso.c | Check IKJTSOEV init and ALLOC spec | runtime |
-| LUZ30034 | tso.free failed (irx_rc/rexx_rc in message) | src/tso.c | Ensure DDNAME is allocated and IKJTSOEV init succeeded | runtime |
+| LUZ30033 | tso.alloc failed (native rc in message) | src/tso.c | Check native DAIR path and ALLOC spec | runtime |
+| LUZ30034 | tso.free failed (native rc in message) | src/tso.c | Ensure DDNAME is allocated and native DAIR path works | runtime |
 | LUZ30035 | tso.msg failed (irx_rc/rexx_rc in message) | src/tso.c | Ensure IKJTSOEV init and message string are valid | runtime |
 | LUZ30036 | LUTSO invalid mode | rexx/LUTSO.rexx | Use supported modes CMD/ALLOC/FREE/MSG | validation |
 | LUZ30040 | LUAEXEC init failed | src/luaexec.c | Verify LE runtime availability and memory | runtime |
@@ -22,6 +22,7 @@
 | LUZ30043 | LUAEXEC run failed: %s | src/luaexec.c | Inspect script error and LUAPATH configuration | runtime |
 | LUZ30044 | LUAEXEC dd register failed | src/luaexec.c | Verify LUAPATH DDNAME allocation | runtime |
 | LUZ30045 | tso.* not available in PGM mode | src/tso.c | Run under TSO mode (LUACMD) or enable TSO environment | runtime |
+| LUZ30047 | tso.cmd native TSO unavailable | src/tso.c | Ensure IKJTSOEV and CPPL are available under TMP | runtime |
 | LUZ30046 | LUAEXEC invalid MODE in PARM | src/luaexec.c | Use MODE=PGM or MODE=TSO | validation |
 | LUZ30053 | LUAEXRUN invalid line length | src/luaexec.c | Check CPPL operand length parsing | validation |
 | LUZ30054 | LUAEXRUN line pointer is NULL | src/luaexec.c | Verify CPPL operand pointer calculation | validation |

@@ -1,37 +1,52 @@
 # Copyright 2026 drblez AKA Ruslan Stepanenko (drblez@gmail.com)
 #
-# Build scaffolding for Lua/TSO host API stubs.
+# z/OS build and submission helpers.
 #
 # Object Table:
-# | Object | Kind | Purpose |
-# |--------|------|---------|
-# | all | target | Build all objects and archive |
-# | clean | target | Remove build artifacts |
+# | Object     | Kind   | Purpose |
+# |------------|--------|---------|
+# | sync-full  | target | Full FTP sync of all source trees |
+# | sync       | target | Incremental FTP sync using state cache |
+# | buildinc   | target | Incremental BUILDINC after sync; optional rebuild list |
+# | it_tso     | target | Run ITTSO after buildinc |
+# | clean_out  | target | Remove local JCL .out artifacts |
+#
+# Change Note: Replace local build rules with FTP-based sync/build/test
+# targets to match the z/OS workflow and reduce manual steps.
 
-CC ?= cc
-AR ?= ar
-CFLAGS ?= -Wall -Wextra -O2
+BUILDINC_JCL ?= jcl/BUILDINC.jcl
+ITTSO_JCL ?= jcl/ITTSO.jcl
+HLQ ?=
+REBUILD ?=
+REBUILD_FILE ?=
+SYNC_ARGS ?=
+SUBMIT_ARGS ?=
 
-SRC = \
-  src/luaz_core.c \
-  src/luaz_tso.c \
-  src/luaz_ds.c \
-  src/luaz_ispf.c \
-  src/luaz_axr.c \
-  src/luaz_tls.c \
-  src/luaz_time.c \
-  src/luaz_policy.c \
-  src/luaz_path.c \
-  src/luaz_platform.c \
-  src/luaz_io_dd.c \
-  src/luaexec.c
+REBUILD_ARGS :=
+ifneq ($(strip $(REBUILD)),)
+REBUILD_ARGS += --rebuild $(REBUILD)
+endif
+ifneq ($(strip $(REBUILD_FILE)),)
+REBUILD_ARGS += --rebuild-file $(REBUILD_FILE)
+endif
+ifneq ($(strip $(HLQ)),)
+REBUILD_ARGS += --hlq $(HLQ)
+endif
 
-OBJ = $(SRC:.c=.o)
+.PHONY: sync-full sync buildinc it_tso clean_out
 
-all: libluaz.a
+sync-full:
+	./scripts/ftp_sync_all.sh --full $(SYNC_ARGS)
 
-libluaz.a: $(OBJ)
-	$(AR) rcs $@ $(OBJ)
+sync:
+	./scripts/ftp_sync_all.sh $(SYNC_ARGS)
 
-clean:
-	rm -f $(OBJ) libluaz.a
+buildinc: sync
+	./scripts/ftp_submit.sh $(SUBMIT_ARGS) $(REBUILD_ARGS) -j $(BUILDINC_JCL)
+
+it_tso:
+	./scripts/ftp_submit.sh $(SUBMIT_ARGS) -j $(ITTSO_JCL)
+
+# Change Note: add local cleanup target for JCL spool artifacts.
+clean_out:
+	rm -f jcl/*.out

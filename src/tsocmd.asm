@@ -22,8 +22,7 @@
 * Entry point: TSOCMD (LE-conforming, OS linkage).
 * - Purpose: allocate private DD, run IKJEFTSR, capture output, return
 * RC.
-* - Input: R1 -> OS plist; plist[0] -> address of parameter block
-* pointer.
+* - Input: R1 -> OS plist; plist[0] -> parameter block pointer value.
 * - Parameter block (CMDPARM): CPPL, CMD, CMD_LEN, OUTDD, REASON,
 * ABEND,
 *   DAIR_RC, CAT_RC, WORK.
@@ -33,9 +32,25 @@
 * IKJEFTSR.
 * - Notes: HOB may be set on plist entries; code clears HOB before
 * deref.
+* Change note: align TSOCMD with LE_C_HLASM_RULES for CSECT/base/HOB.
+* Problem: missing stable CEEENTRY base and literal-based HOB masking.
+* Expected effect: stable addressability and correct plist pointer
+* handling.
+* Impact: TSOCMD uses CEEENTRY base and NILF for HOB.
 * Define entry point control section.
-* Enter LE, OS linkage.
-TSOCMD  CEEENTRY PPA=TSCPPA,MAIN=NO,PLIST=OS,PARMREG=1
+TSOCMD  CSECT
+* Change note: keep AMODE/RMODE on CEEENTRY to avoid ASMA186E
+* duplicates.
+* Problem: standalone AMODE/RMODE conflicts with CEEENTRY expansion.
+* Expected effect: ASMA90 RC=0 with CEEENTRY-controlled modes.
+* Impact: AMODE/RMODE set via CEEENTRY.
+* Ref: src/tsocmd.md#ceeentry-amode-rmode
+* Change note: fix CEEENTRY continuation column for AMODE/RMODE.
+* Problem: wrong continuation column triggered ASMA145E.
+* Expected effect: CEEENTRY macro parses AMODE/RMODE correctly.
+* Enter LE, OS linkage for TSOCMD entry.
+TSOCMD  CEEENTRY PPA=TSCPPA,MAIN=NO,AUTO=4,PLIST=OS,PARMREG=1,         X
+               BASE=(11),AMODE=31,RMODE=ANY
 * Register aliases.
 * Define register 0 alias.
 R0       EQU   0
@@ -72,18 +87,19 @@ R15      EQU   15
 * External entry points.
 * Declare TSODALC entry.
          EXTRN TSODALC
-* Set base register for this CSECT.
-* Establish module base.
-         LARL  R11,TSOCMD
 * Enable CAA addressability.
          USING CEECAA,R12                           Map CAA via R12.
 * Enable DSA addressability.
          USING CEEDSA,R13                           Map DSA via R13.
-* Enable base addressability.
+* Enable base addressability from CEEENTRY base register.
          USING TSOCMD,R11                           Map CSECT via R11.
 * Algorithm: validate plist and parameter block pointers before use.
-* - Verify plist addressable, slot addressable, and parameter block
-* range.
+* Change note: remove LRA addressability probes for TSOCMD.
+* Problem: LRA causes 0C2 in problem state under TMP.
+* Expected effect: TSOCMD no longer issues privileged checks;
+* allows runtime behavior to be validated per LE_C_HLASM_RULES.
+* Impact: only NULL checks remain before dereference.
+* - Validate plist and parameter block pointers for NULL only.
 * Preserve caller parameter list pointer.
 * Save plist pointer in R8.
          LR    R8,R1
@@ -93,51 +109,18 @@ R15      EQU   15
 * Fail when the caller did not provide a parameter pointer.
 * Branch on missing plist.
          BZ    CMD_FAIL_PARM
-* Verify that the R1 address is translatable (avoid 0C4 on deref).
-* Check plist addressability.
-         LRA   R3,0(R8)
-* Fail when the R1 address is not addressable.
-* Branch on bad plist addr.
-         BNE   CMD_FAIL_PARM
-* Load the first plist entry (slot address with HOB).
-* Load slot address from plist.
+* Load the parameter block pointer from the plist entry (with HOB).
+* Load parameter block pointer from plist entry.
          L     R2,0(R8)
 * Clear the end-of-list high bit from the plist entry.
-* Clear HOB in slot address.
-         N     R2,=X'7FFFFFFF'
-* Validate that the slot address is nonzero.
-* Test slot address for zero.
-         LTR   R2,R2
-* Fail when the slot address is NULL.
-* Branch on null slot address.
-         BZ    CMD_FAIL_PARM
-* Verify that the slot address is addressable.
-* Check slot addressability.
-         LRA   R3,0(R2)
-* Fail when the slot address is not addressable.
-* Branch on bad slot address.
-         BNE   CMD_FAIL_PARM
-* Load the parameter block pointer from the slot.
-* Load parameter block pointer.
-         L     R2,0(R2)
+* Clear HOB in parameter block pointer.
+         NILF  R2,X'7FFFFFFF'                       Clear HOB via NILF.
 * Validate that the parameter block pointer is nonzero.
-* Test parameter block pointer.
+* Test parameter block pointer for zero.
          LTR   R2,R2
 * Fail when the parameter block pointer is NULL.
 * Branch on null parameter block.
          BZ    CMD_FAIL_PARM
-* Verify that the first word of the parameter block is addressable.
-* Check first word addressability.
-         LRA   R3,0(R2)
-* Fail when the parameter block is not addressable.
-* Branch on bad parameter block.
-         BNE   CMD_FAIL_PARM
-* Verify that the last word of the parameter block is addressable.
-* Check last word addressability.
-         LRA   R3,32(R2)
-* Fail when the parameter block crosses an invalid page.
-* Branch on invalid block range.
-         BNE   CMD_FAIL_PARM
 * Parameter block pointer is ready.
 * Anchor for parameter-ready path.
 CMD_PB_READY DS   0H
@@ -212,12 +195,17 @@ CMD_PB_READY DS   0H
 * Clear work area block 4/4.
 * Zero fourth 256 bytes.
          XC    768(256,R9),0(R9)
+* Change note: preserve parameter block pointer in DSA auto storage.
+* Problem: TSODALC may clobber R9/R2; reloading PBPTRSV via R9 fails.
+* Expected effect: restore parameter block pointer via CEEDSAAUTO.
+* Impact: uses AUTO=4 storage in LE DSA, no work area dependency.
+* Ref: src/tsocmd.md#ceeentry-auto
 * Algorithm: allocate private DD and redirect SYSTSPRT via TSODALC.
 * - Build TSODALC plist from local slots and call TSODALC.
 * Preserve parameter block pointer across external calls.
 * External entry points are not required to preserve R2.
-* Save parameter block pointer.
-         ST    R2,PBPTRSV
+* Save parameter block pointer in DSA automatic storage.
+         ST    R2,CEEDSAAUTO
 * Store CPPL pointer for TSODALC.
 * Save CPPL pointer for DAIR.
          ST    R3,LOCALCPPL
@@ -278,9 +266,8 @@ CMD_PB_READY DS   0H
 * Call TSODALC to allocate DD.
 * Call TSODALC allocation.
          BALR  R14,R15
-* Restore parameter block and work area pointers after external call.
-* Restore parameter block pointer.
-         L     R2,PBPTRSV
+* Restore parameter block pointer after external call.
+         L     R2,CEEDSAAUTO
 * Restore work area pointer.
          L     R9,CMD_WORK
 * Remap work area after call.
