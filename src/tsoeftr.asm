@@ -65,7 +65,8 @@ R15      EQU   15                               Register 15 alias.
          XR    R10,R10                            Clear heap ptr.
 * Clear result pointers for failure path.
          XR    R4,R4                              Clear rc pointer.
-         XR    R5,R5                              Clear reason pointer.
+* Clear reason pointer.
+         XR    R5,R5
 * Load command pointer from caller slot.
          L     R2,0(R8)                           Load cmd slot.
          LTR   R2,R2                              Check for NULL.
@@ -120,11 +121,13 @@ EFTR_NWORK DS 0H
 * Reload cmd pointer for IKJEFTSR.
          L     R2,CMDPTR(R9)                     Reload cmd ptr.
 * Reload length pointer for IKJEFTSR.
-         L     R3,CMDLENP(R9)                    Reload length pointer.
+* Reload length pointer.
+         L     R3,CMDLENP(R9)
 * Reload rc pointer for IKJEFTSR.
          L     R4,RCPTR(R9)                      Reload rc pointer.
 * Reload reason pointer for IKJEFTSR.
-         L     R5,REASONP(R9)                    Reload reason pointer.
+* Reload reason pointer.
+         L     R5,REASONP(R9)
 * Point to IKJEFTSR parameter list.
          LA    R6,SR_PLIST(R9)                   Point to SR plist.
 * Prepare IKJEFTSR flags address.
@@ -132,7 +135,8 @@ EFTR_NWORK DS 0H
 * Store parm1 (flags address).
          ST    R7,0(R6)                          Store flags pointer.
 * Store parm2 (cmd pointer).
-         ST    R2,4(R6)                          Store command pointer.
+* Store command pointer.
+         ST    R2,4(R6)
 * Store parm3 (cmd length pointer).
          ST    R3,8(R6)                          Store length pointer.
 * Store parm4 (rc pointer).
@@ -153,11 +157,13 @@ SRABNDOK DS 0H
 * Initialize IKJEFTSR flags (command, isolated).
          LA    R7,SR_FLAGS(R9)                   Point to flags.
          MVI   0(R7),X'00'                        Reserved flags.
-         MVI   1(R7),X'00'                        Isolated environment.
+* Isolated environment.
+         MVI   1(R7),X'00'
          MVI   2(R7),X'00'                        No dump on abend.
          MVI   3(R7),X'01'                        Command indicator.
 * Point R1 to IKJEFTSR parameter list.
-         LA    R1,SR_PLIST(R9)                    R1 -> IKJEFTSR plist.
+* R1 -> IKJEFTSR plist.
+         LA    R1,SR_PLIST(R9)
 * Locate TSO service facility entry point.
          L     R15,CVTPTR                         Load CVT address.
          L     R15,CVTTVT(,R15)                   Load TVT address.

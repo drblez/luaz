@@ -8,8 +8,8 @@
  * |--------|------|---------|
  * | main | function | Validate tso module stub behavior |
  */
-#include "lua.h"
-#include "lauxlib.h"
+#include "LUA"
+#include "LAUXLIB"
 
 #include <stdio.h>
 #include <string.h>

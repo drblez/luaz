@@ -23,16 +23,8 @@
 | LUZ30044 | LUAEXEC dd register failed | src/luaexec.c | Verify LUAPATH DDNAME allocation | runtime |
 | LUZ30045 | tso.* not available in PGM mode | src/tso.c | Run under TSO mode (LUACMD) or enable TSO environment | runtime |
 | LUZ30046 | LUAEXEC invalid MODE in PARM | src/luaexec.c | Use MODE=PGM or MODE=TSO | validation |
-| LUZ30047 | LUACMD before LE bridge (debug) | src/luacmd.asm | None | diagnostic |
-| LUZ30048 | LUACMDL after CEEENTRY (debug) | src/luacmd.asm | None | diagnostic |
-| LUZ30049 | LUAEXRUN entry (debug) | src/luaexec.c | None | diagnostic |
-| LUZ30050 | LUACMD after LE bridge (debug) | src/luacmd.asm | None | diagnostic |
-| LUZ30051 | LUACMDL before LUAEXRUN (debug) | src/luacmd.asm | None | diagnostic |
-| LUZ30052 | LUACMDL after LUAEXRUN (debug) | src/luacmd.asm | None | diagnostic |
 | LUZ30053 | LUAEXRUN invalid line length | src/luaexec.c | Check CPPL operand length parsing | validation |
 | LUZ30054 | LUAEXRUN line pointer is NULL | src/luaexec.c | Verify CPPL operand pointer calculation | validation |
-| LUZ30057 | LUACMDL before TSONCPPL (debug) | src/luacmd.asm | None | diagnostic |
-| LUZ30058 | LUACMDL after TSONCPPL (debug) | src/luacmd.asm | None | diagnostic |
 | LUZ30061 | tso_native_env_init failed | src/tso_native.c | Ensure IKJTSOEV is available and CPPL is initialized | diagnostic |
 | LUZ30062 | tso_native CPPL unavailable | src/tso_native.c | Ensure LUACMD passes CPPL via TSONCPPL | diagnostic |
 | LUZ30063 | tso_native DDNAME allocation failed | src/tso_native.c | Check internal DDNAME generator and outdd buffer | diagnostic |
@@ -42,8 +34,10 @@
 | LUZ30067 | tso_native TSOCMD rc=%d | src/tso_native.c | Check TSOCMD parameter block validation | diagnostic |
 | LUZ30068 | tso_native TSOCMD dbg parms=%08X cppl=%08X cmd=%08X outdd=%08X dair=%08X work=%08X | src/tso_native.c | Inspect TSOCMD debug snapshot (parameter block, CPPL, CMD ptr, DDNAME, DAIR ptr, work ptr) | diagnostic |
 | LUZ30069 | tso_native TSOCMD r1=%08X parms=%08X match=%d | src/tso_native.c | Compare incoming R1 with parameter block address (OS PLIST vs direct) | diagnostic |
-| LUZ30070 | ITLUACMD ok LUAZ_MODE=TSO | tests/integration/lua/ITLUACMD.lua | None | diagnostic |
-| LUZ30071 | ITLUACMD expected LUAZ_MODE=TSO got=%s | tests/integration/lua/ITLUACMD.lua | Run via LUACMD under IKJEFT01 and ensure MODE=TSO is enforced | validation |
+| LUZ30070 | ITLUACMD ok LUAZ_MODE=TSO args ok | tests/integration/lua/ITLUACMD.lua | None | diagnostic |
+| LUZ30071 | ITLUACMD validation failed: %s | tests/integration/lua/ITLUACMD.lua | Run via LUACMD under IKJEFT01 and ensure MODE=TSO and operands are preserved | validation |
+| LUZ30090 | ITLUAINFB ok LUAZ_MODE=TSO args ok | jcl/IT_LUAIN_FB80.jcl | None | diagnostic |
+| LUZ30091 | ITLUAINFB fail %s | jcl/IT_LUAIN_FB80.jcl | Run via LUACMD under IKJEFT01 and ensure LUAIN is FB80 in-stream data | validation |
 | LUZ30060 | LUAZ_MODE debug output | tests/integration/lua/ITTSO.lua | None | diagnostic |
 | LUZ30006 | ds.open_dd not implemented | src/ds.c | Use DDNAME I/O via JCL tools | stub |
 | LUZ30007 | ds.read not implemented | src/ds.c | Use dataset utilities for reads | stub |

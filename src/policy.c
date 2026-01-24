@@ -8,8 +8,8 @@
  * |--------|------|---------|
  * | luaz_policy_get | function | Read key from policy dataset |
  */
-#include "errors.h"
-#include "policy.h"
+#include "ERRORS"
+#include "POLICY"
 
 int luaz_policy_get(const char *key, char *out, unsigned long *len)
 {

@@ -25,10 +25,10 @@
  * - Run under TMP (IKJEFT01) or ensure TSO/E environment is established.
  * - Output capture uses an internal DD via DAIR; no user DDNAME is required.
  */
-#include "tso_native.h"
-#include "errors.h"
-#include "tso_cmd_asm.h"
-#include "tso_dair_asm.h"
+#include "TSONATV"
+#include "ERRORS"
+#include "TSOCMDA"
+#include "TSODASM"
 
 #include <string.h>
 #include <stdlib.h>

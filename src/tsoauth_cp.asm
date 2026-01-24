@@ -18,8 +18,10 @@
 *   TSOAUTH <TSO-command>
 *
 TSOAUTH  CSECT                                  Entry point CSECT.
-TSOAUTH  AMODE 31                                Use 31-bit addressing.
-TSOAUTH  RMODE ANY                               Allow load any region.
+* Use 31-bit addressing.
+TSOAUTH  AMODE 31
+* Allow load any region.
+TSOAUTH  RMODE ANY
 R0       EQU   0                                 Register 0 alias.
 R1       EQU   1                                 Register 1 alias.
 R2       EQU   2                                 Register 2 alias.

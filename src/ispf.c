@@ -9,8 +9,8 @@
  * | lua_ispf_qry | function | Query ISPF environment |
  * | lua_ispf_exec | function | Execute ISPF command |
  */
-#include "ispf.h"
-#include "errors.h"
+#include "ISPF"
+#include "ERRORS"
 
 int lua_ispf_qry(void)
 {

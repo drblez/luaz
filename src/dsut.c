@@ -8,7 +8,7 @@
  * |--------|------|---------|
  * | main | function | Validate ds.open_dd read/write via DDNAME |
  */
-#include "ds.h"
+#include "DS"
 
 #include <errno.h>
 #include <stdio.h>

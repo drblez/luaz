@@ -11,8 +11,8 @@
  * | lua_ds_write | function | Write to DDNAME stream |
  * | lua_ds_close | function | Close DDNAME stream |
  */
-#include "ds.h"
-#include "errors.h"
+#include "DS"
+#include "ERRORS"
 
 #include <ctype.h>
 #include <stdio.h>

@@ -34,9 +34,13 @@ lua-vm/src/lutf8lib.c,LUTF8LIB
 lua-vm/src/lvm.c,LVM
 lua-vm/src/lzio.c,LZIO
 src/axr.c,AXR
+src/a2c_call.c,A2CCALL
+src/a2c_driver.c,A2CDRVR
+src/c2a_test.c,C2ATEST
 src/core.c,CORE
 src/ds.c,DS
 src/dsut.c,DSUT
+src/ebcchk.c,EBCCHK
 src/hashcmp.c,HASHCMP
 src/iodd.c,IODD
 src/irxut.c,IRXUT

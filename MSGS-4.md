@@ -36,3 +36,28 @@
 | LUZ40014 | unable to update hash member | src/hashcmp.c | Verify HASHOUT DD, PDSE allocation, and write access | build |
 | LUZ40015 | hash record format invalid | src/hashcmp.c | Regenerate hash member or delete it to force rebuild | build |
 | LUZ40016 | object member missing | src/hashcmp.c | Ensure OBJ PDS is allocated and member exists | build |
+| LUZ40080 | EBCCHK C bytes: %02X %02X %02X | src/ebcchk.c | Verify output equals C1 C2 C3 for EBCDIC | test |
+| LUZ40081 | EBCCHK ASM bytes: XX XX XX | src/ebcchka.asm | Verify output equals C1 C2 C3 for EBCDIC | test |
+| LUZ40082 | EBCCHK C mismatch expected=C1 C2 C3 got=%02X %02X %02X | src/ebcchk.c | Ensure FTP conversion to EBCDIC is enabled | validation |
+| LUZ40083 | EBCCHK ASM mismatch expected=C1 C2 C3 | src/ebcchka.asm | Ensure FTP conversion to EBCDIC is enabled | validation |
+| LUZ40100 | UTC2A start | src/c2a_test.c | None | diagnostic |
+| LUZ40101 | UTC2A add2 ok | src/c2a_test.c | None | diagnostic |
+| LUZ40102 | UTC2A strlen ok | src/c2a_test.c | None | diagnostic |
+| LUZ40103 | UTC2A sum ok | src/c2a_test.c | None | diagnostic |
+| LUZ40104 | UTC2A add64 ok | src/c2a_test.c | None | diagnostic |
+| LUZ40109 | UTC2A success | src/c2a_test.c | None | diagnostic |
+| LUZ40110 | UTA2C start | src/a2c_test.asm | None | diagnostic |
+| LUZ40111 | UTA2C cscale ok | src/a2c_test.asm | None | diagnostic |
+| LUZ40112 | UTA2C cstrlen ok | src/a2c_test.asm | None | diagnostic |
+| LUZ40113 | UTA2C cadd64 ok | src/a2c_test.asm | None | diagnostic |
+| LUZ40119 | UTA2C success | src/a2c_test.asm | None | diagnostic |
+| LUZ40150 | UTC2A add2 failed got=%d | src/c2a_test.c | Verify OS linkage and NOXPLINK for ASM routines | validation |
+| LUZ40151 | UTC2A strlen failed got=%d | src/c2a_test.c | Verify OS linkage and parameter plist for strings | validation |
+| LUZ40152 | UTC2A sum failed got=%d | src/c2a_test.c | Verify struct layout and plist dereference rules | validation |
+| LUZ40153 | UTC2A add64 failed rc=%d val=%lld | src/c2a_test.c | Verify 64-bit out-parameter handling | validation |
+| LUZ40160 | UTA2C cscale rc!=0 | src/a2c_test.asm | Verify OS linkage, OUT pointer cell, and plist construction in ASM | validation |
+| LUZ40161 | UTA2C cstrlen mismatch | src/a2c_test.asm | Verify string plist construction and NUL termination | validation |
+| LUZ40162 | UTA2C cadd64 mismatch | src/a2c_test.asm | Verify 64-bit plist construction and output buffer | validation |
+| LUZ40163 | UTA2C cscale value mismatch | src/a2c_test.asm | Verify input values and plist dereference rules | validation |
+| LUZ40164 | UTA2C cscale args a=%d b=%d out=%p | src/a2c_call.c | Compare args against expected plist values | diagnostic |
+| LUZ40165 | UTA2C cscale wrote=%d | src/a2c_call.c | Verify output value matches expected product | diagnostic |

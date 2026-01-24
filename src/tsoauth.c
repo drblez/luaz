@@ -13,8 +13,8 @@
  * - Add module name to AUTHPGM and AUTHTSF in SYS1.PARMLIB(IKJTSO00).
  * - Activate updated IKJTSO00 (restart TSO) before running.
  */
-#include "tsoeftr.h"
-#include "tsowrt.h"
+#include "TSOEFTR"
+#include "TSOWRT"
 
 #include <stdio.h>
 #include <stddef.h>

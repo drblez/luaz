@@ -50,3 +50,5 @@ jcl/*.out
 # Local PDS maps
 pds-map-rexx.csv
 pds-map-test.csv
+
+.sync/

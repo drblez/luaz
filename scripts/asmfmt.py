@@ -53,6 +53,16 @@ def _is_comment_record(line: str) -> bool:
     return _COMMENT_RE.match(line) is not None
 
 
+def _has_continuation_indicator(line: str) -> bool:
+    """
+    Check for a non-blank continuation indicator in column 72 (standard format).
+    """
+    if _is_comment_record(line):
+        return False
+    s = line.rstrip("\n")
+    return len(s) >= 72 and s[71] != " "
+
+
 def _wrap_comment_record(prefix: str, text: str) -> List[str]:
     """
     Wrap a single comment record (prefix + '*' + text) so that each record stays
@@ -116,6 +126,12 @@ def format_lines(lines: List[str]) -> List[str]:
 
         if not raw.strip():
             out.append("\n")
+            i += 1
+            continue
+
+        # Preserve explicit continuation lines (column 72 indicator) as-is.
+        if _has_continuation_indicator(raw):
+            out.append(raw)
             i += 1
             continue
 

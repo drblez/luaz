@@ -11,6 +11,15 @@
  * | lua_tso_free | function | Free a dataset allocation |
  * | lua_tso_msg | function | Emit a TSO message |
  * | lua_tso_exit | function | Exit with RC |
+ *
+ * Note: REXX-based execution is legacy/compatibility only. Do not
+ * modify or extend REXX paths unless explicitly requested; direct
+ * TSO is the active development path.
+ *
+ * Change note: record REXX restriction in TSO public header.
+ * Problem: REXX path must not be extended without approval.
+ * Expected effect: contributors avoid REXX changes by default.
+ * Impact: documents policy; runtime behavior unchanged.
  */
 #ifndef TSO_H
 #define TSO_H

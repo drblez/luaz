@@ -12,7 +12,7 @@
  * - Run under a TSO-capable environment (TMP/IKJEFT01).
  * - Allocate SYSTSPRT to capture diagnostic output.
  */
-#include "tso_native.h"
+#include "TSONATV"
 
 #include <stdio.h>
 

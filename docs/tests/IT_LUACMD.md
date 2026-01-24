@@ -2,7 +2,8 @@
 
 ## Purpose
 
-Validate that LUACMD invokes LUAEXEC via LUAEXRUN and forces MODE=TSO.
+Validate that LUACMD invokes LUAEXEC via LUAEXRUN, injects MODE=TSO
+automatically, and preserves user operands.
 
 ## Preconditions
 
@@ -13,8 +14,8 @@ Validate that LUACMD invokes LUAEXEC via LUAEXRUN and forces MODE=TSO.
 ## Steps
 
 1) Upload `tests/integration/lua/ITLUACMD.lua` into `DRBLEZ.LUA.TEST(ITLUACMD)`.
-2) Submit `jcl/IT_LUACMD.jcl` (run under IKJEFT01).
-3) Inspect SYSOUT for `LUZ30070`.
+2) Submit `jcl/IT_LUACMD.jcl` (run under IKJEFT01, passes ARG1/'ARG TWO'/ARG3=Z/ARG4).
+3) Inspect SYSOUT for `LUZ30070` and argument validation.
 
 ## Expected RC per step
 

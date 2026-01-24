@@ -9,6 +9,7 @@
  * | main | function | Entry point for LUAEXEC |
  * | luaexec_parse_parm | function | Parse PARM tokens for DSN/args |
  * | luaexec_set_args | function | Publish Lua arg table |
+ * | lua_tso_luain_load | function | Load LUAIN with VB/FB80 record support |
  *
  * Platform Requirements:
  * - LE: required (C runtime).
@@ -16,13 +17,14 @@
  * - EBCDIC: inputs/outputs are EBCDIC in batch.
  * - DDNAME I/O: script input via `DD:LUAIN`.
  */
-#include "iodd.h"
+#include "IODD"
 
-#include "lua.h"
-#include "lauxlib.h"
-#include "lualib.h"
+#include "LUA"
+#include "LAUXLIB"
+#include "LUALIB"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 extern int luaopen_tso(lua_State *L);
@@ -31,49 +33,32 @@ typedef struct luaexec_parm {
   const char *dsn;
   const char *mode;
   int args_start;
-  int bad_mode;
 } luaexec_parm;
 
 /**
- * @brief Parse LUAEXEC PARM tokens for MODE and DSN flags.
+ * @brief Parse LUAEXEC PARM tokens for DSN and MODE flags.
  *
  * @param argc Argument count.
  * @param argv Argument vector.
  * @param out Output structure populated with parsed values.
- * @param forced_mode Optional forced MODE (overrides user input when non-NULL).
  */
-static void luaexec_parse_parm(int argc, char **argv, luaexec_parm *out,
-                               const char *forced_mode)
+static void luaexec_parse_parm(int argc, char **argv, luaexec_parm *out)
 {
   int i = 0;
 
   out->dsn = NULL;
-  out->mode = forced_mode ? forced_mode : "PGM";
+  out->mode = NULL;
   out->args_start = argc;
-  out->bad_mode = 0;
   for (i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--") == 0) {
       out->args_start = i + 1;
       break;
     }
-    if (strncmp(argv[i], "MODE=", 5) == 0) {
-      const char *mode = argv[i] + 5;
-      if (strcmp(mode, "TSO") == 0 || strcmp(mode, "PGM") == 0) {
-        if (forced_mode != NULL && strcmp(mode, forced_mode) != 0)
-          out->bad_mode = 1;
-        else
-          out->mode = mode;
-      } else {
-        out->bad_mode = 1;
-      }
-      continue;
-    }
     if (strncmp(argv[i], "DSN=", 4) == 0)
       out->dsn = argv[i] + 4;
+    if (strncmp(argv[i], "MODE=", 5) == 0)
+      out->mode = argv[i] + 5;
   }
-
-  if (forced_mode != NULL)
-    out->mode = forced_mode;
 }
 
 /**
@@ -101,27 +86,133 @@ static void luaexec_set_args(lua_State *L, const char *script, int argc,
 }
 
 /**
+ * @brief Load Lua chunk from DD:LUAIN with VB/FB80 record support.
+ *
+ * This loader reads LUAIN using record I/O where possible and builds
+ * a newline-delimited buffer so fixed records (FB80) are handled.
+ *
+ * @param L Lua state.
+ * @param script DD:LUAIN path string.
+ * @return LUA_OK on success, or a Lua error code on failure.
+ */
+static int lua_tso_luain_load(lua_State *L, const char *script)
+{
+  FILE *fp = NULL;
+  char path[32];
+  char *rec = NULL;
+  char *chunk = NULL;
+  size_t rec_cap = 32760u;
+  size_t chunk_len = 0;
+  size_t chunk_cap = 0;
+  int rc = LUA_ERRFILE;
+
+  if (script == NULL || script[0] == '\0') {
+    lua_pushstring(L, "LUAIN script path is empty");
+    return LUA_ERRFILE;
+  }
+  if (snprintf(path, sizeof(path), "%s", script) <= 0) {
+    lua_pushstring(L, "LUAIN script path format failed");
+    return LUA_ERRFILE;
+  }
+
+  /* Change note: add LUAIN record loader for FB80/VB support.
+   * Problem: luaL_loadfile on DD:LUAIN is byte-stream oriented and does not
+   * reliably handle fixed-length records supplied by JCL (FB80).
+   * Expected effect: build a newline-delimited buffer using record I/O so
+   * LUAIN works for VB and FB80 datasets.
+   * Impact: LUAEXEC loads from DD:LUAIN using fread record I/O when possible.
+   * Ref: src/luaexec.md#luain-record-io
+   */
+  fp = fopen(path, "rb,type=record");
+  if (fp == NULL)
+    fp = fopen(path, "rb,recfm=FB,lrecl=80");
+  if (fp == NULL)
+    return luaL_loadfile(L, path);
+
+  rec = (char *)malloc(rec_cap);
+  if (rec == NULL) {
+    fclose(fp);
+    lua_pushstring(L, "LUAIN record buffer alloc failed");
+    return LUA_ERRMEM;
+  }
+
+  while (1) {
+    size_t n = fread(rec, 1u, rec_cap, fp);
+    if (n == 0) {
+      if (ferror(fp)) {
+        rc = LUA_ERRFILE;
+        lua_pushstring(L, "LUAIN record read failed");
+        goto cleanup;
+      }
+      break;
+    }
+    while (n > 0 &&
+           (rec[n - 1] == ' ' || rec[n - 1] == '\0' ||
+            rec[n - 1] == '\r' || rec[n - 1] == '\n')) {
+      n--;
+    }
+    if (chunk_len + n + 1u > chunk_cap) {
+      size_t new_cap = chunk_cap ? chunk_cap * 2u : 1024u;
+      while (new_cap < chunk_len + n + 1u)
+        new_cap *= 2u;
+      chunk = (char *)realloc(chunk, new_cap);
+      if (chunk == NULL) {
+        rc = LUA_ERRMEM;
+        lua_pushstring(L, "LUAIN chunk alloc failed");
+        goto cleanup;
+      }
+      chunk_cap = new_cap;
+    }
+    if (n > 0) {
+      memcpy(chunk + chunk_len, rec, n);
+      chunk_len += n;
+    }
+    chunk[chunk_len++] = '\n';
+  }
+
+  if (chunk_len == 0) {
+    rc = luaL_loadbuffer(L, "", 0, path);
+  } else {
+    rc = luaL_loadbuffer(L, chunk, chunk_len, path);
+  }
+
+cleanup:
+  free(chunk);
+  free(rec);
+  fclose(fp);
+  return rc;
+}
+
+/**
  * @brief Execute a Lua script with Lua/TSO runtime initialization.
+ *
+ * The MODE=PARM token, if present, overrides the default mode argument.
  *
  * @param argc Argument count.
  * @param argv Argument vector.
- * @param forced_mode Optional forced MODE (TSO/PGM).
+ * @param mode Default execution mode string (TSO/PGM).
  * @return 0 on success, or 8 on failure (LUZ-prefixed diagnostics emitted).
  */
-static int luaexec_run(int argc, char **argv, const char *forced_mode)
+static int luaexec_run(int argc, char **argv, const char *mode)
 {
   luaexec_parm parm;
   const char *script = "DD:LUAIN";
+  const char *run_mode = mode;
   lua_State *L = NULL;
-  luaexec_parse_parm(argc, argv, &parm, forced_mode);
-  if (parm.bad_mode) {
-    puts("LUZ30046 LUAEXEC invalid MODE in PARM");
-    return 8;
-  }
+  luaexec_parse_parm(argc, argv, &parm);
   if (parm.dsn != NULL && parm.dsn[0] != '\0') {
     puts("LUZ30041 LUAEXEC DSN in PARM not implemented");
     return 8;
   }
+  if (parm.mode != NULL && parm.mode[0] != '\0')
+    run_mode = parm.mode;
+  if (run_mode == NULL)
+    run_mode = "PGM";
+  /* Change note: remove LUAEXEC mode debug output.
+   * Problem: verbose SYSOUT in normal runs.
+   * Expected effect: reduce diagnostic noise without changing behavior.
+   * Impact: no mode/args_start printout during LUAEXEC.
+   */
 
   L = luaL_newstate();
   if (L == NULL) {
@@ -137,12 +228,12 @@ static int luaexec_run(int argc, char **argv, const char *forced_mode)
   luaL_openlibs(L);
   luaL_requiref(L, "tso", luaopen_tso, 1);
   lua_pop(L, 1);
-  lua_pushstring(L, parm.mode);
+  lua_pushstring(L, run_mode);
   lua_setglobal(L, "LUAZ_MODE");
 
   luaexec_set_args(L, script, argc, argv, parm.args_start);
 
-  if (luaL_loadfile(L, script) != LUA_OK) {
+  if (lua_tso_luain_load(L, script) != LUA_OK) {
     const char *msg = lua_tostring(L, -1);
     if (msg)
       printf("LUZ30042 LUAEXEC load failed: %s\n", msg);
@@ -236,20 +327,18 @@ static int luaexec_tokenize(const char *line, int line_len, char *buf,
 /**
  * @brief Run LUAEXEC from a single command line (TSO command processor path).
  *
- * @param line Pointer to the command line text.
+ * Mandatory requirement: LUACMD must pass MODE=TSO explicitly and
+ * LUAEXRUN must not default to TSO. Mode is determined only by params.
+ *
+ * @param line Pointer to the command line text (may include MODE= and --).
  * @param line_len Length of the command line text.
- * @param forced_mode Optional forced MODE (TSO/PGM).
  * @return 0 on success, or 8 on validation/execution failure.
  */
-int luaexec_run_line(const char *line, int line_len, const char *forced_mode)
+int luaexec_run_line(const char *line, int line_len)
 {
   char buf[512];
   char *argv[64];
-  const char *mode = "TSO";
   int argc = 0;
-
-  if (forced_mode != NULL && forced_mode[0] != '\0')
-    mode = forced_mode;
 
   if (line == NULL) {
     puts("LUZ30054 LUAEXRUN line pointer is NULL");
@@ -260,14 +349,29 @@ int luaexec_run_line(const char *line, int line_len, const char *forced_mode)
     return 8;
   }
 
-  puts("LUZ30049 LUAEXRUN entry");
-  fflush(stdout);
+  /* Change note: remove LUAEXRUN entry/raw-line debug output.
+   * Problem: debug prints clutter SYSOUT in normal runs.
+   * Expected effect: only standard LUZ messages remain; parsing unchanged.
+   * Impact: reduces stdout noise for LUAEXRUN path.
+   */
 
   argc = luaexec_tokenize(line, line_len, buf, sizeof(buf), argv,
                           (int)(sizeof(argv) / sizeof(argv[0])));
   if (argc < 0)
     return 8;
-  return luaexec_run(argc, argv, mode);
+  /* Change note: remove LUAEXRUN argv token debug output.
+   * Problem: verbose SYSOUT in normal runs.
+   * Expected effect: reduce diagnostic noise without changing behavior.
+   * Impact: no argc/argv prints during LUAEXRUN.
+   */
+  /* Change note: restore PGM default for LUAEXRUN.
+   * Problem: defaulting to TSO violates the contract that LUACMD must
+   * pass MODE=TSO explicitly; RC=12 persists after LUACMD returns.
+   * Expected effect: LUAZ_MODE follows MODE= tokens consistently.
+   */
+  {
+    return luaexec_run(argc, argv, "PGM");
+  }
 }
 
 /**
@@ -279,5 +383,5 @@ int luaexec_run_line(const char *line, int line_len, const char *forced_mode)
  */
 int main(int argc, char **argv)
 {
-  return luaexec_run(argc, argv, NULL);
+  return luaexec_run(argc, argv, "PGM");
 }

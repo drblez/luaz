@@ -8,8 +8,8 @@
  * |--------|------|---------|
  * | main | function | Validate LUAMAP lookup and LUAPATH member reads |
  */
-#include "iodd.h"
-#include "path.h"
+#include "IODD"
+#include "PATH"
 
 #include <stdio.h>
 #include <string.h>

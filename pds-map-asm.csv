@@ -1,5 +1,8 @@
 relative_path,member
 src/irxcall.asm,IRXCALL
+src/a2c_test.asm,A2CTEST
+src/c2a_asm.asm,C2AASM
+src/ebcchka.asm,EBCCHKA
 src/luacmd.asm,LUACMD
 src/tsoauth_cp.asm,TSOAUTH
 src/tsoeftr.asm,TSOEFTR

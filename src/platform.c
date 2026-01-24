@@ -8,8 +8,8 @@
  * |--------|------|---------|
  * | luaz_platform_set_ops | function | Register platform hooks |
  */
-#include "platform.h"
-#include "path.h"
+#include "PLATFORM"
+#include "PATH"
 
 static struct luaz_platform_ops g_ops;
 static struct luaz_path_ops g_path_ops;

@@ -14,7 +14,7 @@ fi
 usage() {
   cat <<'USAGE'
 Usage:
-  ftp_sync_all.sh [--hlq HLQ] [--host H] [--port P] [--user U] [--pass W]
+  ftp_sync_all.sh [--hlq HLQ] [--host H] [--port P] [--user U] [--pass W] [--debug] [--full]
 
 Defaults:
   HLQ from MF_HLQ or DRBLEZ
@@ -40,6 +40,10 @@ HOST="${MF_HOST:-192.168.1.160}"
 PORT="${MF_PORT:-2121}"
 USER="${MF_USER:-}"
 PASS="${MF_PASS:-}"
+DEBUG="no"
+DEBUG_FLAG=()
+FULL_SYNC="no"
+FULL_SYNC_FLAG=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -48,6 +52,8 @@ while [[ $# -gt 0 ]]; do
     --port) PORT="$2"; shift 2;;
     --user) USER="$2"; shift 2;;
     --pass) PASS="$2"; shift 2;;
+    --debug) DEBUG="yes"; shift 1;;
+    --full) FULL_SYNC="yes"; shift 1;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown arg: $1" >&2; usage; exit 1;;
   esac
@@ -65,15 +71,43 @@ fi
 
 export MF_HOST="$HOST" MF_PORT="$PORT" MF_USER="$USER" MF_PASS="$PASS"
 
-# SRC/INC: VB/1024, LUA/JCL/ASM/REXX: FB/80 (auto defaults in ftp_sync_src.sh)
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.SRC" --root src --map pds-map-src.csv --use-map --rewrite-includes-map pds-map-inc.csv
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.SRC" --root lua-vm/src --map pds-map-src.csv --use-map --rewrite-includes-map pds-map-inc.csv
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.ASM" --root src --map pds-map-asm.csv --use-map --ext .asm
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.INC" --root include --map pds-map-inc.csv --use-map --rewrite-includes-map pds-map-inc.csv
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.INC" --root lua-vm/src --map pds-map-inc.csv --use-map --rewrite-includes-map pds-map-inc.csv
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.LUA" --root lua --ext .lua
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.JCL" --root jcl --ext .jcl
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.REXX" --root rexx --map pds-map-rexx.csv
-scripts/ftp_sync_src.sh --pds "$HLQ.LUA.TEST" --root tests/integration/lua --map pds-map-test.csv --ext .lua
+if [[ "$DEBUG" == "yes" ]]; then
+  DEBUG_FLAG=(--debug)
+fi
+if [[ "$FULL_SYNC" == "yes" ]]; then
+  FULL_SYNC_FLAG=(--full)
+fi
 
-echo "Done. Uploaded SRC/INC/LUA/JCL/REXX/TEST to $HLQ.LUA.*"
+# Purpose: allow full re-sync across all roots by forwarding --full.
+# Fixes: inability to force a complete upload when state marks files as unchanged.
+# Expected effect: all files are uploaded even if hashes match.
+# Impact: increases FTP traffic for the requested run.
+run_step() {
+  local name="$1"
+  shift
+  if [[ "$DEBUG" == "yes" ]]; then
+    echo "DEBUG: step $name"
+  fi
+  set +e
+  "$@"
+  local rc=$?
+  set -e
+  if [[ "$DEBUG" == "yes" ]]; then
+    echo "DEBUG: step $name rc=$rc"
+  fi
+  if [[ $rc -ne 0 ]]; then
+    echo "ERROR: step $name failed rc=$rc" >&2
+    exit $rc
+  fi
+}
+
+# SRC/INC: VB/1024, LUA/JCL/ASM/REXX: FB/80 (auto defaults in ftp_sync_src.sh)
+run_step "SRC-main" scripts/ftp_sync_src.sh --pds "$HLQ.LUA.SRC" --root src --map pds-map-src.csv --use-map --rewrite-includes-map pds-map-inc.csv --ext .c "${DEBUG_FLAG[@]}" "${FULL_SYNC_FLAG[@]}"
+run_step "SRC-vm" scripts/ftp_sync_src.sh --pds "$HLQ.LUA.SRC" --root lua-vm/src --map pds-map-src.csv --use-map --rewrite-includes-map pds-map-inc.csv --ext .c "${DEBUG_FLAG[@]}" "${FULL_SYNC_FLAG[@]}"
+run_step "ASM" scripts/ftp_sync_src.sh --pds "$HLQ.LUA.ASM" --root src --map pds-map-asm.csv --use-map --ext .asm "${DEBUG_FLAG[@]}" "${FULL_SYNC_FLAG[@]}"
+run_step "INC-main" scripts/ftp_sync_src.sh --pds "$HLQ.LUA.INC" --root include --map pds-map-inc.csv --use-map --rewrite-includes-map pds-map-inc.csv --ext .h --ext .inc "${DEBUG_FLAG[@]}" "${FULL_SYNC_FLAG[@]}"
+run_step "INC-vm" scripts/ftp_sync_src.sh --pds "$HLQ.LUA.INC" --root lua-vm/src --map pds-map-inc.csv --use-map --rewrite-includes-map pds-map-inc.csv --ext .h --ext .hpp "${DEBUG_FLAG[@]}" "${FULL_SYNC_FLAG[@]}"
+run_step "LUA" scripts/ftp_sync_src.sh --pds "$HLQ.LUA.LUA" --root lua --ext .lua "${DEBUG_FLAG[@]}" "${FULL_SYNC_FLAG[@]}"
+run_step "JCL" scripts/ftp_sync_src.sh --pds "$HLQ.LUA.JCL" --root jcl --ext .jcl "${DEBUG_FLAG[@]}" "${FULL_SYNC_FLAG[@]}"
+run_step "REXX" scripts/ftp_sync_src.sh --pds "$HLQ.LUA.REXX" --root rexx --map pds-map-rexx.csv "${DEBUG_FLAG[@]}" "${FULL_SYNC_FLAG[@]}"
+run_step "TEST" scripts/ftp_sync_src.sh --pds "$HLQ.LUA.TEST" --root tests/integration/lua --map pds-map-test.csv --ext .lua "${DEBUG_FLAG[@]}" "${FULL_SYNC_FLAG[@]}"

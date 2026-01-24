@@ -15,8 +15,8 @@
  */
 #include <stddef.h>
 #include <time.h>
-#include "errors.h"
-#include "lua.h"
+#include "ERRORS"
+#include "LUA"
 
 int luaz_time_now(time_t *out)
 {

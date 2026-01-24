@@ -8,10 +8,10 @@
  * |--------|------|---------|
  * | main | function | Validate luaL_loadfile via LUAPATH |
  */
-#include "iodd.h"
+#include "IODD"
 
-#include "lua.h"
-#include "lauxlib.h"
+#include "LUA"
+#include "LAUXLIB"
 
 #include <stdio.h>
 

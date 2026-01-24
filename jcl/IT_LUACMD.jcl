@@ -1,5 +1,5 @@
 //* Copyright 2026 drblez AKA Ruslan Stepanenko (drblez@gmail.com)
-//* Purpose: Integration test for LUACMD -> LUAEXEC MODE=TSO propagation.
+//* Purpose: Integration test for LUACMD -> LUAEXEC automatic LUAZ_MODE.
 //* Objects:
 //* +---------+----------------------------------------------+
 //* | RUN     | Execute ITLUACMD Lua script via LUACMD        |
@@ -18,7 +18,7 @@
 //STEPLIB  DD DSN=&HLQ..LUA.LOADLIB,DISP=SHR
 //SYSTSPRT DD SYSOUT=*
 //SYSTSIN  DD *
-  LUACMD MODE=TSO
+  LUACMD ARG1 'ARG TWO' ARG3=Z ARG4
 /*
 //SYSEXEC DD DSN=&HLQ..LUA.REXX,DISP=SHR
 //LUAIN   DD DSN=&HLQ..LUA.TEST(ITLUACMD),DISP=SHR

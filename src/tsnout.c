@@ -13,7 +13,7 @@
  * - No user DDNAME setup is required for output capture.
  * - Ensure TSOAUTH is available in SYS1.LINKLIB for command processor testing.
  */
-#include "tso_native.h"
+#include "TSONATV"
 
 #include <stdio.h>
 

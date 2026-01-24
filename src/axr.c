@@ -8,8 +8,8 @@
  * |--------|------|---------|
  * | lua_axr_request | function | Execute AXR request (optional) |
  */
-#include "axr.h"
-#include "errors.h"
+#include "AXR"
+#include "ERRORS"
 
 int lua_axr_request(const char *request)
 {

@@ -20,12 +20,12 @@
  * | lua_tso_exit | function | Exit with RC |
  * | luaopen_tso | function | Lua module entrypoint |
  */
-#include "tso.h"
-#include "errors.h"
-#include "tso_native.h"
+#include "TSO"
+#include "ERRORS"
+#include "TSONATV"
 
-#include "lua.h"
-#include "lauxlib.h"
+#include "LUA"
+#include "LAUXLIB"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -198,6 +198,15 @@ static int read_dd_to_lines(lua_State *L, const char *ddname)
 /**
  * @brief Invoke the LUTSO REXX exec via IRXEXEC for TSO command processing.
  *
+ * REXX path is legacy/compatibility only. Do not modify or extend
+ * REXX-based execution unless explicitly requested; direct TSO is the
+ * active development path.
+ *
+ * Change note: record REXX restriction near the REXX entry point.
+ * Problem: REXX path must not be modified without approval.
+ * Expected effect: contributors avoid changes to REXX fallback.
+ * Impact: documents policy; runtime behavior unchanged.
+ *
  * @param ddname DDNAME containing the REXX exec library.
  * @param member REXX exec member name.
  * @param mode Execution mode string (TSO/PGM).
@@ -361,6 +370,11 @@ static int l_tso_cmd(lua_State *L)
     return 3;
   }
 
+  /* Change note: mark REXX fallback as legacy-only.
+   * Problem: REXX-based execution must not be extended without approval.
+   * Expected effect: developers avoid touching fallback unless requested.
+   * Impact: documents policy; runtime behavior unchanged.
+   */
   rc = tso_call_rexx("SYSEXEC", "LUTSO", "CMD", cmd, outdd, LUZ_E_TSO_CMD);
   if (rc == LUZ_E_TSO_CMD) {
     lua_pushnil(L);
@@ -395,6 +409,11 @@ static int l_tso_alloc(lua_State *L)
     return 3;
   }
   lua_pop(L, 1);
+  /* Change note: REXX alloc/free remains legacy-only.
+   * Problem: direct TSO is the active development path.
+   * Expected effect: do not modify REXX alloc/free without approval.
+   * Impact: documents policy; runtime behavior unchanged.
+   */
   int rc = lua_tso_alloc(spec);
   if (rc == LUZ_E_TSO_ALLOC) {
     lua_pushnil(L);
@@ -425,6 +444,11 @@ static int l_tso_free(lua_State *L)
     return 3;
   }
   lua_pop(L, 1);
+  /* Change note: REXX alloc/free remains legacy-only.
+   * Problem: direct TSO is the active development path.
+   * Expected effect: do not modify REXX alloc/free without approval.
+   * Impact: documents policy; runtime behavior unchanged.
+   */
   int rc = lua_tso_free(spec);
   if (rc == LUZ_E_TSO_FREE) {
     lua_pushnil(L);
@@ -520,6 +544,11 @@ int lua_tso_cmd(const char *cmd)
 {
   if (cmd == NULL)
     return LUZ_E_TSO_CMD;
+  /* Change note: REXX path is legacy-only.
+   * Problem: direct TSO is the active development path.
+   * Expected effect: avoid modifying REXX fallback unless requested.
+   * Impact: documents policy; runtime behavior unchanged.
+   */
   return tso_call_rexx("SYSEXEC", "LUTSO", "CMD", cmd, NULL, LUZ_E_TSO_CMD);
 }
 
@@ -534,6 +563,11 @@ int lua_tso_alloc(const char *spec)
   int rc;
   if (spec == NULL)
     return LUZ_E_TSO_ALLOC;
+  /* Change note: REXX path is legacy-only.
+   * Problem: direct TSO is the active development path.
+   * Expected effect: avoid modifying REXX fallback unless requested.
+   * Impact: documents policy; runtime behavior unchanged.
+   */
   rc = tso_call_rexx("SYSEXEC", "LUTSO", "ALLOC", spec, NULL, LUZ_E_TSO_ALLOC);
   return rc;
 }
@@ -549,6 +583,11 @@ int lua_tso_free(const char *spec)
   int rc;
   if (spec == NULL)
     return LUZ_E_TSO_FREE;
+  /* Change note: REXX path is legacy-only.
+   * Problem: direct TSO is the active development path.
+   * Expected effect: avoid modifying REXX fallback unless requested.
+   * Impact: documents policy; runtime behavior unchanged.
+   */
   rc = tso_call_rexx("SYSEXEC", "LUTSO", "FREE", spec, NULL, LUZ_E_TSO_FREE);
   return rc;
 }

@@ -13,7 +13,7 @@
 //CC      EXEC PGM=CCNDRVR,REGION=192M,
 //         COND=(4,NE,HCMP),
 //         PARM='TERM,RENT,LANGLVL(EXTC99),LONGNAME,NOASM,
-//              NOGENASM,DEFINE(LUAZ_ZOS)'
+//              NOGENASM,NOXPLINK,DEFINE(LUAZ_ZOS)'
 //STEPLIB  DD  DSN=CEE.SCEERUN2,DISP=SHR
 //        DD  DSN=CBC.SCCNCMP,DISP=SHR
 //        DD  DSN=CEE.SCEERUN,DISP=SHR
@@ -45,7 +45,10 @@
 //             DCB=(RECFM=FB,LRECL=3200,BLKSIZE=12800)
 //SYSUT17  DD  UNIT=SYSALLDA,SPACE=(32000,(30,30)),
 //             DCB=(RECFM=FB,LRECL=3200,BLKSIZE=12800)
-//DEL     EXEC PGM=IDCAMS,COND=((4,NE,HCMP),(4,GT,CC))
+//* Change: delete OBJ member on any nonzero compile RC.
+//* Problem: failed compile can leave stale object for link-edit.
+//* Expected effect: force rebuild instead of reusing bad OBJ.
+//DEL     EXEC PGM=IDCAMS,COND=((4,NE,HCMP),(0,EQ,CC))
 //SYSPRINT DD SYSOUT=*
 //SYSIN    DD DSN=&HLQ..LUA.CTL(&OUTMEM),DISP=SHR
 //HU      EXEC PGM=HASHCMP,
