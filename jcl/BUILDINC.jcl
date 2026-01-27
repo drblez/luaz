@@ -3,6 +3,11 @@
 //* Notes:
 //*  - Requires HASHCMP load module in &HLQ..LUA.LOAD.
 //*  - Creates hash PDSEs for SRC/ASM if missing.
+//*  - HCMP RC=4 is expected when changes are detected (not an error).
+//* Rules for adding a new module (C or ASM):
+//*  - CTLUPD: add a CTL member entry to delete stale OBJ on rebuild.
+//*  - Compile: add an ICOMP (C) or ACOMP (ASM) step for the new member.
+//*  - Link-edit: include the new OBJLIB(member) in LUAEXEC/LUACMD as needed.
 //* Objects:
 //* +---------+----------------------------------------------+
 //* | Name    | Description                                  |
@@ -203,6 +208,12 @@
 ./ ADD NAME=TSOCMD,LIST=ALL
   DELETE DRBLEZ.LUA.OBJ(TSOCMD) PURGE
   SET MAXCC=0
+./ ADD NAME=TSODALO,LIST=ALL
+  DELETE DRBLEZ.LUA.OBJ(TSODALO) PURGE
+  SET MAXCC=0
+./ ADD NAME=TSOSTK,LIST=ALL
+  DELETE DRBLEZ.LUA.OBJ(TSOSTK) PURGE
+  SET MAXCC=0
 ./ ADD NAME=CCOPTS,LIST=ALL
   TERM
   RENT
@@ -271,6 +282,8 @@
 //AASM2  EXEC ACOMP,INFILE=&ASMSRC(LUACMD),OUTMEM=LUACMD
 //AASM3  EXEC ACOMP,INFILE=&ASMSRC(TSODAIR),OUTMEM=TSODAIR
 //AASM4  EXEC ACOMP,INFILE=&ASMSRC(TSOCMD),OUTMEM=TSOCMD
+//AASM5  EXEC ACOMP,INFILE=&ASMSRC(TSOSTK),OUTMEM=TSOSTK
+//AASM6  EXEC ACOMP,INFILE=&ASMSRC(TSODALO),OUTMEM=TSODALO
 //DELLOAD EXEC PGM=IDCAMS
 //SYSPRINT DD SYSOUT=*
 //SYSIN    DD *,SYMBOLS=JCLONLY
@@ -340,6 +353,8 @@
   INCLUDE OBJLIB(IRXCALL)
   INCLUDE OBJLIB(TSODAIR)
   INCLUDE OBJLIB(TSOCMD)
+  INCLUDE OBJLIB(TSOSTK)
+  INCLUDE OBJLIB(TSODALO)
   NAME LUAEXEC(R)
 /*
 //SYSPRINT DD SYSOUT=*
@@ -396,6 +411,8 @@
   INCLUDE OBJLIB(TSOCMD)
   INCLUDE OBJLIB(IRXCALL)
   INCLUDE OBJLIB(TSODAIR)
+  INCLUDE OBJLIB(TSOSTK)
+  INCLUDE OBJLIB(TSODALO)
 * Change: force LUACMD as entry point for command processor.
 * Problem: default CEESTART entry bypasses LUACMD and skips MODE=TSO.
 * Expected effect: LUACMD runs, forms line, and calls LUAEXRUN.

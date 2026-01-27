@@ -5,7 +5,8 @@
 * Object Table:
 * | Object  | Kind  | Purpose |
 * |---------|-------|---------|
-* | EBCCHKA | CSECT | Program entry; output hex bytes for literal "ABC" |
+* | EBCCHKA | CSECT | Program entry; output hex bytes for literal "ABC"
+* |
 *
 * Platform Requirements:
 * - LE: not required (MVS linkage).
@@ -18,7 +19,8 @@
 * - Input: R1 may point to OS parameter list; not used.
 * - Output: R15=0 when bytes are C1/C2/C3, R15=8 on mismatch.
 * - RC/Special cases: mismatch triggers LUZ40083 message.
-* - Algorithm notes: build hex text from literal bytes and send via WTO.
+* - Algorithm notes: build hex text from literal bytes and send via
+* WTO.
 *
 * Define code section for EBCCHKA entry.
 EBCCHKA  CSECT

@@ -11,6 +11,7 @@
  * | tso_native_cmd_cp | function | Execute a TSO command via TSOAUTH command processor |
  * | tso_native_cmd_cleanup | function | Release internal DD allocations after command |
  * | tso_native_set_cppl | function | Set CPPL pointer from TSO command processor |
+ * | lua_tso_set_cppl | function | Cache CPPL pointer value for LUAEXEC callers |
  * | tso_native_alloc | function | Dynamic allocation via DAIR |
  * | tso_native_free | function | Dynamic deallocation via DAIR |
  * | tso_native_msg | function | Emit a TSO message |
@@ -39,8 +40,16 @@
 /* LE service resolver for dynamic entry points (e.g., IKJTSOEV). */
 extern void (*fetch(const char *name))();
 
-/* IKJTSOEV function signature for environment probing. */
-typedef void (*ikjtsoev_fn)(int *, int *, int *, int *, void **);
+/* IKJTSOEV function signature for environment probing (OS linkage).
+ * Change note: declare OS linkage for IKJTSOEV fetch calls.
+ * Problem: C linkage can build the wrong plist, leaving CPPL NULL.
+ * Expected effect: OS linkage builds a correct parameter list and
+ * IKJTSOEV returns a valid CPPL address in TSO mode.
+ * Impact: tso_native_env_init uses IKJTSOEV CPPL for native TSO calls.
+ * Ref: src/tso_native.c.md#ikjtsoev-os-linkage
+ */
+typedef void ikjtsoev_fn(int *, int *, int *, int *, void **);
+#pragma linkage(ikjtsoev_fn, OS)
 static int g_env_state = 0; /* 0=unknown, 1=ready, -1=failed */
 static int g_env_rc = 0;    /* Last IKJTSOEV return code. */
 static int g_env_reason = 0; /* Last IKJTSOEV reason code. */
@@ -69,6 +78,63 @@ static void tso_native_diag(const char *msg)
   fflush(NULL);
 }
 
+/**
+ * @brief Emit a hex dump line for diagnostics (LUZ-prefixed).
+ *
+ * @param label Short label for the dumped bytes (ASCII).
+ * @param bytes Pointer to the byte buffer to dump.
+ * @param len Number of bytes to dump (capped at 64).
+ */
+static void tso_native_dump_bytes(const char *label,
+                                  const unsigned char *bytes, size_t len)
+{
+  size_t i = 0;
+  size_t cap = 64;
+
+  if (label == NULL || bytes == NULL || len == 0)
+    return;
+  if (len > cap)
+    len = cap;
+
+  printf("LUZ30080 TSOCMD %s", label);
+  for (i = 0; i < len; i++)
+    printf(" %02X", bytes[i]);
+  printf("\n");
+  fflush(NULL);
+}
+
+/**
+ * @brief Emit a parameter block dump for TSOCMD diagnostics.
+ *
+ * @param parms Pointer to the TSOCMD parameter block.
+ */
+static void tso_native_dump_parms(const tso_cmd_parms_t *parms)
+{
+  const unsigned char *cmd_bytes = NULL;
+  const unsigned char *outdd_bytes = NULL;
+  size_t cmd_len = 0;
+
+  if (parms == NULL)
+    return;
+
+  printf("LUZ30079 TSOCMD parms cppl=%p cmd=%p cmd_len=%d outdd=%p "
+         "reason=%p abend=%p dair=%p cat=%p work=%p\n",
+         parms->cppl, parms->cmd, parms->cmd_len, parms->outdd,
+         parms->reason, parms->abend, parms->dair_rc, parms->cat_rc,
+         parms->work);
+  fflush(NULL);
+
+  if (parms->cmd != NULL && parms->cmd_len > 0) {
+    cmd_len = (size_t)parms->cmd_len;
+    cmd_bytes = (const unsigned char *)(uintptr_t)parms->cmd;
+    tso_native_dump_bytes("cmd", cmd_bytes, cmd_len);
+  }
+  if (parms->outdd != NULL) {
+    outdd_bytes = (const unsigned char *)(uintptr_t)parms->outdd;
+    tso_native_dump_bytes("outdd", outdd_bytes, 8u);
+  }
+}
+
 #pragma linkage(tso_native_set_cppl, OS)
 #pragma export(tso_native_set_cppl)
 #pragma map(tso_native_set_cppl, "TSONCPPL")
@@ -79,9 +145,59 @@ static void tso_native_diag(const char *msg)
  */
 void tso_native_set_cppl(void *cppl)
 {
+  /* Change note: trace TSONCPPL invocation and CPPL value.
+   * Problem: CPPL remains NULL in tso_native despite LUACMD call.
+   * Expected effect: SYSOUT shows whether TSONCPPL is invoked and
+   * which CPPL pointer it receives.
+   * Impact: adds a diagnostic line per TSONCPPL call.
+   */
+  printf("LUZ30074 TSONCPPL called cppl=%p\n", cppl);
+  fflush(NULL);
   if (cppl == NULL)
     return;
-  g_env_cppl = cppl;
+  /* Change note: dereference CPPL value cell for OS-linkage plist.
+   * Problem: LUACMD passes address of CPPL cell; direct use stores
+   * the cell address instead of the CPPL pointer value.
+   * Expected effect: g_env_cppl receives the actual CPPL pointer.
+   * Impact: tso_native_env_init sees CPPL and enables native calls.
+   */
+  g_env_cppl = *(void **)cppl;
+  /* Change note: log dereferenced CPPL value and cached pointer.
+   * Problem: CPPL cell may be empty or overwritten before call.
+   * Expected effect: SYSOUT shows the dereferenced CPPL value and the
+   * cached pointer used by tso_native.
+   * Impact: narrows whether the CPPL cell is populated by LUACMD.
+   */
+  printf("LUZ30076 TSONCPPL deref cppl=%p g_env_cppl=%p\n",
+         *(void **)cppl, g_env_cppl);
+  fflush(NULL);
+  g_env_state = 1;
+  g_env_rc = 0;
+  g_env_reason = 0;
+  g_env_abend = 0;
+}
+
+/**
+ * @brief Cache a CPPL pointer value for native TSO calls in this module.
+ *
+ * @param cppl CPPL pointer value supplied by LUAEXRUN.
+ * @return None.
+ */
+void lua_tso_set_cppl(void *cppl)
+{
+  void *cppl_value = NULL;
+
+  if (cppl == NULL)
+    return;
+  cppl_value = (void *)((uintptr_t)cppl & 0x7FFFFFFF);
+  if (cppl_value == NULL)
+    return;
+  /* Change note: cache CPPL value without OS-linkage indirection.
+   * Problem: LUAEXRUN cannot call TSONCPPL safely with OS linkage.
+   * Expected effect: CPPL is cached directly in LUAEXE for native TSO.
+   * Impact: tso_native_env_init succeeds without IKJTSOEV under LUACMD.
+   */
+  g_env_cppl = cppl_value;
   g_env_state = 1;
   g_env_rc = 0;
   g_env_reason = 0;
@@ -117,7 +233,7 @@ static int tso_gen_ddname(char *outdd, size_t outdd_len)
  */
 int tso_native_env_init(void)
 {
-  ikjtsoev_fn ikjtsoev;
+  ikjtsoev_fn *ikjtsoev;
   int parm1 = 0;
 
   if (g_env_cppl != NULL) {
@@ -129,13 +245,21 @@ int tso_native_env_init(void)
   if (g_env_state == -1)
     return LUZ_E_TSO_CMD;
 
-  ikjtsoev = (ikjtsoev_fn)fetch("IKJTSOEV");
+  ikjtsoev = (ikjtsoev_fn *)fetch("IKJTSOEV");
   if (ikjtsoev == NULL) {
     g_env_state = -1;
     g_env_rc = -1;
     return LUZ_E_TSO_CMD;
   }
   ikjtsoev(&parm1, &g_env_rc, &g_env_reason, &g_env_abend, &g_env_cppl);
+  /* Change note: trace IKJTSOEV results and CPPL outcome.
+   * Problem: CPPL cache is NULL even after IKJTSOEV in TSO mode.
+   * Expected effect: SYSOUT shows IKJTSOEV rc/reason/abend and CPPL.
+   * Impact: adds a diagnostic line per IKJTSOEV invocation.
+   */
+  printf("LUZ30075 IKJTSOEV rc=%d reason=%d abend=%d cppl=%p\n",
+         g_env_rc, g_env_reason, g_env_abend, g_env_cppl);
+  fflush(NULL);
   if (g_env_rc == 0) {
     g_env_state = 1;
     return 0;
@@ -234,6 +358,13 @@ int tso_native_cmd(const char *cmd, char *outdd, size_t outdd_len,
   parms->dair_rc = (int32_t * __ptr32)&state->dair_rc;
   parms->cat_rc = (int32_t * __ptr32)&state->cat_rc;
   parms->work = (void * __ptr32)work;
+
+  /* Change note: dump TSOCMD parameter block before call.
+   * Problem: ABEND 4088/63 occurs inside TSOCMD; need parameter visibility.
+   * Expected effect: SYSPRINT includes TSOCMD parameters and cmd bytes.
+   * Impact: emits LUZ30079/30080 before TSOCMD invocation.
+   */
+  tso_native_dump_parms(parms);
 
   rc = tsocmd_call(parms);
   local_reason = state->reason;

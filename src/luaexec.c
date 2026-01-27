@@ -7,8 +7,12 @@
  * | Object | Kind | Purpose |
  * |--------|------|---------|
  * | main | function | Entry point for LUAEXEC |
+ * | luaexec_le_handler | function | LE condition handler for abend decode |
+ * | luaexec_register_le_handler | function | Register LE condition handler |
+ * | luaexec_qdata_abend | type | LE q_data layout for abend conditions |
  * | luaexec_parse_parm | function | Parse PARM tokens for DSN/args |
  * | luaexec_set_args | function | Publish Lua arg table |
+ * | luaexec_run_line | function | Run LUAEXEC for LUACMD (TSO path) |
  * | lua_tso_luain_load | function | Load LUAIN with VB/FB80 record support |
  *
  * Platform Requirements:
@@ -18,14 +22,17 @@
  * - DDNAME I/O: script input via `DD:LUAIN`.
  */
 #include "IODD"
-
 #include "LUA"
 #include "LAUXLIB"
 #include "LUALIB"
+#include "TSO"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
+#include <leawi.h>
+#include <ceeedcct.h>
 
 extern int luaopen_tso(lua_State *L);
 
@@ -34,6 +41,97 @@ typedef struct luaexec_parm {
   const char *mode;
   int args_start;
 } luaexec_parm;
+
+/**
+ * @brief LE q_data layout for abend conditions (CEE35I).
+ */
+typedef struct luaexec_qdata_abend {
+  uint32_t parm_count;
+  uint32_t abend_code;
+  uint32_t reason_code;
+} luaexec_qdata_abend;
+
+/* Tracks whether the LE handler has been registered for this process. */
+static int luaexec_le_handler_registered = 0;
+
+/**
+ * @brief LE condition handler to capture abend reason data via CEEGQDT.
+ *
+ * @param fc Condition token for the active condition.
+ * @param token User token supplied when registering the handler.
+ * @param result Handler disposition (resume/percolate).
+ * @param newfc Optional feedback code for condition promotion.
+ */
+static void luaexec_le_handler(_FEEDBACK *fc, _INT4 *token, _INT4 *result,
+                               _FEEDBACK *newfc)
+{
+  _FEEDBACK itok = {0};
+  _FEEDBACK itok_fc = {0};
+  _FEEDBACK dcod_fc = {0};
+  _FEEDBACK qdata_fc = {0};
+  _INT2 c1 = 0;
+  _INT2 c2 = 0;
+  _INT2 cond_case = 0;
+  _INT2 sev = 0;
+  _INT2 control = 0;
+  _CHAR3 facid = {'?', '?', '?'};
+  _INT4 isi = 0;
+  _INT4 qdata_token = 0;
+  const luaexec_qdata_abend *qdata = NULL;
+  uint32_t abend_word = 0;
+  uint32_t reason_word = 0;
+
+  (void)token;
+  (void)newfc;
+
+  CEEITOK(&itok, &itok_fc);
+  if (_FBCHECK(itok_fc, CEE000) == 0) {
+    CEEDCOD(&itok, &c1, &c2, &cond_case, &sev, &control, facid, &isi, &dcod_fc);
+  }
+
+  CEEGQDT(fc, &qdata_token, &qdata_fc);
+  if (_FBCHECK(qdata_fc, CEE000) == 0 && qdata_token != 0) {
+    qdata = (const luaexec_qdata_abend *)((uintptr_t)qdata_token & 0x7FFFFFFF);
+    if (qdata != NULL && qdata->parm_count >= 3u) {
+      abend_word = qdata->abend_code;
+      reason_word = qdata->reason_code;
+    }
+  }
+
+  printf("LUZ30077 LE abend msg=%d fac=%.3s c1=%d c2=%d case=%d sev=%d "
+         "ctrl=%d isi=%d abend=%08X reason=%08X\n",
+         fc ? fc->tok_msgno : 0, facid, c1, c2, cond_case, sev, control, isi,
+         abend_word, reason_word);
+
+  /* Percolate so LE continues normal abend processing. */
+  *result = 20;
+}
+
+/**
+ * @brief Register the LUAEXEC LE condition handler for abend diagnostics.
+ *
+ * @return 0 on success, or 8 on failure.
+ */
+static int luaexec_register_le_handler(void)
+{
+  _ENTRY routine;
+  _INT4 token = 0;
+  _FEEDBACK fc = {0};
+
+  if (luaexec_le_handler_registered)
+    return 0;
+
+  routine.address = (_POINTER)&luaexec_le_handler;
+  routine.nesting = NULL;
+  CEEHDLR(&routine, &token, &fc);
+  if (_FBCHECK(fc, CEE000) != 0) {
+    printf("LUZ30078 CEEHDLR failed msgno=%d\n", fc.tok_msgno);
+    return 8;
+  }
+
+  luaexec_le_handler_registered = 1;
+  return 0;
+}
 
 /**
  * @brief Parse LUAEXEC PARM tokens for DSN and MODE flags.
@@ -295,6 +393,14 @@ static int luaexec_tokenize(const char *line, int line_len, char *buf,
     return argc;
   }
 
+  /* Change note: emit raw ASM->C line before tokenization.
+   * Problem: LUAZ_MODE is PGM; need to confirm MODE= token presence.
+   * Expected effect: SYSOUT shows exact line content from LUACMD.
+   * Impact: adds one diagnostic line per LUAEXRUN parse.
+   */
+  printf("LUZ30073 LUAEXRUN parse line len=%d text='%.*s'\n",
+         line_len, line_len, line);
+
   if ((size_t)len >= cap)
     len = (int)cap - 1;
   memcpy(buf, line, (size_t)len);
@@ -337,13 +443,22 @@ static int luaexec_tokenize(const char *line, int line_len, char *buf,
  *
  * @param line Pointer to the command line text (may include MODE= and --).
  * @param line_len Length of the command line text.
+ * @param cppl CPPL pointer from LUACMD (address parameter).
  * @return 0 on success, or 8 on validation/execution failure.
  */
-int luaexec_run_line(const char *line, int line_len)
+int luaexec_run_line(const char *line, int line_len, void *cppl)
 {
   char buf[512];
   char *argv[64];
   int argc = 0;
+
+  /* Change note: register LE condition handler before any parsing.
+   * Problem: ABEND 4088/63 occurs before luaexec_run, so handler is missed.
+   * Expected effect: handler captures q_data for early LUACMD/LUAEXRUN abends.
+   * Impact: LUAEXRUN emits LUZ30077 on LE abends before tokenization.
+   * Ref: src/luaexec.md#le-condition-handler
+   */
+  luaexec_register_le_handler();
 
   if (line == NULL) {
     puts("LUZ30054 LUAEXRUN line pointer is NULL");
@@ -353,6 +468,21 @@ int luaexec_run_line(const char *line, int line_len)
     puts("LUZ30053 LUAEXRUN invalid line length");
     return 8;
   }
+  /* Change note: cache LUACMD CPPL for IKJEFTSR optional parameters.
+   * Problem: CPPL from LUACMD was ignored, preventing param8 usage.
+   * Expected effect: LUAEXRUN forwards CPPL to TSO command execution.
+   * Impact: tso.cmd can use IKJEFTSR param8 when CPPL is available.
+   * Ref: src/luaexec.c.md#cppl-forwarding
+   */
+  lua_tso_set_cppl_cmd(cppl);
+  /* Change note: add LUAEXRUN address diagnostics for ASM->C compare.
+   * Problem: LUACMD->LUAEXRUN argument addresses must be validated.
+   * Expected effect: SYSOUT shows pointer/length addresses for SNAPX match.
+   * Impact: emits one diagnostic line per LUAEXRUN invocation.
+   */
+  printf("LUZ30072 LUAEXRUN dbg line=%08X len=%d buf=%08X argv=%08X\n",
+         (unsigned int)(uintptr_t)line, line_len,
+         (unsigned int)(uintptr_t)buf, (unsigned int)(uintptr_t)argv);
 
   /* Change note: remove LUAEXRUN entry/raw-line debug output.
    * Problem: debug prints clutter SYSOUT in normal runs.
@@ -388,5 +518,13 @@ int luaexec_run_line(const char *line, int line_len)
  */
 int main(int argc, char **argv)
 {
+  /* Change note: register LE condition handler in PGM entry.
+   * Problem: PGM-mode abends lack LE q_data context in SYSPRINT.
+   * Expected effect: handler captures abend/reason for main entry too.
+   * Impact: LUZ30077 emitted on LE abends in PGM mode.
+   * Ref: src/luaexec.md#le-condition-handler
+   */
+  luaexec_register_le_handler();
+
   return luaexec_run(argc, argv, "PGM");
 }

@@ -8,3 +8,11 @@
 - `fopen` parameters support `type=record` and dataset DCB qualifiers such as
   `recfm=` and `lrecl=` for record files.
   https://www.ibm.com/docs/en/zos/3.1.0?topic=of-fopen-freopen-parameters
+
+## tso-clean-c
+
+- IKJTSOEV return codes (rc=24 means the call was issued from a TMP/service
+  routines environment, so initialization is already in place).
+  https://www.ibm.com/docs/en/zos/2.4.0?topic=ikjtsoev-return-reason-codes-from-tsoe-environment-service
+- IKJEFTSR parameter list and flags for invoking the TSO/E service facility.
+  https://www.ibm.com/docs/en/zos/2.4.0?topic=ikjeftsr-parameter-list

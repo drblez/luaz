@@ -12,10 +12,6 @@
 #
 # Notes:
 # - Supports staging (copy + include rewrites) before upload.
-# - Automatically formats HLASM sources before upload:
-#   - replace TAB with spaces
-#   - wrap long `* ...` comment records
-#   - move long trailing remarks (after opcode) to `* ...` records above
 #
 set -euo pipefail
 
@@ -342,9 +338,6 @@ if [[ -n "$REWRITE_MAP" || "$AUTO_ASMFMT" == "yes" ]]; then
   if [[ -n "$REWRITE_MAP" ]]; then
     scripts/rewrite_includes.py --map "$REWRITE_MAP" --root "$STAGE_DIR" >/dev/null
   fi
-  if [[ "$AUTO_ASMFMT" == "yes" ]]; then
-    python3 scripts/asmfmt.py --root "$STAGE_DIR" --ext .asm --quiet
-  fi
   STAGE_ROOT="$STAGE_DIR"
 fi
 
@@ -493,7 +486,7 @@ def host_label(rel_path):
 # Purpose: load and update sync state to skip unchanged uploads.
 # Fixes: repeated uploads of identical content.
 # Expected effect: only changed members are sent to FTP unless full_sync is set.
-# Impact: upload list is filtered by hash+format state.
+# Impact: upload list is filtered by hash state.
 state = {"version": 1, "entries": {}}
 if os.path.exists(state_path):
     try:

@@ -11,6 +11,7 @@
  * | lua_tso_free | function | Free a dataset allocation |
  * | lua_tso_msg | function | Emit a TSO message |
  * | lua_tso_exit | function | Exit with RC |
+ * | lua_tso_set_cppl_cmd | function | Cache CPPL for IKJEFTSR command calls |
  *
  * Note: REXX-based execution is legacy/compatibility only. Do not
  * modify or extend REXX paths unless explicitly requested; direct
@@ -64,6 +65,19 @@ int lua_tso_msg(const char *text, int level);
  * @return rc unchanged.
  */
 int lua_tso_exit(int rc);
+/**
+ * @brief Cache a CPPL pointer value for IKJEFTSR command execution.
+ *
+ * Change note: publish a CPPL setter for command execution.
+ * Problem: LUACMD CPPL could not be forwarded through C APIs.
+ * Expected effect: callers can cache CPPL for IKJEFTSR optional params.
+ * Impact: enables CPPL-aware tso.cmd execution paths.
+ * Ref: include/tso.h.md#cppl-setter
+ *
+ * @param cppl CPPL pointer supplied by LUACMD (address parameter).
+ * @return None.
+ */
+void lua_tso_set_cppl_cmd(void *cppl);
 
 #ifdef __cplusplus
 }

@@ -9,3 +9,5 @@ src/tsoeftr.asm,TSOEFTR
 src/tsowrt.asm,TSOWRT
 src/tsodair.asm,TSODAIR
 src/tsocmd.asm,TSOCMD
+src/tsostk.asm,TSOSTK
+src/tsodalo.asm,TSODALO

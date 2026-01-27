@@ -20,11 +20,23 @@ select
       address TSO payload
       rc = RC
       "OUTTRAP OFF"
-      if LUZOUT.0 = 0 then do
-        LUZOUT.0 = 1
-        LUZOUT.1 = ""
+      if outdd = "SYSTSPRT" then do
+        /* Change note: emit trapped output to SYSTSPRT for capture=true. */
+        /* Problem: Lua capture path should avoid DD routing and ASM use. */
+        /* Expected effect: OUTTRAP lines are written to SYSTSPRT via SAY. */
+        /* Impact: C can read SYSTSPRT and return command output lines. */
+        /* Ref: rexx/LUTSO.rexx.md#outtrap-systsprt */
+        do i = 1 to LUZOUT.0
+          say LUZOUT.i
+        end
       end
-      "EXECIO" LUZOUT.0 "DISKW" outdd "(STEM LUZOUT. FINIS"
+      else do
+        if LUZOUT.0 = 0 then do
+          LUZOUT.0 = 1
+          LUZOUT.1 = ""
+        end
+        "EXECIO" LUZOUT.0 "DISKW" outdd "(STEM LUZOUT. FINIS"
+      end
     end
     else do
       address TSO payload

@@ -155,7 +155,8 @@ user $USER $PASS
 passive
 epsv4
 quote SITE FILETYPE=JES
-quote site notrailingblanks
+quote SITE JESRECFM=V
+quote SITE NOTRAILINGBLANKS
 quote SITE JESJOBNAME=*
 quote SITE JESOWNER=*
 quote SITE JESSTATUS=ALL
@@ -224,7 +225,8 @@ user $USER $PASS
 passive
 epsv4
 quote SITE FILETYPE=JES
-quote site notrailingblanks
+quote SITE JESRECFM=V
+quote SITE NOTRAILINGBLANKS
 quote SITE JESJOBNAME=*
 quote SITE JESOWNER=*
 quote SITE JESSTATUS=ALL
@@ -247,7 +249,8 @@ user $USER $PASS
 passive
 epsv4
 quote SITE FILETYPE=JES
-quote site notrailingblanks
+quote SITE JESRECFM=V
+quote SITE NOTRAILINGBLANKS
 quote SITE JESJOBNAME=*
 quote SITE JESOWNER=*
 delete $id
@@ -270,7 +273,8 @@ user $USER $PASS
 passive
 epsv4
 quote SITE FILETYPE=JES
-quote site notrailingblanks
+quote SITE JESRECFM=V
+quote SITE NOTRAILINGBLANKS
 quote SITE JESJOBNAME=*
 quote SITE JESOWNER=*
 get $id $out

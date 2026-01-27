@@ -6,7 +6,8 @@
 * | Object  | Kind  | Purpose |
 * |---------|-------|---------|
 * | A2CTESTS | CSECT | PPA holder for LE entry metadata |
-* | A2CTEST  | CSECT | LE subroutine calling C entrypoints via OS plist |
+* | A2CTEST  | CSECT | LE subroutine calling C entrypoints via OS plist
+* |
 *
 * Platform Requirements:
 * - LE: required (CEEENTRY/CEETERM).
@@ -75,7 +76,8 @@ A2CTEST  CEEENTRY PPA=A2CTPPA,MAIN=NO,NAB=NO,PLIST=OS,EXECOPS=NO,      X
          LTR   15,15
 * Change: split RC vs value mismatch for cscale diagnostics.
 * Problem: single mismatch message hides whether RC or value failed.
-* Expected effect: pinpoint whether plist/out handling or value math failed.
+* Expected effect: pinpoint whether plist/out handling or value math
+* failed.
 * Branch on nonzero RC.
          BNZ   A2CERR1R
 * Load computed result.
@@ -168,7 +170,8 @@ PLIST1   DC    A(A1),A(B1),A(OUT1)
 * Define string input for cstrlen (NUL-terminated).
 STR1     DC    C'HELLO',X'00'
 * Change: pass pointer value directly for cstrlen.
-* Problem: extra indirection makes C read pointer cell, not string bytes.
+* Problem: extra indirection makes C read pointer cell, not string
+* bytes.
 * Expected effect: C receives STR1 address directly.
 PLIST2   DC    A(STR1)
 * Align 64-bit operands to doubleword to avoid misaligned access.
@@ -180,7 +183,8 @@ B64      DC    F'0',F'32'
 * Define 64-bit output storage.
 OUT64    DC    F'0',F'0'
 * Change: pass pointer value directly for 64-bit out parameter.
-* Problem: extra indirection makes C treat pointer cell as target buffer.
+* Problem: extra indirection makes C treat pointer cell as target
+* buffer.
 * Expected effect: C writes result into OUT64.
 PLIST3   DC    A(A64),A(B64),A(OUT64)
 * Define expected 64-bit result.
@@ -196,4 +200,4 @@ CEEDSA   DSECT
 * Expand LE DSA mapping.
          CEEDSA
 * End of A2CTEST module.
-         END  A2CTEST
+         END   A2CTEST

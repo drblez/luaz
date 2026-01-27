@@ -2,13 +2,15 @@
 
 ## Purpose
 
-Validate the `tso.cmd` direct TSO path in batch mode using a Lua script.
+Validate `tso.cmd(..., true)` output capture in batch mode using a Lua script.
 
 ## Preconditions
 
 - `DRBLEZ.LUA.TEST` exists and is readable (RECFM=VB, LRECL>=1024).
 - `DRBLEZ.LUA.LOADLIB(LUAEXEC)` exists.
 - `DRBLEZ.LUA.LOADLIB(LUACMD)` exists.
+- `SYSTSPRT` is allocated in JCL (dataset or SYSOUT).
+- `DRBLEZ.LUA.REXX(LUTSO)` is available and `SYSEXEC` is allocated in JCL.
 
 ## Steps
 

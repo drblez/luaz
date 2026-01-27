@@ -31,3 +31,12 @@
 | LUZ00027 | TSOAUTH failed rc=%d | tests | Verify AUTHPGM/AUTHTSF and APF authorization, then rerun UT_TSOAUTH | unit test |
 | LUZ00028 | TSOAUTH alloc failed | tests | Ensure sufficient region and storage availability, then rerun UT_TSOAUTH | unit test |
 | LUZ00029 | TSOAUTH rc=%d reason=%d abend=%d | tests | Inspect UT_TSOAUTH output and IKJEFTSR reason/abend codes | unit test |
+| LUZ00030 | TSOAF start | tests | If missing, alloc/free test did not start | unit test |
+| LUZ00031 | TSOAF IKJTSOEV rc=%d rsn=%d abend=%d cppl=%p | tests | Ensure TMP is active and IKJTSOEV returns RC=0/8/24 | unit test |
+| LUZ00032 | TSOAF tsodalc dd=%s dair_rc=%d cat_rc=%d | tests | Check TSODALC inputs and DAIR RCs | unit test |
+| LUZ00033 | TSOAF IKJEFTSR svc_rc=%d cmd_rc=%d rsn=%d abend=%d | tests | Check TSO command status and IKJEFTSR reason/abend | unit test |
+| LUZ00034 | TSOAF read dd=%s failed | tests | Verify DDNAME allocation and record I/O attributes | unit test |
+| LUZ00035 | TSOAF %s | tests | Inspect captured SYSTSPRT lines | unit test |
+| LUZ00036 | TSOAF tsodfre dd=%s dair_rc=%d cat_rc=%d | tests | Check TSODFRE inputs and DAIR RCs | unit test |
+| LUZ00037 | TSOAF failed | tests | Inspect prior TSOAF diagnostics for failure reason | unit test |
+| LUZ00038 | TSOAF log DD open failed | tests | Ensure TSOAFLOG DD is allocated in JCL | unit test |

@@ -5,6 +5,7 @@
 # Object Table:
 # | Object     | Kind   | Purpose |
 # |------------|--------|---------|
+# | fmt        | target | Format HLASM sources in-place |
 # | sync-full  | target | Full FTP sync of all source trees |
 # | sync       | target | Incremental FTP sync using state cache |
 # | buildinc   | target | Incremental BUILDINC after sync; optional rebuild list |
@@ -33,12 +34,15 @@ ifneq ($(strip $(HLQ)),)
 REBUILD_ARGS += --hlq $(HLQ)
 endif
 
-.PHONY: sync-full sync buildinc it_tso clean_out
+.PHONY: fmt sync-full sync buildinc it_tso clean_out
 
-sync-full:
+fmt:
+	python3 scripts/asmfmt.py --root src --ext .asm
+
+sync-full: fmt
 	./scripts/ftp_sync_all.sh --full $(SYNC_ARGS)
 
-sync:
+sync: fmt
 	./scripts/ftp_sync_all.sh $(SYNC_ARGS)
 
 buildinc: sync

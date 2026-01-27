@@ -62,3 +62,5 @@ src/tso_native.c,TSONATV
 src/tsoauth.c,TSOAUTHC
 src/tsnenv.c,TSNENV
 src/tsnout.c,TSNOUT
+src/tso_c_example.c,TSOCEX
+src/tso_c_alloc_free.c,TSOCALF

@@ -52,3 +52,9 @@ pds-map-rexx.csv
 pds-map-test.csv
 
 .sync/
+.cache/
+.coverage
+
+*__pycache__*
+
+*.bak

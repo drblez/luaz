@@ -135,7 +135,7 @@ Copyright 2026 drblez AKA Ruslan Stepanenko (drblez@gmail.com)
 
 Обязано:
 
-* `tso.cmd(cmd) -> rc, lines[]`
+* `tso.cmd(cmd, capture?) -> rc, lines[]`
 * `tso.alloc(spec) -> rc`, `tso.free(spec) -> rc`
 * `tso.msg(text, level?)`
 * `tso.exit(rc)`

@@ -23,7 +23,7 @@
 * Ref: src/tsowrt.md#ceeentry-amode-rmode
 * Define entry point control section via LE entry macro.
 * Define TSOWRT control section.
-TSOWRT  CSECT
+TSOWRT   CSECT
 * Register name aliases.
 R0       EQU   0
 * Register name aliases.
@@ -68,13 +68,13 @@ TSOWRT   CEEENTRY PPA=TSWPPA,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),     X
 * Preserve caller parameter list pointer.
          LR    R8,R1
 * Load buffer pointer from plist entry.
-         L     R2,0(R8)                           Load buf pointer.
+         L     R2,0(R8)        Load buf pointer.
 * Load length pointer from plist entry.
-         L     R3,4(R8)                           Load len pointer.
+         L     R3,4(R8)        Load len pointer.
 * Load rc pointer from plist entry.
-         L     R4,8(R8)                           Load rc pointer.
+         L     R4,8(R8)        Load rc pointer.
 * Clear high bit on last plist entry.
-         NILF  R4,X'7FFFFFFF'                     Clear HOB via NILF.
+         NILF  R4,X'7FFFFFFF'  Clear HOB via NILF.
 * Validate buffer pointer is nonzero.
          LTR   R2,R2
 * Branch if buffer pointer is NULL.

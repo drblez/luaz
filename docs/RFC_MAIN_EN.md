@@ -135,7 +135,7 @@ If programmatic start/cancel of execs or REXXLIB access is needed, the platform 
 
 Must provide:
 
-* `tso.cmd(cmd) -> rc, lines[]`
+* `tso.cmd(cmd, capture?) -> rc, lines[]`
 * `tso.alloc(spec) -> rc`, `tso.free(spec) -> rc`
 * `tso.msg(text, level?)`
 * `tso.exit(rc)`

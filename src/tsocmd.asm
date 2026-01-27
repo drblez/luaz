@@ -38,7 +38,7 @@
 * handling.
 * Impact: TSOCMD uses CEEENTRY base and NILF for HOB.
 * Define entry point control section.
-TSOCMD  CSECT
+TSOCMD   CSECT
 * Change note: keep AMODE/RMODE on CEEENTRY to avoid ASMA186E
 * duplicates.
 * Problem: standalone AMODE/RMODE conflicts with CEEENTRY expansion.
@@ -49,7 +49,7 @@ TSOCMD  CSECT
 * Problem: wrong continuation column triggered ASMA145E.
 * Expected effect: CEEENTRY macro parses AMODE/RMODE correctly.
 * Enter LE, OS linkage for TSOCMD entry.
-TSOCMD  CEEENTRY PPA=TSCPPA,MAIN=NO,AUTO=4,PLIST=OS,PARMREG=1,         X
+TSOCMD   CEEENTRY PPA=TSCPPA,MAIN=NO,AUTO=4,PLIST=OS,PARMREG=1,        X
                BASE=(11),AMODE=31,RMODE=ANY
 * Register aliases.
 * Define register 0 alias.
@@ -88,11 +88,11 @@ R15      EQU   15
 * Declare TSODALC entry.
          EXTRN TSODALC
 * Enable CAA addressability.
-         USING CEECAA,R12                           Map CAA via R12.
+         USING CEECAA,R12                          Map CAA via R12.
 * Enable DSA addressability.
-         USING CEEDSA,R13                           Map DSA via R13.
+         USING CEEDSA,R13                          Map DSA via R13.
 * Enable base addressability from CEEENTRY base register.
-         USING TSOCMD,R11                           Map CSECT via R11.
+         USING TSOCMD,R11                          Map CSECT via R11.
 * Algorithm: validate plist and parameter block pointers before use.
 * Change note: remove LRA addressability probes for TSOCMD.
 * Problem: LRA causes 0C2 in problem state under TMP.
@@ -114,7 +114,7 @@ R15      EQU   15
          L     R2,0(R8)
 * Clear the end-of-list high bit from the plist entry.
 * Clear HOB in parameter block pointer.
-         NILF  R2,X'7FFFFFFF'                       Clear HOB via NILF.
+         NILF  R2,X'7FFFFFFF'                      Clear HOB via NILF.
 * Validate that the parameter block pointer is nonzero.
 * Test parameter block pointer for zero.
          LTR   R2,R2
@@ -123,12 +123,12 @@ R15      EQU   15
          BZ    CMD_FAIL_PARM
 * Parameter block pointer is ready.
 * Anchor for parameter-ready path.
-CMD_PB_READY DS   0H
+CMD_PB_READY DS 0H
 * Enable parameter block addressability.
 * Map parameter block via R2.
          USING CMDPARM,R2
 * Load CPPL pointer from parameter block.
-         L     R3,CMD_CPPL                          Load CPPL pointer.
+         L     R3,CMD_CPPL                         Load CPPL pointer.
 * Validate CPPL pointer.
 * Test CPPL pointer for zero.
          LTR   R3,R3
@@ -257,6 +257,70 @@ CMD_PB_READY DS   0H
 * Store WORK slot address in plist.
 * Store work slot address.
          ST    R10,DALCPLST+16
+* Change note: capture SNAPX before TSODALC for ABEND diagnosis.
+* Problem: ABEND 4088/63 may occur during TSODALC; need pre-call dump.
+* Expected effect: SNAPX captures CMDPARM and WORKAREA before TSODALC.
+* Impact: additional SNAP output; ABEND if SNAP cannot open.
+* Ref: src/tsocmd.asm.md#snapx-pre-ikjeftsr
+* Save registers before SNAPX sequence.
+         STM   R0,R15,SNAPREGS           Save registers for SNAPX call.
+* Open SNAP DD for SNAPX output.
+         OPEN  (TSOSNAP,(OUTPUT))               Open SNAP DD for SNAPX.
+* Test OPEN return code.
+* Ref: src/tsocmd.asm.md#open-return-codes
+         LTR   R15,R15                      Test SNAP OPEN return code.
+* Treat RC <= 4 as usable OPEN (warning still opens DD).
+         CHI   R15,4                        Compare OPEN RC to warning.
+* Detect OPEN failure (RC > 4) and ABEND for diagnosis.
+* Problem: SNAP output missing may be due to OPEN failure.
+* Expected effect: ABEND makes OPEN failure visible in SYSTSPRT.
+* Impact: job ends early when SNAP cannot be opened.
+         BH    SNAPD_FAIL              Branch on OPEN failure (RC > 4).
+* Restore registers before computing storage ranges.
+         LM    R0,R15,SNAPREGS            Restore registers after OPEN.
+* Change note: use scratch registers for SNAPX ranges.
+* Problem: SNAPX may clobber R2/R9 needed after diagnostics.
+* Expected effect: storage list uses scratch registers only.
+* Impact: TSODALC path preserves R2/R9 for subsequent calls.
+* Build CMDPARM dump range start (mask to 31-bit).
+* Copy CMDPARM start to scratch.
+         LR    R0,R2                          Copy CMDPARM start to R0.
+* Clear high-order bit from CMDPARM start.
+         NILF  R0,X'7FFFFFFF'              Ensure 31-bit CMDPARM start.
+* Build CMDPARM dump range end.
+* Compute CMDPARM end pointer.
+         LA    R1,CMDPARM_LEN-1(R0)            Set CMDPARM end address.
+* Issue SNAPX for CMDPARM only (reduce storage-list complexity).
+         SNAPX DCB=TSOSNAP,ID=2,PDATA=(REGS,PSW,SAH),STORAGE=(R0,R1)
+* Close SNAP DD to flush output.
+         CLOSE (TSOSNAP)                     Close SNAP DD after SNAPX.
+* Branch around SNAPD_FAIL on success.
+         B     SNAPD_DONE               Skip SNAPD_FAIL on normal path.
+* SNAP OPEN failure handler.
+SNAPD_FAIL DS  0H                            SNAP OPEN failed (RC > 4).
+* Abend on SNAP OPEN failure for visibility.
+         ABEND 4093,DUMP                    Abend when SNAP OPEN fails.
+* Anchor for SNAPX done path.
+SNAPD_DONE DS  0H                                 Mark SNAPX done path.
+* Restore registers after SNAPX sequence.
+         LM    R0,R15,SNAPREGS           Restore registers after SNAPX.
+* Change note: establish ESPIE around TSODALC to trap program checks.
+* Problem: ABEND 4088/63 occurs inside TSODALC; need exit on program
+* interruptions to capture diagnostics.
+* Expected effect: ESPIE exit issues SNAPX when TSODALC triggers a
+* program interruption.
+* Impact: TSODALC call is wrapped by ESPIE SET/RESET.
+* Ref: src/tsocmd.asm.md#espie-tsodalc-abend
+* Preserve CMDPARM pointer for ESPIE exit diagnostics.
+* Save CMDPARM pointer.
+         ST    R2,ESPIE_PB              Store CMDPARM pointer for exit.
+* Preserve WORKAREA pointer for ESPIE exit diagnostics.
+* Save WORKAREA pointer.
+         ST    R9,ESPIE_WORK           Store WORKAREA pointer for exit.
+* Establish ESPIE exit for program interruptions 1-15.
+         ESPIE SET,TSOCMD_ESPIE,((1,15))    Set ESPIE exit for TSODALC.
+* Save previous ESPIE token for RESET.
+         ST    R1,ESPIE_TOKEN                      Store ESPIE token.
 * Point R1 to TSODALC plist.
 * Point R1 at DAIR plist.
          LA    R1,DALCPLST
@@ -266,14 +330,72 @@ CMD_PB_READY DS   0H
 * Call TSODALC to allocate DD.
 * Call TSODALC allocation.
          BALR  R14,R15
+* Restore previous ESPIE environment after TSODALC.
+         ESPIE RESET,ESPIE_TOKEN       Restore prior ESPIE environment.
 * Restore parameter block pointer after external call.
          L     R2,CEEDSAAUTO
 * Restore work area pointer.
          L     R9,CMD_WORK
 * Remap work area after call.
          USING WORKAREA,R9
+* Change note: capture SNAPX immediately after TSODALC.
+* Problem: ABEND 4088/63 may occur after TSODALC; need post-call dump.
+* Expected effect: SNAPX captures CMDPARM/WORKAREA after TSODALC.
+* Impact: additional SNAP output; ABEND if SNAP cannot open.
+* Ref: src/tsocmd.asm.md#snapx-pre-ikjeftsr
+* Save registers before SNAPX sequence.
+         STM   R0,R15,SNAPREGS           Save registers for SNAPX call.
+* Open SNAP DD for SNAPX output.
+         OPEN  (TSOSNAP,(OUTPUT))               Open SNAP DD for SNAPX.
+* Test OPEN return code.
+* Ref: src/tsocmd.asm.md#open-return-codes
+         LTR   R15,R15                      Test SNAP OPEN return code.
+* Treat RC <= 4 as usable OPEN (warning still opens DD).
+         CHI   R15,4                        Compare OPEN RC to warning.
+* Detect OPEN failure (RC > 4) and ABEND for diagnosis.
+* Problem: SNAP output missing may be due to OPEN failure.
+* Expected effect: ABEND makes OPEN failure visible in SYSTSPRT.
+* Impact: job ends early when SNAP cannot be opened.
+         BH    SNAPD2_FAIL             Branch on OPEN failure (RC > 4).
+* Restore registers before computing storage ranges.
+         LM    R0,R15,SNAPREGS            Restore registers after OPEN.
+* Change note: use scratch registers for SNAPX ranges.
+* Problem: SNAPX may clobber R2/R9 needed after diagnostics.
+* Expected effect: storage list uses scratch registers only.
+* Impact: TSODALC path preserves R2/R9 for RC handling.
+* Build CMDPARM dump range start (mask to 31-bit).
+* Copy CMDPARM start to scratch.
+         LR    R0,R2                          Copy CMDPARM start to R0.
+* Clear high-order bit from CMDPARM start.
+         NILF  R0,X'7FFFFFFF'              Ensure 31-bit CMDPARM start.
+* Build CMDPARM dump range end.
+* Compute CMDPARM end pointer.
+         LA    R1,CMDPARM_LEN-1(R0)            Set CMDPARM end address.
+* Build WORKAREA dump range start (mask to 31-bit).
+* Copy WORKAREA start to scratch.
+         LR    R4,R9                         Copy WORKAREA start to R4.
+* Clear high-order bit from WORKAREA start.
+         NILF  R4,X'7FFFFFFF'             Ensure 31-bit WORKAREA start.
+* Build WORKAREA dump range end.
+* Compute WORKAREA end pointer.
+         LA    R5,WORKSIZE-1(R4)              Set WORKAREA end address.
+* Issue SNAPX for CMDPARM and WORKAREA.
+         SNAPX DCB=TSOSNAP,ID=4,PDATA=(REGS,PSW,SAH),STORAGE=(R0,R1,   +
+               R4,R5)
+* Close SNAP DD to flush output.
+         CLOSE (TSOSNAP)                     Close SNAP DD after SNAPX.
+* Branch around SNAPD2_FAIL on success.
+         B     SNAPD2_DONE             Skip SNAPD2_FAIL on normal path.
+* SNAP OPEN failure handler.
+SNAPD2_FAIL DS 0H                            SNAP OPEN failed (RC > 4).
+* Abend on SNAP OPEN failure for visibility.
+         ABEND 4093,DUMP                    Abend when SNAP OPEN fails.
+* Anchor for SNAPX done path.
+SNAPD2_DONE DS 0H                                 Mark SNAPX done path.
+* Restore registers after SNAPX sequence.
+         LM    R0,R15,SNAPREGS           Restore registers after SNAPX.
 * Test TSODALC return code.
-         LTR   R15,R15                              Test TSODALC RC.
+         LTR   R15,R15                             Test TSODALC RC.
 * Fail if TSODALC returned nonzero.
 * Branch on DAIR failure.
          BNZ   CMD_FAIL_DALC
@@ -318,11 +440,131 @@ CMD_PB_READY DS   0H
          ST    R10,EFTSI_REASON@
 * Point R1 at IKJEFTSI plist.
          LA    R1,EFTSIWA
-         CALLTSSR EP=IKJTSFI                        Invoke IKJEFTSI.
+         CALLTSSR EP=IKJTSFI                       Invoke IKJEFTSI.
 * Save IKJEFTSI return code.
          ST    R15,EFTRSI_RC
+* Change note: capture SNAPX immediately after IKJEFTSI.
+* Problem: ABEND 4088/63 may occur after IKJEFTSI; need post-call dump.
+* Expected effect: SNAPX captures CMDPARM/EFTSIWA after IKJEFTSI.
+* Impact: additional SNAP output; ABEND if SNAP cannot open.
+* Ref: src/tsocmd.asm.md#snapx-pre-ikjeftsr
+* Save registers before SNAPX sequence.
+         STM   R0,R15,SNAPREGS           Save registers for SNAPX call.
+* Open SNAP DD for SNAPX output.
+         OPEN  (TSOSNAP,(OUTPUT))               Open SNAP DD for SNAPX.
+* Test OPEN return code.
+* Ref: src/tsocmd.asm.md#open-return-codes
+         LTR   R15,R15                      Test SNAP OPEN return code.
+* Treat RC <= 4 as usable OPEN (warning still opens DD).
+         CHI   R15,4                        Compare OPEN RC to warning.
+* Detect OPEN failure (RC > 4) and ABEND for diagnosis.
+* Problem: SNAP output missing may be due to OPEN failure.
+* Expected effect: ABEND makes OPEN failure visible in SYSTSPRT.
+* Impact: job ends early when SNAP cannot be opened.
+         BH    SNAPSI_FAIL             Branch on OPEN failure (RC > 4).
+* Restore registers before computing storage ranges.
+         LM    R0,R15,SNAPREGS            Restore registers after OPEN.
+* Change note: use scratch registers for SNAPX ranges.
+* Problem: SNAPX may clobber R2/R9 needed after diagnostics.
+* Expected effect: storage list uses scratch registers only.
+* Impact: post-IKJEFTSI path preserves R2/R9 for RC handling.
+* Build CMDPARM dump range start (mask to 31-bit).
+* Copy CMDPARM start to scratch.
+         LR    R0,R2                          Copy CMDPARM start to R0.
+* Clear high-order bit from CMDPARM start.
+         NILF  R0,X'7FFFFFFF'              Ensure 31-bit CMDPARM start.
+* Build CMDPARM dump range end.
+* Compute CMDPARM end pointer.
+         LA    R1,CMDPARM_LEN-1(R0)            Set CMDPARM end address.
+* Build EFTSIWA dump range start (mask to 31-bit).
+* Address EFTSIWA start.
+         LA    R4,EFTSIWA                        Address EFTSIWA start.
+* Clear high-order bit from EFTSIWA start.
+         NILF  R4,X'7FFFFFFF'              Ensure 31-bit EFTSIWA start.
+* Build EFTSIWA dump range end.
+* Compute EFTSIWA end pointer.
+         LA    R5,EFTSIWSZ-1(R4)               Set EFTSIWA end address.
+* Issue SNAPX for CMDPARM and EFTSIWA.
+         SNAPX DCB=TSOSNAP,ID=5,PDATA=(REGS,PSW,SAH),STORAGE=(R0,R1,   +
+               R4,R5)
+* Close SNAP DD to flush output.
+         CLOSE (TSOSNAP)                     Close SNAP DD after SNAPX.
+* Branch around SNAPSI_FAIL on success.
+         B     SNAPSI_DONE             Skip SNAPSI_FAIL on normal path.
+* SNAP OPEN failure handler.
+SNAPSI_FAIL DS 0H                            SNAP OPEN failed (RC > 4).
+* Abend on SNAP OPEN failure for visibility.
+         ABEND 4093,DUMP                    Abend when SNAP OPEN fails.
+* Anchor for SNAPX done path.
+SNAPSI_DONE DS 0H                                 Mark SNAPX done path.
+* Restore registers after SNAPX sequence.
+         LM    R0,R15,SNAPREGS           Restore registers after SNAPX.
+* Change note: emit IKJEFTSI rc/error/abend/reason to SYSTSPRT.
+* Problem: need immediate IKJEFTSI status even if later ABEND occurs.
+* Expected effect: PUTLINE writes IKJEFTSI results to SYSTSPRT.
+* Impact: extra diagnostic line in batch output.
+* Format IKJEFTSI rc into output line.
+* Load IKJEFTSI return code.
+         L     R7,EFTRSI_RC                     Load IKJEFTSI RC value.
+* Convert IKJEFTSI RC to packed decimal.
+         CVD   R7,PACKNUM                         Convert rc to packed.
+* Reset edit mask for RC.
+         MVC   EDMASKW,EDMASK0                     Copy edit mask.
+* Edit IKJEFTSI RC into display form.
+         ED    EDMASKW,PACKNUM                     Edit rc value.
+* Store IKJEFTSI RC text.
+         MVC   OUTTXT+RC_POS(8),EDMASKW            Store rc text.
+* Format IKJEFTSI error into output line.
+* Load IKJEFTSI ERROR value.
+         L     R7,EFTSI_ERROR                Load IKJEFTSI ERROR value.
+* Convert IKJEFTSI ERROR to packed decimal.
+         CVD   R7,PACKNUM                      Convert error to packed.
+* Reset edit mask for ERROR.
+         MVC   EDMASKW,EDMASK0                     Copy edit mask.
+* Edit IKJEFTSI ERROR into display form.
+         ED    EDMASKW,PACKNUM                     Edit error value.
+* Store IKJEFTSI ERROR text.
+         MVC   OUTTXT+ERR_POS(8),EDMASKW           Store error text.
+* Format IKJEFTSI abend into output line.
+* Load IKJEFTSI ABEND value.
+         L     R7,EFTSI_ABEND                Load IKJEFTSI ABEND value.
+* Convert IKJEFTSI ABEND to packed decimal.
+         CVD   R7,PACKNUM                      Convert abend to packed.
+* Reset edit mask for ABEND.
+         MVC   EDMASKW,EDMASK0                     Copy edit mask.
+* Edit IKJEFTSI ABEND into display form.
+         ED    EDMASKW,PACKNUM                     Edit abend value.
+* Store IKJEFTSI ABEND text.
+         MVC   OUTTXT+ABD_POS(8),EDMASKW           Store abend text.
+* Format IKJEFTSI reason into output line.
+* Load IKJEFTSI REASON value.
+         L     R7,EFTSI_REASON              Load IKJEFTSI REASON value.
+* Convert IKJEFTSI REASON to packed decimal.
+         CVD   R7,PACKNUM                     Convert reason to packed.
+* Reset edit mask for REASON.
+         MVC   EDMASKW,EDMASK0                     Copy edit mask.
+* Edit IKJEFTSI REASON into display form.
+         ED    EDMASKW,PACKNUM                     Edit reason value.
+* Store IKJEFTSI REASON text.
+         MVC   OUTTXT+RSN_POS(8),EDMASKW           Store reason text.
+* Resolve UPT/ECT from CPPL for PUTLINE.
+* Load CPPL pointer for PUTLINE.
+         L     R3,CMD_CPPL                         Load CPPL pointer.
+* Map CPPL for UPT/ECT fields.
+         USING CPPL,R3                            Map CPPL for PUTLINE.
+* Load UPT pointer.
+         L     R3,CPPLUPT                          Load UPT pointer.
+* Load ECT pointer.
+         L     R4,CPPLECT                          Load ECT pointer.
+* Emit line to SYSTSPRT via PUTLINE.
+         PUTLINE PARM=PUTPARM,UPT=(R3),ECT=(R4),ECB=ECBADS,            X
+               OUTPUT=(OUTLINE,TERM,SINGLE,DATA),MF=(E,IOPLADS)
+* Drop CPPL mapping after PUTLINE.
+         DROP  R3
+* Restore IKJEFTSI return code for branch test.
+         L     R15,EFTRSI_RC                       Reload IKJEFTSI RC.
 * Fail if IKJEFTSI returned nonzero (token not available).
-         LTR   R15,R15                              Test IKJEFTSI RC.
+         LTR   R15,R15                             Test IKJEFTSI RC.
 * Branch on IKJEFTSI failure.
          BNZ   CMD_FAIL_EFTSI
 * Load command length from parameter block.
@@ -341,7 +583,7 @@ CMD_PB_READY DS   0H
 * Use local reason slot.
          LA    R10,REASONV
 * Anchor for reason pointer set.
-CMD_RSN_OK DS 0H
+CMD_RSN_OK DS  0H
 * Resolve abend storage pointer.
 * Load abend pointer.
          L     R0,CMD_ABEND
@@ -352,7 +594,7 @@ CMD_RSN_OK DS 0H
 * Use local abend slot.
          LA    R0,ABENDV
 * Anchor for abend pointer set.
-CMD_ABN_OK DS 0H
+CMD_ABN_OK DS  0H
 * Algorithm: build IKJEFTSR plist and invoke via TSVTASF.
 * - Use caller work slice EFTRWORK for plist and CPPL work area.
 * Build IKJEFTSR parameter list in the caller-provided work slice.
@@ -364,11 +606,11 @@ CMD_ABN_OK DS 0H
          XC    0(EFTSRWSZ,R6),0(R6)
 * Set flags for IKJEFTSR (command invocation, unauthorized
 * environment).
-         MVI   EFT_FLAGS+0,X'00'                    Clear flag byte 0.
+         MVI   EFT_FLAGS+0,X'00'                   Clear flag byte 0.
 * Unisolated/unauthorized environment.
 * Set unauthorized flag.
          MVI   EFT_FLAGS+1,X'01'
-         MVI   EFT_FLAGS+2,X'00'                    Clear flag byte 2.
+         MVI   EFT_FLAGS+2,X'00'                   Clear flag byte 2.
 * Set command invocation flag.
          MVI   EFT_FLAGS+3,X'01'
 * Store parm1 (flags address).
@@ -419,11 +661,69 @@ CMD_ABN_OK DS 0H
          LA    R1,EFT_PLIST
 * Locate TSO service facility entry point (TSVTASF) and invoke
 * IKJEFTSR.
-         L     R15,CVTPTR                           Load CVT pointer.
+         L     R15,CVTPTR                          Load CVT pointer.
 * Load TVT pointer from CVT.
          L     R15,CVTTVT(,R15)
 * Load TSVTASF entry.
          L     R15,TSVTASF-TSVT(,R15)
+* Change note: capture SNAPX immediately before TSVTASF call.
+* Problem: ABEND 4088/63 occurs during IKJEFTSR; need closest pre-call
+* dump.
+* Expected effect: SNAPX captures CMDPARM/EFTSRWA right before TSVTASF.
+* Impact: additional SNAP output; ABEND if SNAP cannot open.
+* Ref: src/tsocmd.asm.md#snapx-pre-ikjeftsr
+* Save registers before SNAPX sequence.
+         STM   R0,R15,SNAPREGS           Save registers for SNAPX call.
+* Open SNAP DD for SNAPX output.
+         OPEN  (TSOSNAP,(OUTPUT))               Open SNAP DD for SNAPX.
+* Test OPEN return code.
+* Ref: src/tsocmd.asm.md#open-return-codes
+         LTR   R15,R15                      Test SNAP OPEN return code.
+* Treat RC <= 4 as usable OPEN (warning still opens DD).
+         CHI   R15,4                        Compare OPEN RC to warning.
+* Detect OPEN failure (RC > 4) and ABEND for diagnosis.
+* Problem: SNAP output missing may be due to OPEN failure.
+* Expected effect: ABEND makes OPEN failure visible in SYSTSPRT.
+* Impact: job ends early when SNAP cannot be opened.
+         BH    SNAP_FAIL               Branch on OPEN failure (RC > 4).
+* Restore registers before computing storage ranges.
+         LM    R0,R15,SNAPREGS            Restore registers after OPEN.
+* Change note: use scratch registers for SNAPX ranges.
+* Problem: SNAPX may clobber R2/R6 needed after diagnostics.
+* Expected effect: storage list uses scratch registers only.
+* Impact: preserves live registers for IKJEFTSR call setup.
+* Ref: src/tsocmd.asm.md#snapx-pre-ikjeftsr
+* Build CMDPARM dump range start (mask to 31-bit).
+* Copy CMDPARM start to scratch.
+         LR    R0,R2                          Copy CMDPARM start to R0.
+* Clear high-order bit from CMDPARM start.
+         NILF  R0,X'7FFFFFFF'              Ensure 31-bit CMDPARM start.
+* Build CMDPARM dump range end.
+* Compute CMDPARM end pointer.
+         LA    R1,CMDPARM_LEN-1(R0)            Set CMDPARM end address.
+* Build EFTSRWA dump range start (mask to 31-bit).
+* Copy EFTSRWA start to scratch.
+         LR    R4,R6                          Copy EFTSRWA start to R4.
+* Clear high-order bit from EFTSRWA start.
+         NILF  R4,X'7FFFFFFF'              Ensure 31-bit EFTSRWA start.
+* Build EFTSRWA dump range end.
+* Compute EFTSRWA end pointer.
+         LA    R5,EFTSRWSZ-1(R4)               Set EFTSRWA end address.
+* Issue SNAPX for CMDPARM and IKJEFTSR work area.
+         SNAPX DCB=TSOSNAP,ID=3,PDATA=(REGS,PSW,SAH),STORAGE=(R0,R1,   +
+               R4,R5)
+* Close SNAP DD to flush output.
+         CLOSE (TSOSNAP)                     Close SNAP DD after SNAPX.
+* Branch around SNAP_FAIL on success.
+         B     SNAP_DONE                 Skip SNAP_FAIL on normal path.
+* SNAP OPEN failure handler.
+SNAP_FAIL DS   0H                            SNAP OPEN failed (RC > 4).
+* Abend on SNAP OPEN failure for visibility.
+         ABEND 4093,DUMP                    Abend when SNAP OPEN fails.
+* Anchor for SNAPX done path.
+SNAP_DONE DS   0H                                 Mark SNAPX done path.
+* Restore registers after SNAPX sequence.
+         LM    R0,R15,SNAPREGS           Restore registers after SNAPX.
 * Call IKJEFTSR via TSVTASF.
          BALR  R14,R15
 *
@@ -466,7 +766,7 @@ CMD_ABN_OK DS 0H
          ST    R7,EFTST_REASON@
 * Point R1 at IKJEFTST plist.
          LA    R1,EFTSTWA
-         CALLTSSR EP=IKJTSFT                        Invoke IKJEFTST.
+         CALLTSSR EP=IKJTSFT                       Invoke IKJEFTST.
 * Save IKJEFTST return code.
          ST    R15,EFTRST_RC
 * Drop IKJEFTSR work mapping.
@@ -480,19 +780,19 @@ CMD_ABN_OK DS 0H
          B     CMD_DONE
 * Fail: parameter block missing.
 * Set RC for missing plist.
-CMD_FAIL_PARM L  R15,=F'-10'
+CMD_FAIL_PARM L R15,=F'-10'
 * Branch to common return.
 * Branch to shared return path.
          B     CMD_DONE
 * Fail: CPPL pointer missing.
 * Set RC for missing CPPL.
-CMD_FAIL_CPPL L  R15,=F'-11'
+CMD_FAIL_CPPL L R15,=F'-11'
 * Branch to common return.
 * Branch to shared return path.
          B     CMD_DONE
 * Fail: command pointer missing.
 * Set RC for missing command.
-CMD_FAIL_CMD L  R15,=F'-12'
+CMD_FAIL_CMD L R15,=F'-12'
 * Branch to common return.
 * Branch to shared return path.
          B     CMD_DONE
@@ -504,25 +804,25 @@ CMD_FAIL_DD L  R15,=F'-13'
          B     CMD_DONE
 * Fail: DAIR RC pointer missing.
 * Set RC for missing DAIR RC.
-CMD_FAIL_DAIR L  R15,=F'-14'
+CMD_FAIL_DAIR L R15,=F'-14'
 * Branch to common return.
 * Branch to shared return path.
          B     CMD_DONE
 * Fail: CAT RC pointer missing.
 * Set RC for missing CAT RC.
-CMD_FAIL_CAT L  R15,=F'-15'
+CMD_FAIL_CAT L R15,=F'-15'
 * Branch to common return.
 * Branch to shared return path.
          B     CMD_DONE
 * Fail: work area missing.
 * Set RC for missing work area.
-CMD_FAIL_WORK L  R15,=F'-16'
+CMD_FAIL_WORK L R15,=F'-16'
 * Branch to common return.
 * Branch to shared return path.
          B     CMD_DONE
 * Fail: TSODALC reported failure.
 * Set RC for TSODALC failure.
-CMD_FAIL_DALC L  R15,=F'-18'
+CMD_FAIL_DALC L R15,=F'-18'
 * Branch to common return.
 * Branch to shared return path.
          B     CMD_DONE
@@ -535,16 +835,181 @@ CMD_FAIL_EFTSI L R15,=F'-19'
 * Return to caller via LE epilog.
 * Return via LE epilog with RC.
 CMD_DONE CEETERM RC=(R15)
+* TSODALC ESPIE exit routine entry.
+* Purpose: capture diagnostics when TSODALC triggers a program check.
+* Input: R1 -> PIE/EPIE per ESPIE entry rules.
+* Output: return to RTM via R14 with registers restored.
+TSOCMD_ESPIE DS 0H                              ESPIE exit entry point.
+* Save all registers on entry.
+         STM   R0,R15,ESPIE_REGS         Save registers for ESPIE exit.
+* Establish CSECT base register.
+         LARL  R11,TSOCMD                    Load TSOCMD base into R11.
+* Map CSECT for static data access.
+         USING TSOCMD,R11                    Map TSOCMD for ESPIE exit.
+* Change note: request ESPIE percolation to RTM and reset.
+* Problem: returning to the interrupted instruction can loop; need
+* percolation to RTM with ESPIE reset token.
+* Expected effect: ESPIE exit percolates to RTM and removes itself.
+* Impact: RTM handles abend; ESPIE is reset via EPIERSET/EPIERTOK.
+* Ref: src/tsocmd.asm.md#espie-tsodalc-abend
+* Copy PIE/EPIE pointer to scratch for safe addressing.
+         LR    R10,R1                            Copy PIE/EPIE pointer.
+* Clear high-order bit from PIE/EPIE pointer.
+         NILF  R10,X'7FFFFFFF'          Ensure 31-bit PIE/EPIE pointer.
+* Request percolation to RTM via EPIEPERC.
+         OI    EPIE_FLGS_OFF(R10),EPIE_PERC_MASK   Set EPIEPERC.
+* Request ESPIE RESET via EPIERSET.
+         OI    EPIE_FLGS_OFF(R10),EPIE_RESET_MASK  Set EPIERSET.
+* Load ESPIE token for reset.
+         L     R0,ESPIE_TOKEN               Load ESPIE token for reset.
+* Store ESPIE token into EPIERTOK.
+         ST    R0,EPIE_RTOK_OFF(R10)         Store reset token in EPIE.
+* Capture PIE/EPIE pointer for diagnostics.
+         ST    R1,ESPIE_PIE                      Save PIE/EPIE pointer.
+* Open SNAP DD for ESPIE diagnostics.
+         OPEN  (TSOSNAP,(OUTPUT))         Open SNAP DD for ESPIE SNAPX.
+* Test OPEN return code.
+         LTR   R15,R15                      Test SNAP OPEN return code.
+* Treat RC <= 4 as usable OPEN (warning still opens DD).
+         CHI   R15,4                        Compare OPEN RC to warning.
+* Skip SNAPX if OPEN failed (RC > 4).
+         BH    ESPIE_EXIT                   Skip SNAPX on OPEN failure.
+* Restore PIE/EPIE pointer after OPEN.
+         L     R1,ESPIE_PIE                    Reload PIE/EPIE pointer.
+* Change note: use SNAPX list form and valid registers (2-12).
+* Problem: SNAPX execute form requires registers 2-12; R0/R1 are
+* invalid.
+* Expected effect: storage list is honored in ESPIE exit SNAPX.
+* Impact: ESPIE SNAPX uses SNAP6PL list form and R10/R11 pair.
+* Ref: src/tsocmd.asm.md#snapx-pre-ikjeftsr
+* Build PIE/EPIE dump range start (mask to 31-bit).
+* Copy PIE/EPIE start to scratch (R10).
+         LR    R10,R1                       Copy PIE/EPIE start to R10.
+* Clear high-order bit from PIE/EPIE start.
+         NILF  R10,X'7FFFFFFF'            Ensure 31-bit PIE/EPIE start.
+* Build PIE/EPIE dump range end.
+* Compute PIE/EPIE end pointer (R11).
+         LA    R11,EPIE_LEN-1(R10)            Set PIE/EPIE end address.
+* Issue SNAPX for PIE/EPIE only.
+         SNAPX MF=(E,SNAP6PL),STORAGE=(R10,R11)
+* Load CMDPARM pointer for optional dump.
+         L     R4,ESPIE_PB                        Load CMDPARM pointer.
+* Test CMDPARM pointer for zero.
+         LTR   R4,R4                              Test CMDPARM pointer.
+* Skip CMDPARM/WORK dump when CMDPARM pointer missing.
+         BZ    ESPIE_CLOSE                     Skip CMDPARM/WORK SNAPX.
+* Load WORKAREA pointer for optional dump.
+         L     R6,ESPIE_WORK                     Load WORKAREA pointer.
+* Test WORKAREA pointer for zero.
+         LTR   R6,R6                             Test WORKAREA pointer.
+* Skip CMDPARM/WORK dump when WORKAREA pointer missing.
+         BZ    ESPIE_CLOSE                     Skip CMDPARM/WORK SNAPX.
+* Build CMDPARM dump range start (mask to 31-bit).
+* Copy CMDPARM start to scratch (R10).
+         LR    R10,R4                        Copy CMDPARM start to R10.
+* Clear high-order bit from CMDPARM start.
+         NILF  R10,X'7FFFFFFF'             Ensure 31-bit CMDPARM start.
+* Build CMDPARM dump range end.
+* Compute CMDPARM end pointer (R11).
+         LA    R11,CMDPARM_LEN-1(R10)          Set CMDPARM end address.
+* Build WORKAREA dump range start (mask to 31-bit).
+* Copy WORKAREA start to scratch (R8).
+         LR    R8,R6                         Copy WORKAREA start to R8.
+* Clear high-order bit from WORKAREA start.
+         NILF  R8,X'7FFFFFFF'             Ensure 31-bit WORKAREA start.
+* Build WORKAREA dump range end.
+* Compute WORKAREA end pointer (R9).
+         LA    R9,WORKSIZE-1(R8)              Set WORKAREA end address.
+* Issue SNAPX for CMDPARM and WORKAREA.
+         SNAPX MF=(E,SNAP7PL),STORAGE=(R10,R11,R8,R9)
+* Close SNAP DD after ESPIE SNAPX.
+ESPIE_CLOSE DS 0H                          Anchor for ESPIE CLOSE path.
+         CLOSE (TSOSNAP)                  Close SNAP DD for ESPIE exit.
+* Restore registers and return to system recovery.
+ESPIE_EXIT DS  0H                           Anchor for ESPIE exit path.
+         LM    R0,R15,ESPIE_REGS          Restore registers for return.
+* Return to RTM using original return address.
+         BR    R14                              Return from ESPIE exit.
 * Emit literal pool for constants.
-         LTORG                                      Emit literal pool.
+         LTORG Emit                                literal pool.
 * LE PPA for TSOCMD.
 * Define LE PPA for TSOCMD.
 TSCPPA   CEEPPA
+* SNAPX register save area for pre-IKJEFTSR dump.
+* Reserve SNAPX register save area.
+SNAPREGS DS    16F                   Save area for R0-R15 during SNAPX.
+* ESPIE register save area for TSODALC exit.
+* Reserve ESPIE register save area.
+ESPIE_REGS DS  16F                       Save area for ESPIE exit regs.
+* ESPIE token for RESET.
+ESPIE_TOKEN DS F                                   Saved ESPIE token.
+* ESPIE CMDPARM pointer for exit dumps.
+ESPIE_PB DS    F                        CMDPARM pointer for ESPIE exit.
+* ESPIE WORKAREA pointer for exit dumps.
+ESPIE_WORK DS  F                       WORKAREA pointer for ESPIE exit.
+* ESPIE PIE/EPIE pointer storage.
+ESPIE_PIE DS   F                           PIE/EPIE pointer from ESPIE.
+* ESPIE dump length for PIE/EPIE area.
+EPIE_LEN EQU   256                         Bytes to dump from PIE/EPIE.
+* EPIE flags byte offset (EPIEFLGS).
+EPIE_FLGS_OFF EQU X'99'                     Offset of EPIEFLGS in EPIE.
+* EPIE reset token offset (EPIERTOK).
+EPIE_RTOK_OFF EQU X'9C'                     Offset of EPIERTOK in EPIE.
+* EPIE percolation request mask (EPIEPERC).
+EPIE_PERC_MASK EQU X'10'                         Mask for EPIEPERC bit.
+* EPIE reset request mask (EPIERSET).
+EPIE_RESET_MASK EQU X'08'                        Mask for EPIERSET bit.
+* SNAPX output DCB for DD SNAP (VBA/125/882).
+* Define SNAPX DCB for SYSOUT SNAP dumps.
+TSOSNAP  DCB   DDNAME=SNAP,DSORG=PS,MACRF=(W),RECFM=VBA,               +
+               LRECL=125,BLKSIZE=882
+* SNAPX list form for ESPIE PIE/EPIE dump.
+* Change note: reserve list storage after list form for execute use.
+* Problem: execute form STORAGE needs list area per IBM SNAPX list
+* form.
+* Expected effect: SNAP6PL supports ESPIE SNAPX with dynamic STORAGE.
+* Impact: ESPIE exit uses MF=(E,SNAP6PL) with register pairs.
+* Ref: src/tsocmd.asm.md#snapx-pre-ikjeftsr
+SNAP6PL  SNAPX MF=L,DCB=TSOSNAP,ID=6,PDATA=(REGS,PSW,SAH)
+SNAP6LS  DS    2F                                 SNAP6 list (1 range).
+* SNAPX list form for ESPIE CMDPARM/WORKAREA dump.
+* Change note: reserve list storage after list form for execute use.
+* Problem: execute form STORAGE needs list area per IBM SNAPX list
+* form.
+* Expected effect: SNAP7PL supports ESPIE SNAPX with 2 ranges.
+* Impact: ESPIE exit uses MF=(E,SNAP7PL) with register pairs.
+* Ref: src/tsocmd.asm.md#snapx-pre-ikjeftsr
+SNAP7PL  SNAPX MF=L,DCB=TSOSNAP,ID=7,PDATA=(REGS,PSW,SAH)
+SNAP7LS  DS    4F                                SNAP7 list (2 ranges).
+* PUTLINE working storage for IKJEFTSI diagnostics.
+* PUTLINE ECB for output line.
+ECBADS   DS    F                                   PUTLINE ECB.
+* PUTLINE IOPL for output line.
+IOPLADS  DS    4F                                  PUTLINE IOPL.
+* PUTLINE parameter list for output line.
+PUTPARM  PUTLINE MF=L                              PUTLINE parm.
+* Edit mask for 8-digit fields.
+EDMASK0  DC    X'F0F0F0F0F0F0F0F0'                 Edit mask template.
+* Edit work area for numeric fields.
+EDMASKW  DS    CL8                                 Edit work area.
+* Packed decimal work area for numeric fields.
+PACKNUM  DS    D                                   Packed work value.
+* PUTLINE output header (length + flags).
+OUTLINE  DC    H'74',H'0'                          Output line header.
+* PUTLINE output text buffer (segment 1).
+OUTTXT   DC    CL49'LUZ30081 IKJEFTSI RC=00000000 ERR=00000000 ABEND='
+* PUTLINE output text buffer (segment 2).
+         DC    CL21'00000000 RSN=00000000'
+* Output field offsets within OUTTXT.
+RC_POS   EQU   21                                  RC offset.
+ERR_POS  EQU   34                                  ERROR offset.
+ABD_POS  EQU   49                                  ABEND offset.
+RSN_POS  EQU   62                                  REASON offset.
 * Parameter block layout for TSOCMD.
 * Map TSOCMD parameter block.
-CMDPARM DSECT
+CMDPARM  DSECT
 * CPPL pointer.
-CMD_CPPL DS    F                                    CPPL pointer slot.
+CMD_CPPL DS    F                                   CPPL pointer slot.
 * Command pointer.
 * Command pointer slot.
 CMD_CMDP DS    F
@@ -565,10 +1030,13 @@ CMD_ABEND DS   F
 CMD_DAIR DS    F
 * CAT RC pointer.
 * Catalog RC pointer slot.
-CMD_CAT DS     F
+CMD_CAT  DS    F
 * Work area pointer.
 * Work area pointer slot.
 CMD_WORK DS    F
+* Parameter block size.
+* Compute parameter block length.
+CMDPARM_LEN EQU *-CMDPARM
 * Work area layout for TSOCMD.
 * Map TSOCMD work area layout.
 WORKAREA DSECT
@@ -589,16 +1057,16 @@ EFTSI_ERROR@ DS F
 * ABEND pointer slot.
 EFTSI_ABEND@ DS F
 * REASON pointer slot.
-EFTSI_REASON@ DS F
-EFTSI_ECTPARM DS F                                  ECTPARM fullword.
-EFTSI_RESERVED DS F                                 RESERVED fullword.
+EFTSI_REASON@  DS F
+EFTSI_ECTPARM  DS F                                ECTPARM fullword.
+EFTSI_RESERVED DS F                                RESERVED fullword.
 * TOKEN storage (16 bytes).
-EFTSI_TOKEN DS CL16
-EFTSI_ERROR DS F                                    ERROR fullword.
-EFTSI_ABEND DS F                                    ABEND fullword.
-EFTSI_REASON DS F                                   REASON fullword.
+EFTSI_TOKEN  DS CL16
+EFTSI_ERROR  DS F                                  ERROR fullword.
+EFTSI_ABEND  DS F                                  ABEND fullword.
+EFTSI_REASON DS F                                  REASON fullword.
 * IKJEFTSI work size.
-EFTSIWSZ EQU  *-EFTSIWA
+EFTSIWSZ EQU   *-EFTSIWA
 * IKJEFTST work area slice.
 * Align IKJEFTST work area.
 EFTSTWA  DS    0F
@@ -613,16 +1081,16 @@ EFTST_ERROR@ DS F
 * ABEND pointer slot.
 EFTST_ABEND@ DS F
 * REASON pointer slot.
-EFTST_REASON@ DS F
-EFTST_ECTPARM DS F                                  ECTPARM fullword.
-EFTST_RESERVED DS F                                 RESERVED fullword.
+EFTST_REASON@  DS F
+EFTST_ECTPARM  DS F                                ECTPARM fullword.
+EFTST_RESERVED DS F                                RESERVED fullword.
 * TOKEN storage (16 bytes).
-EFTST_TOKEN DS CL16
-EFTST_ERROR DS F                                    ERROR fullword.
-EFTST_ABEND DS F                                    ABEND fullword.
-EFTST_REASON DS F                                   REASON fullword.
+EFTST_TOKEN  DS CL16
+EFTST_ERROR  DS F                                  ERROR fullword.
+EFTST_ABEND  DS F                                  ABEND fullword.
+EFTST_REASON DS F                                  REASON fullword.
 * IKJEFTST work size.
-EFTSTWSZ EQU  *-EFTSTWA
+EFTSTWSZ EQU   *-EFTSTWA
 * IKJEFTSR work area slice.
 * Reserve IKJEFTSR work slice.
 EFTRWORK DS    CL152
@@ -657,7 +1125,7 @@ RCVAL    DS    F
 * Local reason value.
 REASONV  DS    F
 * Abend value.
-ABENDV   DS    F                                    Local abend value.
+ABENDV   DS    F                                   Local abend value.
 * Zero fullword used as parm7 placeholder for IKJEFTSR.
 * Zero placeholder for parm7.
 EFT_P7ZERO DS  F
@@ -680,6 +1148,11 @@ CEECAA   DSECT
 CEEDSA   DSECT
 * Expand DSA mapping macro.
          CEEDSA
+* CPPL DSECT anchor.
+* Declare CPPL DSECT anchor.
+CPPL     DSECT
+* Expand CPPL mapping macro.
+         IKJCPPL CPPL
 * IKJEFTSR work area layout (stored inside WORKAREA.EFTRWORK slice).
 * Map IKJEFTSR work layout.
 EFTSRWA  DSECT
@@ -692,7 +1165,7 @@ EFT_PLIST DS   9F
 EFT_FLAGS DS   XL4
 * IKJEFTSR CPPL work area (4 fullwords).
 * IKJEFTSR CPPL work area.
-EFT_CPPL  DS   4F
+EFT_CPPL DS    4F
 * IKJEFTSI/IKJEFTSR token storage (16 bytes).
 * Token storage for IKJEFTSR.
 EFT_TOKEN DS   CL16
@@ -702,7 +1175,7 @@ EFTSRWSZ EQU   *-EFTSRWA
 * CVT/TVT offsets for locating TSVTASF (TSO service facility).
 * CVT pointer offset.
 CVTPTR   EQU   16
-CVTTVT   EQU   X'9C'                                CVT-to-TVT offset.
+CVTTVT   EQU   X'9C'                               CVT-to-TVT offset.
 * Map TSVT control block.
          IKJTSVT
 * End of TSOCMD module.

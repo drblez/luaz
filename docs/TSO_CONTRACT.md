@@ -2,7 +2,9 @@
 
 ## Overview
 
-The `tso` module supports a native backend (IKJEFTSR + DAIR) and a REXX bridge fallback (`LUTSO` via `IRXEXEC`).
+The `tso` module uses a clean C backend (IKJTSOEV + IKJEFTSR) with JCL-allocated
+DDNAMEs. The REXX bridge (`LUTSO` via `IRXEXEC`) is used only when output
+capture is explicitly requested.
 
 `LUAEXEC` runs as a program (`PGM=...`) and `LUACMD` runs as a TSO command processor, both driving the same Lua runtime.
 Lua code can check `LUAZ_MODE` to detect whether it runs in `PGM` or `TSO` mode, and `tso.*` APIs should reject calls in `PGM` mode.
@@ -11,53 +13,50 @@ Lua code can check `LUAZ_MODE` to detect whether it runs in `PGM` or `TSO` mode,
 then calls the exported C entrypoint (`LUAEXRUN`) directly. This avoids TSO program-mode
 parameter conventions and guarantees LE initialization.
 Operands from the TSO command line are passed as a single line (pointer + length) to `LUAEXRUN`.
-`LUAEXRUN` forces `MODE=TSO` internally and rejects explicit `MODE=PGM` in the input.
+`LUAEXRUN` uses only the provided `MODE=` token (default is `PGM`), so `LUACMD`
+injects `MODE=TSO` explicitly.
+The CPPL pointer is passed by `LUACMD` and cached by `LUAEXEC` for OS-linkage calls.
 
 ### LUACMD CPPL parsing
 
 - `CPPL.CPPLCBUF` points to the command buffer.
 - The buffer is `H'len' H'offset' text...` where `text` begins at `buf+offset`.
 - `LUACMD` passes `text` and `len - offset` to `LUAEXRUN`.
+- `LUACMD` passes the CPPL address to `LUAEXRUN` for optional OS-linkage use.
 
 ## Dataset and DDNAME Requirements
 
-- Native backend: output capture uses an internal DDNAME allocated via DAIR; no user DDNAME is required.
-- Native backend: the DDNAME value is generated in C (unique per call) and passed into ASM wrappers as an 8-byte EBCDIC DDNAME.
-- REXX backend: `SYSEXEC` must include `HLQ.LUA.REXX` with member `LUTSO`.
-- REXX backend: `tso.cmd` output capture uses an optional DDNAME (e.g., `TSOOUT`) allocated by the caller.
-- REXX backend: `STEPLIB` (or linklist) must include `SYS1.LPALIB` on this system so `IRXEXEC` can be loaded.
+- Clean C backend: `SYSTSPRT` must be allocated by JCL (dataset or SYSOUT).
+- Capture path: `tso.cmd` reads `SYSTSPRT` directly (`DD:SYSTSPRT`).
+- `tso.alloc` / `tso.free` continue to use DAIR via ASM wrappers.
+- Capture path: `SYSEXEC` must include `HLQ.LUA.REXX` with member `LUTSO`.
+- Capture path: `STEPLIB` (or linklist) must include `SYS1.LPALIB` so `IRXEXEC` can be loaded.
 
-### Native output capture lifecycle (DAIR + SYSTSPRT redirect)
+### Capture lifecycle (SYSTSPRT via REXX OUTTRAP)
 
-The native path captures command output by redirecting `SYSTSPRT` to a private DDNAME using DAIR.
+When `capture=true`, `tso.cmd` uses REXX `OUTTRAP` to isolate the command
+output and then reads `SYSTSPRT` directly.
 
 Contract:
 
-1) C generates a unique DDNAME (8 chars) and calls `TSOCMD`:
-   - `TSOCMD` allocates the private DDNAME and redirects `SYSTSPRT` to it (DAIR via `TSODALC`).
-   - `TSOCMD` executes the TSO command via IKJEFTSR (TSO service facility).
-   - `TSOCMD` returns the TSO RC and fills `reason` / `abend` as applicable.
-   - `TSOCMD` does **not** free the DD allocations.
-
-2) C reads the captured output from the DDNAME (streaming, with limits) and returns it to Lua as lines.
-
-3) C releases DD allocations by calling `TSODFRE` (DAIR free):
-   - restore `SYSTSPRT`,
-   - free the private DDNAME.
+1) JCL allocates `SYSTSPRT` (dataset or SYSOUT).
+2) REXX `LUTSO` traps the command output with `OUTTRAP` and emits it to `SYSTSPRT`.
+3) C reads `DD:SYSTSPRT` (record I/O when possible) and returns only the
+   new lines produced since the previous `tso.cmd` call in the same process.
 
 Notes:
 
-- This keeps “ASM things” (DAIR and TSO/E service facility invocation) in ASM and “C things” (I/O limits, parsing, line splitting, Lua table building) in C.
-- IKJEFTSR is called with an OS-style parameter address list (`R1` points to a list of fullword parameter addresses). For unisolated command invocation, `TSOCMD` passes `CPPL` as parm8 and marks end-of-list by setting the high-order bit on the parm8 address. Token (parm9) is omitted unless explicitly needed.
+- No DAIR allocation or SYSTSPRT redirection is performed in `LUAEXEC`.
 - `DD:`/`//DD:` direct paths bypass LUAMAP and must be read directly from the DDNAME stream (LUAMAP is only for `require` search under `LUAPATH`).
 
 ## API Behavior
 
-- `tso.cmd(cmd, opts) -> rc, lines`
+- `tso.cmd(cmd, capture?) -> rc, lines`
   - `cmd`: TSO command string.
-  - `opts.outdd`: DDNAME for output capture (REXX backend only).
+  - `capture`: optional boolean (default `false`) to enable output capture.
   - `rc`: TSO return code.
-  - `lines`: table of output lines, each prefixed with `LUZ30031`.
+  - `lines`: table of output lines from `SYSTSPRT`, each prefixed with `LUZ30031`
+    when `capture=true`; `nil` when `capture=false`.
 - `tso.alloc(spec) -> rc`
   - `spec`: allocation spec (e.g., `DD(LUTMP) DSN('HLQ.DATA') SHR`).
 - `tso.free(spec) -> rc`
@@ -73,7 +72,7 @@ Notes:
 Tokens before `--` are parsed as control options. Order does not matter.
 
 - `MODE=TSO` or `MODE=PGM` sets `LUAZ_MODE` (default: `PGM`).
-- When invoked from `LUACMD`, `LUAEXRUN` forces `MODE=TSO` regardless of input.
+- When invoked from `LUACMD`, `MODE=TSO` is injected by LUACMD and parsed by `LUAEXRUN`.
 - `DSN=...` is detected but not implemented yet (returns `LUZ30041` and `RC=8`).
 - `--` ends control parsing; everything after goes into Lua `arg[]`.
 - Any other tokens before `--` are ignored (not passed to Lua).

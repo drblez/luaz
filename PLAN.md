@@ -59,12 +59,15 @@ This section replaces the REXX bridge and focuses only on native TSO services.
     - [~] Add unit test program + JCL (TSNUT/UTTSN).
   - [x] Remove `TSOEFTR` dependency: execute IKJEFTSR (TSO service facility) inside `TSOCMD` using caller-provided work buffer.
   - [x] Output capture strategy (TMP required):
-    - [x] Allocate a private, unique DDNAME in C, redirect `SYSTSPRT` to it via DAIR, then read `DD:<ddname>` into Lua.
-    - [x] Free/restore `SYSTSPRT` allocation after output is consumed (cleanup is separate from execution).
+  - [x] Allocate a private OUTDD via TSO ALLOC and route output via STACK OUTDD, then read `DD:<outdd>` into Lua.
+  - [x] Capture DAIR-returned DDNAME for STACK OUTDD when DAIR assigns a new name.
+  - [x] Close STACK dataset DCBs and delete the stack element after output capture.
+    - [x] Free OUTDD allocation after output is consumed (cleanup is separate from execution).
     - [x] No user‑supplied `outdd` (internal DD only).
     - [ ] Optional: GETMSG buffer fallback for message capture.
   - [ ] Map IKJEFTSR RC/RSN/ABEND to LUZ codes and Lua errors.
   - [ ] UT JCL: `TIME`, `LISTCAT`, verify non‑empty output.
+  - [x] Add a standalone C example and JCL for IKJTSOEV/IKJEFTSR output capture.
   - [~] Interim CP path: use `TSOAUTH` in SYS1.LINKLIB for tests before `LUAEXEC`.
   - [~] Add LUACMD TSO command processor wrapper for `LUAEXEC`.
     - [~] Switch LUACMD -> LE bridge (`CEEENTRY`) and call `LUAEXRUN` directly (no IKJEFTSR program-mode).

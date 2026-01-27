@@ -1,4 +1,4 @@
-# TSO Native Backend (C, no REXX)
+# TSO Native Backend (C-first)
 
 This document captures the IBM references and the intended native (non‑REXX) path for `tso.*`.
 
@@ -20,10 +20,9 @@ Links (IBM Docs):
 ## Intended service usage
 
 - `tso.cmd` -> IKJEFTSR (TSO/E Service Facility)
-  - Execute TSO commands directly from C.
-  - Capture output via internal DD (DAIR, SYSTSPRT redirect) or message retrieval service.
-  - Interim testing may route commands through `TSOAUTH` (command processor) before `LUAEXEC` is ready.
-  - `TSOAUTH` must be in `SYS1.LINKLIB` and authorized when using the CP path.
+  - Execute TSO commands directly from C when `capture=false`.
+  - Output capture reads `SYSTSPRT` directly (no DAIR redirection).
+  - CPPL is forwarded when available for OS-linkage calls.
 - `tso.alloc` / `tso.free` -> DAIR + DAIRFAIL
   - Dynamic allocation interface with diagnostic mapping.
   - DAIR calls use ASM macro wrappers (IKJDAPL/IKJDAP08/IKJDAP18) to avoid C struct drift.
@@ -76,10 +75,17 @@ Key DAIR request blocks (from the extracted macros):
 
 - DSNAME buffer format: 2-byte length followed by 44-byte blank-padded name (see IBM docs for DAIR entry code X'00').
 - DA08PQTY/DA08SQTY field format and DA08CD/DA18CD entry codes must be verified against IBM DAIR docs before finalizing production defaults.
-- ASM wrappers: `TSODALC`/`TSODFRE` in `src/tsodair.asm` manage DAIR allocation for SYSTSPRT capture.
+- ASM wrappers: `TSODALC`/`TSODFRE` in `src/tsodair.asm` support legacy DAIR allocation for
+  STACK-based capture experiments (not used by current `tso.cmd`).
 - `TSODALC` uses `DA08ALN=SYSTSPRT` with `DA08ATRL` to inherit DCB attributes; confirm with IBM DAIR docs.
+- Interim capture path: when `tso.cmd(..., true)` is used, `LUTSO` (REXX) traps
+  command output with `OUTTRAP` and emits it to `SYSTSPRT`, which is then read
+  by C to return only the new lines.
 
 ## Notes
 
 - The native backend still requires a valid TSO/E environment.
+- `tso.cmd` depends on JCL-allocated `SYSTSPRT` (dataset or SYSOUT).
+- `tso.cmd(..., true)` returns only new `SYSTSPRT` output since the last call in the
+  same process (per-call output isolation).
 - All messages must use `LUZNNNNN` prefix and be registered in `MSGS-*.md`.

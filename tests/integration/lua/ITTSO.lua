@@ -27,11 +27,11 @@ end
 
 local function main()
   print("LUZ30060 LUAZ_MODE=" .. tostring(LUAZ_MODE))
-  -- Change note: restrict ITTSO to direct tso.cmd only (no REXX alloc/free).
-  -- Problem: REXX path is out of scope until explicitly approved.
-  -- Expected effect: validate direct TSO command execution and output capture.
-  -- Impact: ITTSO no longer exercises tso.alloc/free.
-  local rc, lines, errcode = tso.cmd("LISTCAT LEVEL(DRBLEZ.LUA)")
+  -- Change note: request explicit output capture via REXX OUTTRAP.
+  -- Problem: capture must be opt-in and validated in batch tests.
+  -- Expected effect: tso.cmd returns LUZ30031-prefixed output lines.
+  -- Impact: ITTSO exercises capture=true path only.
+  local rc, lines, errcode = tso.cmd("LISTCAT LEVEL(DRBLEZ.LUA)", true)
   if rc == nil then
     fail("tso.cmd failed: " .. tostring(lines) .. " err=" .. tostring(errcode))
   end

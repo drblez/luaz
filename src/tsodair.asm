@@ -89,8 +89,8 @@ R15      EQU   15
          USING CEEDSA,R13
 * Preserve caller plist pointer.
          LR    R8,R1
-         L     R2,0(R8)                        Load CPPL pointer value.
-         LTR   R2,R2                           Validate CPPL pointer.
+         L     R2,0(R8)             Load CPPL pointer value.
+         LTR   R2,R2                Validate CPPL pointer.
 * Branch if CPPL pointer is NULL.
          BZ    TDALC_FAIL_CPPL
 * Load DDNAME pointer value.
@@ -111,9 +111,9 @@ R15      EQU   15
          LTR   R5,R5
 * Branch if CAT RC pointer is NULL.
          BZ    TDALC_FAIL_CATRC
-         L     R6,16(R8)                       Load work pointer value.
+         L     R6,16(R8)            Load work pointer value.
 * Clear end-of-plist high bit on work pointer.
-         NILF  R6,X'7FFFFFFF'                  Clear HOB via NILF.
+         NILF  R6,X'7FFFFFFF'       Clear HOB via NILF.
 * Check work pointer for NULL.
          LTR   R6,R6
 * Branch if work area pointer is NULL.
@@ -122,7 +122,7 @@ R15      EQU   15
          LR    R9,R6
 * Map work area for fields.
          USING WORKAREA,R9
-         LA    R8,DAPLAREA                     Load DAPL base address.
+         LA    R8,DAPLAREA          Load DAPL base address.
 * Map DAPL fields with base.
          USING DAPL,R8
 * Load DAPB08 base address.
@@ -135,17 +135,17 @@ R15      EQU   15
          XC    0(WORKSIZE,R9),0(R9)
 * Copy caller DDNAME (8 chars).
          MVC   DDNAME(8),0(R3)
-         MVC   DSNBUF+2(44),BLANKS             Blank-fill DSNAME area.
+         MVC   DSNBUF+2(44),BLANKS  Blank-fill DSNAME area.
 * Set DSNAME prefix "&&LZ".
          MVC   DSNBUF+2(4),DSNPFX
 * Append DDNAME to DSNAME.
          MVC   DSNBUF+6(8),DDNAME
 * Load DSNAME length (12).
          LA    R7,12
-         STH   R7,DSNBUF                       Store DSNAME length.
+         STH   R7,DSNBUF            Store DSNAME length.
 * Copy CPPL pointer to base.
          LR    R10,R2
-         USING CPPL,R10                        Map CPPL control block.
+         USING CPPL,R10             Map CPPL control block.
 * Load UPT pointer from CPPL.
          L     R7,CPPLUPT
 * Store UPT pointer in DAPL.
@@ -166,12 +166,12 @@ R15      EQU   15
          MVC   DA08CD,=X'0008'
 * Load DSNAME buffer address.
          LA    R7,DSNBUF
-         ST    R7,DA08PDSN                     Store DSNAME pointer.
+         ST    R7,DA08PDSN          Store DSNAME pointer.
 * Set DDNAME for private output.
          MVC   DA08DDN,DDNAME
 * Copy DCB attributes from SYSTSPRT.
          MVC   DA08ALN,SYSALN
-         MVI   DA08DSP1,DA08NEW                Request NEW allocation.
+         MVI   DA08DSP1,DA08NEW     Request NEW allocation.
 * Delete on unallocate (private DD).
          MVI   DA08DPS2,DA08DEL
 * Set primary space quantity.
@@ -188,7 +188,7 @@ R15      EQU   15
          L     R15,=V(IKJDAIR)
 * Call IKJDAIR for private DD.
          BALR  R14,R15
-         LH    R7,DA08DARC                     Load DAIR return code.
+         LH    R7,DA08DARC          Load DAIR return code.
 * Store DAIR RC for caller.
          ST    R7,0(R4)
 * Load catalog return code.
@@ -201,7 +201,7 @@ R15      EQU   15
          BNE   TDALC_FAILRC
 * Algorithm: redirect SYSTSPRT to private DD.
 * - Reuse DAPB08 to allocate SYSTSPRT pointing to private DD DSN.
-         MVC   DA08DDN,SYSDDN                  Set DDNAME to SYSTSPRT.
+         MVC   DA08DDN,SYSDDN       Set DDNAME to SYSTSPRT.
 * Keep on unallocate (SYSTSPRT).
          MVI   DA08DPS2,DA08KEEP
 * Load DAPL address into R1.
@@ -210,7 +210,7 @@ R15      EQU   15
          L     R15,=V(IKJDAIR)
 * Call IKJDAIR for SYSTSPRT.
          BALR  R14,R15
-         LH    R7,DA08DARC                     Load DAIR return code.
+         LH    R7,DA08DARC          Load DAIR return code.
 * Store DAIR RC for caller.
          ST    R7,0(R4)
 * Load catalog return code.
@@ -221,14 +221,14 @@ R15      EQU   15
          CHI   R7,0
 * Branch if SYSTSPRT alloc failed.
          BNE   TDALC_FAILSPR
-         XR    R15,R15                         Set return code to 0.
-         B     TDALC_DONE                      Branch to epilog.
+         XR    R15,R15              Set return code to 0.
+         B     TDALC_DONE           Branch to epilog.
 * Set nonzero return code.
-TDALC_FAILRC L  R15,=F'8'
-         B     TDALC_DONE                      Branch to epilog.
+TDALC_FAILRC L R15,=F'8'
+         B     TDALC_DONE           Branch to epilog.
 * Algorithm: on SYSTSPRT allocation failure, free private DD (DAPB18).
 * Load DAPB18 base address.
-TDALC_FAILSPR LA  R6,DAPB18AREA
+TDALC_FAILSPR LA R6,DAPB18AREA
 * Map DAPB18 fields with base.
          USING DAPB18,R6
 * Clear DAPB18 request block.
@@ -249,43 +249,43 @@ TDALC_FAILSPR LA  R6,DAPB18AREA
          BALR  R14,R15
 * Set nonzero return code.
          L     R15,=F'8'
-         B     TDALC_DONE                      Branch to epilog.
+         B     TDALC_DONE           Branch to epilog.
 * Set RC=12 for NULL CPPL pointer.
-TDALC_FAIL_CPPL L  R15,=F'12'
-         B     TDALC_DONE                      Branch to epilog.
+TDALC_FAIL_CPPL L R15,=F'12'
+         B     TDALC_DONE           Branch to epilog.
 * Set RC=13 for NULL DDNAME pointer.
-TDALC_FAIL_DDNAME L  R15,=F'13'
-         B     TDALC_DONE                      Branch to epilog.
+TDALC_FAIL_DDNAME L R15,=F'13'
+         B     TDALC_DONE           Branch to epilog.
 * Set RC=14 for NULL DAIR RC pointer.
-TDALC_FAIL_DAIRRC L  R15,=F'14'
-         B     TDALC_DONE                      Branch to epilog.
+TDALC_FAIL_DAIRRC L R15,=F'14'
+         B     TDALC_DONE           Branch to epilog.
 * Set RC=15 for NULL CAT RC pointer.
-TDALC_FAIL_CATRC L  R15,=F'15'
-         B     TDALC_DONE                      Branch to epilog.
+TDALC_FAIL_CATRC L R15,=F'15'
+         B     TDALC_DONE           Branch to epilog.
 * Set RC=16 for NULL work area pointer.
-TDALC_FAIL_WORK L  R15,=F'16'
+TDALC_FAIL_WORK L R15,=F'16'
 * Return to caller with RC.
 TDALC_DONE CEETERM RC=(R15)
 * Emit literal pool for TSODALC.
          LTORG
 * Drop TSODALC addressability before the next entry point.
-         DROP TSODALC
+         DROP  TSODALC
 * Drop WORKAREA addressability.
-         DROP WORKAREA
+         DROP  WORKAREA
 * Drop DAPL addressability.
-         DROP DAPL
+         DROP  DAPL
 * Change note: do not DROP DAPB08 when no active USING.
 * Problem: ASMA307E when DAPB08 is inactive after LTORG.
 * Expected effect: no ASMA307E; runtime behavior unchanged.
 * Impact: DAPB08 is already inactive by the time of drops.
 * Drop DAPB18 addressability.
-         DROP DAPB18
+         DROP  DAPB18
 * Drop CPPL addressability.
-         DROP CPPL
+         DROP  CPPL
 * Drop CAA addressability.
-         DROP CEECAA
+         DROP  CEECAA
 * Drop DSA addressability.
-         DROP CEEDSA
+         DROP  CEEDSA
 * -------------------------------------------------------------
 * Entry point: TSODFRE (LE-conforming, OS linkage).
 * - Purpose: free SYSTSPRT and the private DD allocation.
@@ -307,9 +307,9 @@ TSODFRE  CEEENTRY PPA=TSDPPA2,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),    X
          USING CEEDSA,R13
 * Preserve caller plist pointer.
          LR    R8,R1
-         L     R2,0(R8)                        Load CPPL pointer value.
-         LTR   R2,R2                           Validate CPPL pointer.
-         BZ    TDFRE_FAIL                      Branch if CPPL is NULL.
+         L     R2,0(R8)             Load CPPL pointer value.
+         LTR   R2,R2                Validate CPPL pointer.
+         BZ    TDFRE_FAIL           Branch if CPPL is NULL.
 * Load DDNAME pointer value.
          L     R3,4(R8)
 * Validate DDNAME pointer.
@@ -328,17 +328,17 @@ TSODFRE  CEEENTRY PPA=TSDPPA2,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),    X
          LTR   R5,R5
 * Branch if CAT RC pointer is NULL.
          BZ    TDFRE_FAIL
-         L     R6,16(R8)                       Load work pointer value.
+         L     R6,16(R8)            Load work pointer value.
 * Clear end-of-plist high bit.
-         NILF  R6,X'7FFFFFFF'                  Clear HOB via NILF.
+         NILF  R6,X'7FFFFFFF'       Clear HOB via NILF.
 * Check work pointer for NULL.
          LTR   R6,R6
-         BZ    TDFRE_FAIL                      Branch if no work area.
+         BZ    TDFRE_FAIL           Branch if no work area.
 * Use caller work area base.
          LR    R9,R6
 * Map work area for fields.
          USING WORKAREA,R9
-         LA    R8,DAPLAREA                     Load DAPL base address.
+         LA    R8,DAPLAREA          Load DAPL base address.
 * Map DAPL fields with base.
          USING DAPL,R8
 * Load DAPB18 base address.
@@ -352,7 +352,7 @@ TSODFRE  CEEENTRY PPA=TSDPPA2,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),    X
          MVC   DDNAME(8),0(R3)
 * Copy CPPL pointer to base.
          LR    R10,R2
-         USING CPPL,R10                        Map CPPL control block.
+         USING CPPL,R10             Map CPPL control block.
 * Load UPT pointer from CPPL.
          L     R7,CPPLUPT
 * Store UPT pointer in DAPL.
@@ -371,7 +371,7 @@ TSODFRE  CEEENTRY PPA=TSDPPA2,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),    X
          XC    0(DAPB18_LEN,R6),0(R6)
 * Set DAIR entry code X'18'.
          MVC   DA18CD,=X'0018'
-         MVC   DA18DDN,SYSDDN                  Set DDNAME to SYSTSPRT.
+         MVC   DA18DDN,SYSDDN       Set DDNAME to SYSTSPRT.
 * Keep on unallocate (SYSTSPRT).
          MVI   DA18DPS2,DA18KEEP
 * Load DAPL address into R1.
@@ -380,7 +380,7 @@ TSODFRE  CEEENTRY PPA=TSDPPA2,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),    X
          L     R15,=V(IKJDAIR)
 * Call IKJDAIR for SYSTSPRT free.
          BALR  R14,R15
-         LH    R7,DA18DARC                     Load DAIR return code.
+         LH    R7,DA18DARC          Load DAIR return code.
 * Store DAIR RC for caller.
          ST    R7,0(R4)
 * Load catalog return code.
@@ -389,7 +389,7 @@ TSODFRE  CEEENTRY PPA=TSDPPA2,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),    X
          ST    R0,0(R5)
 * Test DAIR RC for success.
          CHI   R7,0
-         BNE   TDFRE_FAILRC                    Branch if free failed.
+         BNE   TDFRE_FAILRC         Branch if free failed.
 * Algorithm: free private DD allocation (DAPB18).
 * Set DDNAME to private DD.
          MVC   DA18DDN,DDNAME
@@ -401,7 +401,7 @@ TSODFRE  CEEENTRY PPA=TSDPPA2,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),    X
          L     R15,=V(IKJDAIR)
 * Call IKJDAIR for private DD free.
          BALR  R14,R15
-         LH    R7,DA18DARC                     Load DAIR return code.
+         LH    R7,DA18DARC          Load DAIR return code.
 * Store DAIR RC for caller.
          ST    R7,0(R4)
 * Load catalog return code.
@@ -410,32 +410,32 @@ TSODFRE  CEEENTRY PPA=TSDPPA2,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),    X
          ST    R0,0(R5)
 * Test DAIR RC for success.
          CHI   R7,0
-         BNE   TDFRE_FAILRC                    Branch if free failed.
-         XR    R15,R15                         Set return code to 0.
-         B     TDFRE_DONE                      Branch to epilog.
+         BNE   TDFRE_FAILRC         Branch if free failed.
+         XR    R15,R15              Set return code to 0.
+         B     TDFRE_DONE           Branch to epilog.
 * Set nonzero return code.
-TDFRE_FAILRC L  R15,=F'8'
-         B     TDFRE_DONE                      Branch to epilog.
+TDFRE_FAILRC L R15,=F'8'
+         B     TDFRE_DONE           Branch to epilog.
 * Set RC=12 for invalid input.
-TDFRE_FAIL L  R15,=F'12'
+TDFRE_FAIL L   R15,=F'12'
 * Return to caller with RC.
 TDFRE_DONE CEETERM RC=(R15)
 * Emit literal pool for TSODFRE.
          LTORG
 * Drop TSODFRE addressability.
-         DROP TSODFRE
+         DROP  TSODFRE
 * Drop WORKAREA addressability.
-         DROP WORKAREA
+         DROP  WORKAREA
 * Drop DAPL addressability.
-         DROP DAPL
+         DROP  DAPL
 * Drop DAPB18 addressability.
-         DROP DAPB18
+         DROP  DAPB18
 * Drop CPPL addressability.
-         DROP CPPL
+         DROP  CPPL
 * Drop CAA addressability.
-         DROP CEECAA
+         DROP  CEECAA
 * Drop DSA addressability.
-         DROP CEEDSA
+         DROP  CEEDSA
 * -------------------------------------------------------------
 * Common data areas and DSECT mappings.
 * -------------------------------------------------------------
@@ -445,46 +445,46 @@ TDFRE_DONE CEETERM RC=(R15)
 TSDPPA1  CEEPPA EPNAME=TSODALC,PEP=YES,PPA2=YES
 * Define LE PPA block for TSODFRE (secondary entry).
 TSDPPA2  CEEPPA EPNAME=TSODFRE,PEP=NO,PPA2=NO
-BLANKS  DC    44C' '                          Blank fill for DSNAME.
+BLANKS   DC    44C' '               Blank fill for DSNAME.
 * DSNAME prefix for temp dataset.
-DSNPFX  DC    CL4'&&LZ'
-SYSALN  DC    CL8'SYSTSPRT'                   DCB source DDNAME.
+DSNPFX   DC    CL4'&&LZ'
+SYSALN   DC    CL8'SYSTSPRT'        DCB source DDNAME.
 * SYSTSPRT DDNAME constant.
-SYSDDN  DC    CL8'SYSTSPRT'
-SPACE1  DC    CL4'0001'                       Default space quantity.
+SYSDDN   DC    CL8'SYSTSPRT'
+SPACE1   DC    CL4'0001'            Default space quantity.
 * Define LE CAA DSECT anchor.
-CEECAA  DSECT
+CEECAA   DSECT
 * Map CAA fields via macro.
          CEECAA
 * Define LE DSA DSECT anchor.
-CEEDSA  DSECT
+CEEDSA   DSECT
 * Map DSA fields via macro.
          CEEDSA
 * Define DAPL DSECT anchor.
 DAPL     DSECT
 * Map DAPL fields via macro.
          IKJDAPL
-DAPL_LEN EQU   *-DAPL                         Compute DAPL size.
+DAPL_LEN EQU   *-DAPL               Compute DAPL size.
 * Define DAPB08 DSECT anchor.
 DAPB08   DSECT
 * Map DAPB08 fields via macro.
          IKJDAP08
-DAPB08_LEN EQU *-DAPB08                       Compute DAPB08 size.
+DAPB08_LEN EQU *-DAPB08             Compute DAPB08 size.
 * Define DAPB18 DSECT anchor.
 DAPB18   DSECT
 * Map DAPB18 fields via macro.
          IKJDAP18
-DAPB18_LEN EQU *-DAPB18                       Compute DAPB18 size.
-WORKAREA DSECT                                Start work area DSECT.
-DAPLAREA DS  CL(DAPL_LEN)                     Allocate DAPL storage.
-DAPB08AREA DS  CL(DAPB08_LEN)                 Allocate DAPB08 storage.
-DAPB18AREA DS  CL(DAPB18_LEN)                 Allocate DAPB18 storage.
+DAPB18_LEN EQU *-DAPB18             Compute DAPB18 size.
+WORKAREA DSECT Start                work area DSECT.
+DAPLAREA   DS  CL(DAPL_LEN)         Allocate DAPL storage.
+DAPB08AREA DS  CL(DAPB08_LEN)       Allocate DAPB08 storage.
+DAPB18AREA DS  CL(DAPB18_LEN)       Allocate DAPB18 storage.
 * DSNAME length + 44-byte name.
-DSNBUF  DS    H,CL44
-DDNAME  DS    CL8                             Saved DDNAME buffer.
-WORKSIZE EQU  *-WORKAREA                      Compute work area size.
+DSNBUF   DS    H,CL44
+DDNAME   DS    CL8                  Saved DDNAME buffer.
+WORKSIZE EQU   *-WORKAREA           Compute work area size.
 * Define CPPL anchor DSECT.
-CPPL    DSECT
+CPPL     DSECT
 * Map CPPL fields via macro.
          IKJCPPL
-         END   TSODALC                        End of module source.
+         END   TSODALC              End of module source.

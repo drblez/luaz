@@ -29,8 +29,8 @@ and their interaction with datasets and JCL in batch mode.
 
 ## Required Checks (Lua)
 
-- `tso.cmd` returns RC and captures output.
-- `tso.cmd` output lines are prefixed with `LUZ30031`.
+- `tso.cmd(..., true)` returns RC and captures output.
+- `tso.cmd(..., true)` output lines are prefixed with `LUZ30031`.
 -- `tso.alloc/free` are out of scope until direct TSO allocation is implemented.
 - `tso.msg` emits LUZ‑prefixed output.
 - `tso.exit` terminates with requested RC.

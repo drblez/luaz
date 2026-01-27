@@ -18,6 +18,7 @@ All tests are batch‑friendly and validate return codes explicitly.
 - `jcl/RT_*.jcl` — regression tests.
 - `docs/tests/` — test descriptions (goal, steps, expected RC).
 - `tests/data/` — input datasets or fixtures (if needed).
+ - Example: `docs/tests/UT_TSOAF.md` describes `jcl/UTTSOAF.jcl`.
 
 ## Job Rules
 

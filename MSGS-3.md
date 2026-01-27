@@ -12,6 +12,12 @@
 | LUZ30030 | tso.msg output | src/tso.c | None | emitted |
 | LUZ30031 | tso.cmd output line | src/tso.c | Use `tso.cmd` output table to consume lines | emitted |
 | LUZ30032 | tso.cmd failed (native reason/abend/dair_rc or irx_rc/rexx_rc in message) | src/tso.c | Check TMP/DAIR setup or IRXEXEC/LUTSO fallback status | runtime |
+| LUZ30082 | tso.cmd alloc failed rc=%d dair=%d cat=%d da34_darc=%d da34_flg=%d r15_34=%d r15_08=%d dslen=%d ds_hex=%s dd=%s dd_hex=%s | src/tso.c | Verify DAIR availability under TMP, DAIR X'34' outputs, and DDNAME diagnostics | runtime |
+| LUZ30083 | tso.cmd free failed rc=%d dair=%d cat=%d | src/tso.c | Ensure OUTDD was allocated via DAIR and TSODFRE is available | runtime |
+| LUZ30084 | tso.cmd missing CPPL for STACK output | src/tso.c | Run under LUACMD or ensure IKJTSOEV returns a CPPL address | runtime |
+| LUZ30085 | tso.cmd stack outdd failed rc=%d open_errno=%d open_errno2=%d dair=%d cat=%d flg=%d da34_darc=%d da34_flg=%d r15_34=%d r15_08=%d dslen=%d ds_hex=%s dd=%s dd_hex=%s | src/tso.c | Verify STACK OUTDD parameters, DAIR X'34'/X'08' outputs, and OPEN diagnostics | runtime |
+| LUZ30086 | tso.cmd stack close failed rc=%d | src/tso.c | Ensure STACK CLOSE is valid and DCB state is consistent | runtime |
+| LUZ30087 | tso.cmd stack delete failed rc=%d | src/tso.c | Ensure STACK DELETE=TOP is valid for the current I/O stack | runtime |
 | LUZ30033 | tso.alloc failed (native rc in message) | src/tso.c | Check native DAIR path and ALLOC spec | runtime |
 | LUZ30034 | tso.free failed (native rc in message) | src/tso.c | Ensure DDNAME is allocated and native DAIR path works | runtime |
 | LUZ30035 | tso.msg failed (irx_rc/rexx_rc in message) | src/tso.c | Ensure IKJTSOEV init and message string are valid | runtime |
@@ -22,7 +28,7 @@
 | LUZ30043 | LUAEXEC run failed: %s | src/luaexec.c | Inspect script error and LUAPATH configuration | runtime |
 | LUZ30044 | LUAEXEC dd register failed | src/luaexec.c | Verify LUAPATH DDNAME allocation | runtime |
 | LUZ30045 | tso.* not available in PGM mode | src/tso.c | Run under TSO mode (LUACMD) or enable TSO environment | runtime |
-| LUZ30047 | tso.cmd native TSO unavailable | src/tso.c | Ensure IKJTSOEV and CPPL are available under TMP | runtime |
+| LUZ30047 | tso.cmd TSO environment unavailable | src/tso.c | Ensure IKJTSOEV returns rc=0/8/24 under TMP | runtime |
 | LUZ30046 | LUAEXEC invalid MODE in PARM | src/luaexec.c | Use MODE=PGM or MODE=TSO | validation |
 | LUZ30053 | LUAEXRUN invalid line length | src/luaexec.c | Check CPPL operand length parsing | validation |
 | LUZ30054 | LUAEXRUN line pointer is NULL | src/luaexec.c | Verify CPPL operand pointer calculation | validation |
@@ -37,6 +43,16 @@
 | LUZ30069 | tso_native TSOCMD r1=%08X parms=%08X match=%d | src/tso_native.c | Compare incoming R1 with parameter block address (OS PLIST vs direct) | diagnostic |
 | LUZ30070 | ITLUACMD ok LUAZ_MODE=TSO args ok | tests/integration/lua/ITLUACMD.lua | None | diagnostic |
 | LUZ30071 | ITLUACMD validation failed: %s | tests/integration/lua/ITLUACMD.lua | Run via LUACMD under IKJEFT01 and ensure MODE=TSO and operands are preserved | validation |
+| LUZ30072 | LUAEXRUN dbg line=%08X len=%d buf=%08X argv=%08X | src/luaexec.c | Compare printed addresses with SNAPX dump to validate ASM->C parameter passing | diagnostic |
+| LUZ30073 | LUAEXRUN parse line len=%d text='%.*s' | src/luaexec.c | Print raw LUACMD line content before tokenization to verify MODE= token | diagnostic |
+| LUZ30074 | TSONCPPL called cppl=%p | src/tso_native.c | Verify TSONCPPL invocation and CPPL pointer passed from LUACMD | diagnostic |
+| LUZ30075 | IKJTSOEV rc=%d reason=%d abend=%d cppl=%p | src/tso_native.c | Validate IKJTSOEV outcome and CPPL pointer returned in TSO mode | diagnostic |
+| LUZ30076 | TSONCPPL deref cppl=%p g_env_cppl=%p | src/tso_native.c | Check whether the CPPL cell is populated and cached correctly | diagnostic |
+| LUZ30077 | LE abend msg=%d fac=%.3s c1=%d c2=%d case=%d sev=%d ctrl=%d isi=%d abend=%08X reason=%08X | src/luaexec.c | Use the abend/reason fields to look up LE runtime messages or compare with SYSUDUMP | diagnostic |
+| LUZ30078 | CEEHDLR failed msgno=%d | src/luaexec.c | Verify LE runtime availability and handler registration | diagnostic |
+| LUZ30079 | TSOCMD parms cppl=%p cmd=%p cmd_len=%d outdd=%p reason=%p abend=%p dair=%p cat=%p work=%p | src/tso_native.c | Verify TSOCMD parameter block contents before the ASM call | diagnostic |
+| LUZ30080 | TSOCMD %s %02X... | src/tso_native.c | Inspect TSOCMD command/outdd bytes (hex) | diagnostic |
+| LUZ30081 | IKJEFTSI RC=00000000 ERR=00000000 ABEND=00000000 RSN=00000000 | src/tsocmd.asm | Check IKJEFTSI return/error/abend/reason in SYSTSPRT before IKJEFTSR | diagnostic |
 | LUZ30090 | ITLUAINFB ok LUAZ_MODE=TSO args ok | jcl/IT_LUAIN_FB80.jcl | None | diagnostic |
 | LUZ30091 | ITLUAINFB fail %s | jcl/IT_LUAIN_FB80.jcl | Run via LUACMD under IKJEFT01 and ensure LUAIN is FB80 in-stream data | validation |
 | LUZ30060 | LUAZ_MODE debug output | tests/integration/lua/ITTSO.lua | None | diagnostic |
@@ -58,3 +74,7 @@
 | LUZ30021 | LUAPATH load not implemented | src/path.c | Implement LUAPATH loader hooks | stub |
 | LUZ30022 | date formatting not implemented | src/time.c | Build without `LUAZ_TIME_ZOS` or implement time hooks | stub |
 | LUZ30023 | time computation not implemented | src/time.c | Build without `LUAZ_TIME_ZOS` or implement time hooks | stub |
+| LUZ30103 | IKJTSOEV rc=%d rsn=%d ec=%d | src/tso_c_example.c | Ensure TMP (IKJEFT01) and SYSTSIN/SYSTSPRT are allocated and closed | runtime |
+| LUZ30104 | IKJEFTSR svc_rc=%d cmd_rc=%d rsn=%d abend=%d | src/tso_c_example.c | Check TSO command status and reason codes; verify TSO environment init | runtime |
+| LUZ30105 | fopen output dd=%s failed | src/tso_c_example.c | Verify SYSTSPRT DDNAME allocation and dataset access in JCL | runtime |
+| LUZ30110 | TSO output line | src/tso_c_example.c | None | emitted |

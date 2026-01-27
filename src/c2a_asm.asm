@@ -1,6 +1,7 @@
 * Copyright 2026 drblez AKA Ruslan Stepanenko (drblez@gmail.com)
 *
-* C2AASM - C->ASM OS-linkage validation routines (LE-conforming, non-XPLINK).
+* C2AASM - C->ASM OS-linkage validation routines (LE-conforming,
+* non-XPLINK).
 *
 * Object Table:
 * | Object   | Kind  | Purpose |
@@ -43,13 +44,15 @@ C2AADD2  CEEENTRY PPA=ADD2PPA,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),    X
          USING CEEDSA,13
 * Load address of argument cell for a from plist[0].
          L     3,0(,1)
-* Clear HOB on plist entry with an immediate mask to keep address valid.
+* Clear HOB on plist entry with an immediate mask to keep address
+* valid.
          NILF  3,X'7FFFFFFF'
 * Load a value from its cell.
          L     4,0(3)
 * Load address of argument cell for b from plist[1].
          L     3,4(,1)
-* Clear HOB on plist entry with an immediate mask to keep address valid.
+* Clear HOB on plist entry with an immediate mask to keep address
+* valid.
          NILF  3,X'7FFFFFFF'
 * Load b value from its cell.
          L     5,0(3)
@@ -62,7 +65,7 @@ C2AADD2  CEEENTRY PPA=ADD2PPA,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),    X
 * Place literal pool within C2AADD2 range.
          LTORG
 * Drop base registers before next CEEENTRY as required by IBM.
-         DROP 11,12,13
+         DROP  11,12,13
 *
 * Entry point: C2ASTRL.
 * - Purpose: compute length of NUL-terminated string.
@@ -91,7 +94,8 @@ C2ASTRL  CEEENTRY PPA=STRLPPA,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),    X
          USING CEEDSA,13
 * Load address of argument cell for s from plist[0].
          L     3,0(,1)
-* Clear HOB on plist entry with an immediate mask to get string pointer.
+* Clear HOB on plist entry with an immediate mask to get string
+* pointer.
          NILF  3,X'7FFFFFFF'
 * Clear length counter.
          SR    2,2
@@ -110,7 +114,7 @@ STRLDONE CEETERM RC=(2)
 * Place literal pool within C2ASTRL range.
          LTORG
 * Drop base registers before next CEEENTRY as required by IBM.
-         DROP 11,12,13
+         DROP  11,12,13
 *
 * Entry point: C2ASUM.
 * - Purpose: sum two struct fields into output field.
@@ -123,9 +127,9 @@ STRLDONE CEETERM RC=(2)
 * Define control section for C2ASUM.
 C2ASUMS  CSECT
 * Set addressing mode for C2ASUMS control section.
-C2ASUMS AMODE 31
+C2ASUMS  AMODE 31
 * Allow load above/below 16M for C2ASUMS control section.
-C2ASUMS RMODE ANY
+C2ASUMS  RMODE ANY
 * Define PPA for LE-conforming entry.
 SUMPPA   CEEPPA EPNAME=C2ASUM
 * Establish LE-conforming prolog with entrypoint name and AMODE/RMODE.
@@ -139,7 +143,8 @@ C2ASUM   CEEENTRY PPA=SUMPPA,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),     X
          USING CEEDSA,13
 * Load address of argument cell for p from plist[0].
          L     3,0(,1)
-* Clear HOB on plist entry with an immediate mask to get struct pointer.
+* Clear HOB on plist entry with an immediate mask to get struct
+* pointer.
          NILF  3,X'7FFFFFFF'
 * Load a field at offset 0.
          L     4,0(3)
@@ -156,7 +161,7 @@ C2ASUM   CEEENTRY PPA=SUMPPA,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),     X
 * Place literal pool within C2ASUM range.
          LTORG
 * Drop base registers before next CEEENTRY as required by IBM.
-         DROP 11,12,13
+         DROP  11,12,13
 *
 * Entry point: C2AADD64.
 * - Purpose: add two 64-bit values and store into out-parameter.
@@ -169,9 +174,9 @@ C2ASUM   CEEENTRY PPA=SUMPPA,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),     X
 * Define control section for C2AADD64.
 C2A64S   CSECT
 * Set addressing mode for C2A64S control section.
-C2A64S AMODE 31
+C2A64S   AMODE 31
 * Allow load above/below 16M for C2A64S control section.
-C2A64S RMODE ANY
+C2A64S   RMODE ANY
 * Define PPA for LE-conforming entry.
 ADD64PPA CEEPPA EPNAME=C2AADD64
 * Establish LE-conforming prolog with entrypoint name and AMODE/RMODE.
@@ -185,7 +190,8 @@ C2AADD64 CEEENTRY PPA=ADD64PPA,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),   X
          USING CEEDSA,13
 * Load address of argument cell for a from plist[0].
          L     3,0(,1)
-* Clear HOB on plist entry with an immediate mask to keep address valid.
+* Clear HOB on plist entry with an immediate mask to keep address
+* valid.
          NILF  3,X'7FFFFFFF'
 * Use a cell address directly for by-value 64-bit operand a.
 * Load a high word.
@@ -194,7 +200,8 @@ C2AADD64 CEEENTRY PPA=ADD64PPA,MAIN=NO,PLIST=OS,PARMREG=1,BASE=(11),   X
          L     5,4(3)
 * Load address of argument cell for b from plist[1].
          L     3,4(,1)
-* Clear HOB on plist entry with an immediate mask to keep address valid.
+* Clear HOB on plist entry with an immediate mask to keep address
+* valid.
          NILF  3,X'7FFFFFFF'
 * Use a cell address directly for by-value 64-bit operand b.
 * Load b high word.
@@ -246,7 +253,7 @@ ADD64ERR LHI   2,8
 * Place literal pool within C2AADD64 range after error exit.
          LTORG
 * Drop base registers after last CEEENTRY as required by IBM.
-         DROP 11,12,13
+         DROP  11,12,13
 *
 * Define LE CAA DSECT.
 CEECAA   DSECT

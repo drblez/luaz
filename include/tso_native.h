@@ -11,6 +11,7 @@
  * | tso_native_cmd_cp | function | Execute a TSO command via TSOAUTH command processor |
  * | tso_native_cmd_cleanup | function | Release internal DD allocations after command |
  * | tso_native_set_cppl | function | Set CPPL pointer from TSO command processor |
+ * | lua_tso_set_cppl | function | Cache CPPL pointer value for LUAEXEC callers |
  * | tso_native_alloc | function | Dynamic allocation via DAIR |
  * | tso_native_free | function | Dynamic deallocation via DAIR |
  * | tso_native_msg | function | Emit a TSO message |
@@ -79,7 +80,21 @@ int tso_native_cmd_cleanup(const char *outdd);
  *
  * @param cppl CPPL pointer supplied by the command processor entry.
  */
+/* Change note: map CPPL setter to exported OS-linkage symbol.
+ * Problem: callers reference tso_native_set_cppl, but the entry is TSONCPPL.
+ * Expected effect: all callers resolve the same exported entry name.
+ * Impact: LUACMD/LUAEXE CPPL caching links cleanly across modules.
+ */
+#pragma linkage(tso_native_set_cppl, OS)
+#pragma map(tso_native_set_cppl, "TSONCPPL")
 void tso_native_set_cppl(void *cppl);
+
+/**
+ * @brief Cache a CPPL pointer value for native TSO calls in this module.
+ *
+ * @param cppl CPPL pointer value supplied by LUAEXRUN.
+ */
+void lua_tso_set_cppl(void *cppl);
 
 /**
  * @brief Placeholder for DAIR allocation wrapper (not implemented).
