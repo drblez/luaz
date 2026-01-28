@@ -21,7 +21,7 @@ Links (IBM Docs):
 
 - `tso.cmd` -> IKJEFTSR (TSO/E Service Facility)
   - Execute TSO commands directly from C when `capture=false`.
-  - Output capture reads `SYSTSPRT` directly (no DAIR redirection).
+  - Output capture reads `TSOOUT` directly (no DAIR redirection).
   - CPPL is forwarded when available for OS-linkage calls.
 - `tso.alloc` / `tso.free` -> DAIR + DAIRFAIL
   - Dynamic allocation interface with diagnostic mapping.
@@ -79,13 +79,13 @@ Key DAIR request blocks (from the extracted macros):
   STACK-based capture experiments (not used by current `tso.cmd`).
 - `TSODALC` uses `DA08ALN=SYSTSPRT` with `DA08ATRL` to inherit DCB attributes; confirm with IBM DAIR docs.
 - Interim capture path: when `tso.cmd(..., true)` is used, `LUTSO` (REXX) traps
-  command output with `OUTTRAP` and emits it to `SYSTSPRT`, which is then read
-  by C to return only the new lines.
+  command output with `OUTTRAP`, writes it to a `SYSUID.LUAZ.TSOOUT` dataset,
+  and C reads and deletes the dataset after capture.
 
 ## Notes
 
 - The native backend still requires a valid TSO/E environment.
 - `tso.cmd` depends on JCL-allocated `SYSTSPRT` (dataset or SYSOUT).
-- `tso.cmd(..., true)` returns only new `SYSTSPRT` output since the last call in the
-  same process (per-call output isolation).
+- `tso.cmd(..., true)` returns output from a temporary `TSOOUT` DDNAME
+  (per-call output isolation).
 - All messages must use `LUZNNNNN` prefix and be registered in `MSGS-*.md`.

@@ -12,6 +12,10 @@
  * | luaexec_qdata_abend | type | LE q_data layout for abend conditions |
  * | luaexec_parse_parm | function | Parse PARM tokens for DSN/args |
  * | luaexec_set_args | function | Publish Lua arg table |
+ * | luaexec_redirect_luaout | function | Redirect Lua output to LUAOUT DD |
+ * | luaexec_close_luaout | function | Close LUAOUT output stream |
+ * | luaexec_io_noclose | function | Keep LUAOUT stdout handle open |
+ * | luaexec_bind_luaout_stdout | function | Bind io.stdout/io.output to LUAOUT |
  * | luaexec_run_line | function | Run LUAEXEC for LUACMD (TSO path) |
  * | lua_tso_luain_load | function | Load LUAIN with VB/FB80 record support |
  *
@@ -33,6 +37,7 @@
 #include <string.h>
 #include <leawi.h>
 #include <ceeedcct.h>
+#include <errno.h>
 
 extern int luaopen_tso(lua_State *L);
 
@@ -53,6 +58,8 @@ typedef struct luaexec_qdata_abend {
 
 /* Tracks whether the LE handler has been registered for this process. */
 static int luaexec_le_handler_registered = 0;
+/* Output stream for Lua print redirection. */
+static FILE *g_luaout_fp = NULL;
 
 /**
  * @brief LE condition handler to capture abend reason data via CEEGQDT.
@@ -181,6 +188,127 @@ static void luaexec_set_args(lua_State *L, const char *script, int argc,
     lua_rawseti(L, -2, idx++);
   }
   lua_setglobal(L, "arg");
+}
+
+/**
+ * @brief Lua C function that writes print output to LUAOUT.
+ *
+ * @param L Lua state.
+ * @return 0 (no Lua return values).
+ */
+static int luaexec_print_luaout(lua_State *L)
+{
+  int n = lua_gettop(L);
+  int i = 0;
+
+  if (g_luaout_fp == NULL)
+    return 0;
+  for (i = 1; i <= n; i++) {
+    size_t len = 0;
+    const char *s = luaL_tolstring(L, i, &len);
+    if (i > 1)
+      fputc('\t', g_luaout_fp);
+    if (s != NULL && len > 0)
+      fwrite(s, 1u, len, g_luaout_fp);
+    lua_pop(L, 1);
+  }
+  fputc('\n', g_luaout_fp);
+  fflush(g_luaout_fp);
+  return 0;
+}
+
+/**
+ * @brief Redirect Lua print/output to DD:LUAOUT when available.
+ *
+ * @param L Lua state.
+ * @return None.
+ */
+static void luaexec_redirect_luaout(lua_State *L)
+{
+  const char *path = "DD:LUAOUT";
+
+  if (L == NULL)
+    return;
+  g_luaout_fp = fopen(path, "w");
+  if (g_luaout_fp == NULL) {
+    fprintf(stderr, "LUZ30089 LUAEXEC LUAOUT open failed errno=%d\n", errno);
+    return;
+  }
+  lua_pushcfunction(L, luaexec_print_luaout);
+  lua_setglobal(L, "print");
+}
+
+/**
+ * @brief Keep LUAOUT file handle open when Lua closes stdout.
+ *
+ * @param L Lua state.
+ * @return 2 values: nil and error string (standard file close is blocked).
+ */
+static int luaexec_io_noclose(lua_State *L)
+{
+  luaL_Stream *p = (luaL_Stream *)luaL_checkudata(L, 1, LUA_FILEHANDLE);
+
+  p->closef = &luaexec_io_noclose;
+  luaL_pushfail(L);
+  lua_pushliteral(L, "cannot close standard file");
+  return 2;
+}
+
+/**
+ * @brief Bind Lua io.stdout and io.output to LUAOUT.
+ *
+ * @param L Lua state.
+ * @return None.
+ */
+static void luaexec_bind_luaout_stdout(lua_State *L)
+{
+  luaL_Stream *p = NULL;
+
+  if (L == NULL || g_luaout_fp == NULL)
+    return;
+  p = (luaL_Stream *)lua_newuserdatauv(L, sizeof(luaL_Stream), 0);
+  p->f = g_luaout_fp;
+  p->closef = &luaexec_io_noclose;
+  luaL_setmetatable(L, LUA_FILEHANDLE);
+
+  lua_getglobal(L, "io");
+  if (!lua_istable(L, -1)) {
+    lua_pop(L, 2);
+    return;
+  }
+
+  lua_pushvalue(L, -2);
+  lua_setfield(L, -2, "stdout");
+
+  lua_getfield(L, -1, "output");
+  if (lua_isfunction(L, -1)) {
+    lua_pushvalue(L, -3);
+    if (lua_pcall(L, 1, 0, 0) != LUA_OK) {
+      const char *msg = lua_tostring(L, -1);
+      if (msg)
+        fprintf(stderr, "LUZ30092 LUAEXEC LUAOUT io.output failed: %s\n", msg);
+      else
+        fprintf(stderr, "LUZ30092 LUAEXEC LUAOUT io.output failed\n");
+      lua_pop(L, 1);
+    }
+  } else {
+    lua_pop(L, 1);
+  }
+
+  lua_pop(L, 2);
+}
+
+/**
+ * @brief Close Lua output stream for LUAOUT redirection.
+ *
+ * @return None.
+ */
+static void luaexec_close_luaout(void)
+{
+  if (g_luaout_fp == NULL)
+    return;
+  fclose(g_luaout_fp);
+  g_luaout_fp = NULL;
 }
 
 /**
@@ -335,6 +463,13 @@ static int luaexec_run(int argc, char **argv, const char *mode)
   lua_setglobal(L, "LUAZ_MODE");
 
   luaexec_set_args(L, script, argc, argv, parm.args_start);
+  /* Change note: direct Lua output to LUAOUT DDNAME.
+   * Problem: Lua output and debug output were mixed in SYSTSPRT.
+   * Expected effect: Lua stdout (print/io) routes to LUAOUT when allocated.
+   * Impact: debug output remains on SYSTSPRT; Lua output is separated.
+   */
+  luaexec_redirect_luaout(L);
+  luaexec_bind_luaout_stdout(L);
 
   if (lua_tso_luain_load(L, script) != LUA_OK) {
     const char *msg = lua_tostring(L, -1);
@@ -342,6 +477,7 @@ static int luaexec_run(int argc, char **argv, const char *mode)
       printf("LUZ30042 LUAEXEC load failed: %s\n", msg);
     else
       puts("LUZ30042 LUAEXEC load failed");
+    luaexec_close_luaout();
     lua_close(L);
     return 8;
   }
@@ -352,16 +488,24 @@ static int luaexec_run(int argc, char **argv, const char *mode)
       printf("LUZ30043 LUAEXEC run failed: %s\n", msg);
     else
       puts("LUZ30043 LUAEXEC run failed");
+    luaexec_close_luaout();
     lua_close(L);
     return 8;
   }
 
   if (lua_gettop(L) > 0 && lua_isinteger(L, -1)) {
     int rc = (int)lua_tointeger(L, -1);
+    luaexec_close_luaout();
     lua_close(L);
     return rc;
   }
 
+  /* Change note: close LUAOUT stream after Lua completes.
+   * Problem: LUAOUT file handle remained open after script end.
+   * Expected effect: ensure output is flushed and resources released.
+   * Impact: closes LUAOUT even when no capture errors occur.
+   */
+  luaexec_close_luaout();
   lua_close(L);
   return 0;
 }

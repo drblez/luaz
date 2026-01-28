@@ -15,6 +15,8 @@ Validate `tso` module C bindings and `tso.cmd` behavior with optional capture.
 - `DRBLEZ.LUA.LOAD` allocated.
 - `SYSTSPRT` is allocated in JCL (dataset or SYSOUT).
 - `SYSEXEC` DD must be allocated when testing `tso.cmd(..., true)` capture.
+- `TSOOUT` is allocated dynamically by `LUTSO` during capture.
+- `LUAOUT` DD should be allocated when validating Lua output separation.
 
 ## Steps
 

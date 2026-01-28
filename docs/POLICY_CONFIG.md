@@ -14,8 +14,6 @@ This document describes the planned configuration policy dataset.
 - `tso.cmd.blacklist` — comma‑separated command list
 - `trace.level` — `off`, `error`, `info`, `debug`
 - `limits.output.lines` — max output lines per command
-- `encoding.input` — `ebcdic` or `utf8`
-- `encoding.output` — `ebcdic` or `utf8`
 
 ## TLS Keys
 

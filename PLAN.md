@@ -124,6 +124,27 @@ This section replaces the REXX bridge and focuses only on native TSO services.
 - [~] Define `LUACMD` CP contract (CPPL buffer -> `LUAEXRUN` line, `MODE=TSO` forced).
 - [ ] Implement optional `LUACFG` parsing (`key=value` per line).
 
+## 13) Runtime Configuration (LUACFG)
+
+- [x] Define initial key set (see `docs/RUNTIME_CONFIG_KEYS.md`).
+- [ ] Implement LUACFG reader:
+  - [ ] Read `DD:LUACFG` (member `LUACONF` by default).
+  - [ ] Parse `key = value`, ignore comments (`#`/`*`) and blank lines.
+  - [ ] Emit LUZ errors on invalid lines/unknown keys.
+- [ ] Implement policy storage/access:
+  - [ ] Implement `luaz_policy_get` in `src/policy.c`.
+  - [ ] Provide a read‑only Lua view (e.g., `policy.get` or `LUAZ_CONFIG` table).
+- [ ] Apply config to runtime behavior:
+  - [ ] `tso.cmd` allowlist/denylist enforcement.
+  - [ ] `tso.cmd` output line limit (`limits.output.lines`).
+  - [ ] Default capture mode (`tso.cmd.capture.default`) when param is omitted.
+  - [ ] REXX bridge selection (`tso.rexx.exec`, `tso.rexx.dd`).
+  - [ ] DD overrides (`luain.dd`, `luaout.dd`, `luapath.dd`).
+- [ ] Tests & docs:
+  - [ ] UT/IT JCL for LUACFG parsing and runtime effects.
+  - [ ] Update `docs/POLICY_CONFIG.md` and `docs/TSO_CONTRACT.md` with behavior.
+  - [ ] Add/maintain LUZ codes in `MSGS-*.md`.
+
 ## 6) TLS via System SSL
 
 - [ ] Implement `tls.*` in C using GSK APIs.

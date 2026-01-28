@@ -18,6 +18,9 @@
 | LUZ30085 | tso.cmd stack outdd failed rc=%d open_errno=%d open_errno2=%d dair=%d cat=%d flg=%d da34_darc=%d da34_flg=%d r15_34=%d r15_08=%d dslen=%d ds_hex=%s dd=%s dd_hex=%s | src/tso.c | Verify STACK OUTDD parameters, DAIR X'34'/X'08' outputs, and OPEN diagnostics | runtime |
 | LUZ30086 | tso.cmd stack close failed rc=%d | src/tso.c | Ensure STACK CLOSE is valid and DCB state is consistent | runtime |
 | LUZ30087 | tso.cmd stack delete failed rc=%d | src/tso.c | Ensure STACK DELETE=TOP is valid for the current I/O stack | runtime |
+| LUZ30088 | tso.cmd free outdd failed rc=%d | src/tso.c | Ensure TSO FREE DD(TSOOUT) is available and LUTSO ran successfully | runtime |
+| LUZ30089 | LUAEXEC LUAOUT open failed errno=%d | src/luaexec.c | Allocate LUAOUT DDNAME and ensure it is writable; review errno for details | runtime |
+| LUZ30092 | LUAEXEC LUAOUT io.output failed: %s | src/luaexec.c | Verify Lua io library initialization and LUAOUT handle setup | runtime |
 | LUZ30033 | tso.alloc failed (native rc in message) | src/tso.c | Check native DAIR path and ALLOC spec | runtime |
 | LUZ30034 | tso.free failed (native rc in message) | src/tso.c | Ensure DDNAME is allocated and native DAIR path works | runtime |
 | LUZ30035 | tso.msg failed (irx_rc/rexx_rc in message) | src/tso.c | Ensure IKJTSOEV init and message string are valid | runtime |

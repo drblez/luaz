@@ -52,6 +52,7 @@
 //* Expected effect: LUTSO is found under SYSEXEC for command capture.
 //* Impact: SYSEXEC points to HLQ.LUA.REXX in this job.
 //SYSEXEC DD DSN=&HLQ..LUA.REXX,DISP=SHR
+//LUAOUT  DD SYSOUT=*
 //SYSOUT  DD SYSOUT=*
 //SYSPRINT DD SYSOUT=*
 //* Change: add TSOLIB ACTIVATE to place LOADLIB at top of search order.

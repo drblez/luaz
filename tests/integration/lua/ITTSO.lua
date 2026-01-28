@@ -42,6 +42,19 @@ local function main()
   if type(lines[1]) ~= "string" or not lines[1]:match("^LUZ30031") then
     fail("tso.cmd output missing LUZ30031 prefix")
   end
+  -- Change note: echo captured lines for Lua output separation testing.
+  -- Problem: test output was only in SYSTSPRT, mixed with debug logs.
+  -- Expected effect: Lua output appears in LUAOUT for validation.
+  -- Impact: ITTSO prints captured command output lines.
+  for i = 1, #lines do
+    print(lines[i])
+  end
+  -- Change note: verify io.write/io.stdout redirection to LUAOUT.
+  -- Problem: only print output was validated.
+  -- Expected effect: io.write/io.stdout:write output routes to LUAOUT.
+  -- Impact: ITTSO emits extra stdout lines for capture checks.
+  io.write("LUZ00022 Lua io.write ok\n")
+  io.stdout:write("LUZ00023 Lua io.stdout ok\n")
 
   tso.msg("LUZ00020 Lua IT OK")
   return 0

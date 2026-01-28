@@ -114,17 +114,22 @@ typedef struct one_parameter_type {
   int ARGSTRING_LENGTH;
 } one_parameter_type;
 
-/* IRXEXEC parameter block layout (pointers to parameter areas). */
+/* IRXEXEC parameter block layout (pointers to parameter areas).
+ * Change note: align IRXEXEC parm layout to IBM EAGGXC sample (no CPPL).
+ * Problem: inserting CPPL into parm5 caused IRXEXEC 0C4 exceptions.
+ * Expected effect: IRXEXEC uses the correct reserved slot layout.
+ * Impact: REXX capture path avoids protection exceptions.
+ */
 typedef struct IRXEXEC_type {
   EXECBLK_type **execblk_ptr;
   one_parameter_type **argtable_ptr;
   int *flags_ptr;
   int *instblk_ptr;
-  int *cppl_ptr;
+  int *reserved_parm5;
   EVALBLK_type **evalblk_ptr;
-  int *workarea_ptr;
-  int *userfield_ptr;
-  int *envblock_ptr;
+  int *reserved_workarea_ptr;
+  int *reserved_userfield_ptr;
+  int *reserved_envblock_ptr;
   int *rexx_rc_ptr;
 } IRXEXEC_type;
 
@@ -1045,6 +1050,8 @@ static int lua_tso_cmd_nocap(lua_State *L, const char *cmd)
 static int lua_tso_cmd_capture(lua_State *L, const char *cmd)
 {
   int rc = 0;
+  int free_rc = 0;
+  const char *outdd_name = "TSOOUT";
 
   if (tso_env_init() != 0) {
     lua_pushnil(L);
@@ -1060,7 +1067,7 @@ static int lua_tso_cmd_capture(lua_State *L, const char *cmd)
    * Ref: src/tso.c.md#tso-rexx-outtrap
    */
   tso_sync_systsprt_offset();
-  rc = tso_call_rexx("SYSEXEC", "LUTSO", "CMD", cmd, "SYSTSPRT",
+  rc = tso_call_rexx("SYSEXEC", "LUTSO", "CMD", cmd, outdd_name,
                      LUZ_E_TSO_CMD);
   if (rc == LUZ_E_TSO_CMD && g_last_irx_rc != 0) {
     lua_pushnil(L);
@@ -1071,8 +1078,19 @@ static int lua_tso_cmd_capture(lua_State *L, const char *cmd)
     return 3;
   }
   lua_pushinteger(L, rc);
-  if (!read_dd_to_lines(L, "SYSTSPRT")) {
+  if (!read_dd_to_lines(L, outdd_name)) {
     lua_newtable(L);
+  }
+  /* Change note: free the temp output DD after capture.
+   * Problem: LUTSO allocates TSOOUT dynamically for each capture.
+   * Expected effect: DD is freed in C after reading output.
+   * Impact: temp allocations do not leak across calls.
+   */
+  free_rc = tso_call_rexx("SYSEXEC", "LUTSO", "FREE", "DDNAME(TSOOUT) DELETE", "",
+                          LUZ_E_TSO_CMD);
+  if (free_rc != 0) {
+    printf("LUZ30088 tso.cmd free outdd failed rc=%d\n", free_rc);
+    fflush(NULL);
   }
   return 2;
 }
@@ -1099,13 +1117,14 @@ static int tso_call_rexx(const char *ddname, const char *member,
 {
   EXECBLK_type execblk;
   EXECBLK_type *execblk_ptr = &execblk;
-  one_parameter_type args[4];
+  one_parameter_type args[2];
   one_parameter_type *argtable = args;
   IRXEXEC_type parm;
   int flags = 0;
   int rexx_rc = 0;
-  int dummy_zero = 0;
   int eval_rc = 0;
+  char *packed = NULL;
+  size_t packed_len = 0;
   EVALBLK_type evalblk;
   EVALBLK_type *evalblk_ptr = &evalblk;
   irxexec_fn irxexec;
@@ -1143,32 +1162,42 @@ static int tso_call_rexx(const char *ddname, const char *member,
     memcpy(execblk.EXECBLK_DDNAME, ddname, strlen(ddname) > 8 ? 8 : strlen(ddname));
   memcpy(execblk.EXECBLK_SUBCOM, "TSO", 3);
 
-  args[0].ARGSTRING_PTR = (void *)(mode ? mode : "");
-  args[0].ARGSTRING_LENGTH = (int)strlen(mode ? mode : "");
-  args[1].ARGSTRING_PTR = (void *)(payload ? payload : "");
-  args[1].ARGSTRING_LENGTH = (int)strlen(payload ? payload : "");
-  args[2].ARGSTRING_PTR = (void *)(outdd ? outdd : "");
-  args[2].ARGSTRING_LENGTH = (int)strlen(outdd ? outdd : "");
-  args[3].ARGSTRING_PTR = (void *)-1;
-  args[3].ARGSTRING_LENGTH = -1;
+  /* Change note: pack mode/outdd/payload into one argument for IRXEXEC.
+   * Problem: IRXEXEC only delivered the first argument from argtable.
+   * Expected effect: LUTSO always receives mode/outdd/payload consistently.
+   * Impact: capture path uses mode|outdd|payload packing.
+   */
+  packed_len = strlen(mode ? mode : "") + 1
+               + strlen(outdd ? outdd : "") + 1
+               + strlen(payload ? payload : "");
+  packed = (char *)malloc(packed_len + 1);
+  if (packed == NULL)
+    return errcode;
+  snprintf(packed, packed_len + 1, "%s|%s|%s",
+           mode ? mode : "", outdd ? outdd : "", payload ? payload : "");
+  args[0].ARGSTRING_PTR = (void *)packed;
+  args[0].ARGSTRING_LENGTH = (int)packed_len;
+  args[1].ARGSTRING_PTR = (void *)-1;
+  args[1].ARGSTRING_LENGTH = -1;
 
   parm.execblk_ptr = &execblk_ptr;
   parm.argtable_ptr = &argtable;
   parm.flags_ptr = &flags;
   parm.instblk_ptr = NULL;
-  if (g_cppl_addr != 0)
-    parm.cppl_ptr = (int *)(uintptr_t)g_cppl_addr;
-  else
-    parm.cppl_ptr = NULL;
+  parm.reserved_parm5 = NULL;
   parm.evalblk_ptr = &evalblk_ptr;
-  parm.workarea_ptr = NULL;
-  parm.userfield_ptr = NULL;
-  parm.envblock_ptr = NULL;
+  parm.reserved_workarea_ptr = NULL;
+  parm.reserved_userfield_ptr = NULL;
+  parm.reserved_envblock_ptr = NULL;
   parm.rexx_rc_ptr = &rexx_rc;
   parm.rexx_rc_ptr = (int *)((uintptr_t)parm.rexx_rc_ptr | (uintptr_t)0x80000000u);
 
   flags = 0x40000000;
   rc = irxexec(parm);
+  if (packed != NULL) {
+    free(packed);
+    packed = NULL;
+  }
 
   g_last_irx_rc = rc;
   if (rc != 0) {

@@ -23,6 +23,8 @@
 | LUZ00019 | TSOX failed: %s | tests | Inspect UT_TSOX output and LUTSO exec | debug |
 | LUZ00020 | Lua IT OK | tests | None | integration test |
 | LUZ00021 | Lua IT failed | tests | Inspect IT_TSO job output and test script | integration test |
+| LUZ00022 | Lua io.write ok | tests | None | integration test |
+| LUZ00023 | Lua io.stdout ok | tests | None | integration test |
 | LUZ00022 | TSNUT start | tests | If missing, native TSO UT did not start | unit test |
 | LUZ00023 | TSNUT failed rc=%d reason=%d abend=%d dair_rc=%d cat_rc=%d | tests | Inspect UT_TSN output and DAIR/IKJEFTSR status | unit test |
 | LUZ00024 | TSNENV start | tests | If missing, native TSO env UT did not start | unit test |

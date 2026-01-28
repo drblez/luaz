@@ -27,22 +27,24 @@ The CPPL pointer is passed by `LUACMD` and cached by `LUAEXEC` for OS-linkage ca
 ## Dataset and DDNAME Requirements
 
 - Clean C backend: `SYSTSPRT` must be allocated by JCL (dataset or SYSOUT).
-- Capture path: `tso.cmd` reads `SYSTSPRT` directly (`DD:SYSTSPRT`).
+- Capture path: `tso.cmd` reads `TSOOUT` directly (`DD:TSOOUT`).
 - `tso.alloc` / `tso.free` continue to use DAIR via ASM wrappers.
 - Capture path: `SYSEXEC` must include `HLQ.LUA.REXX` with member `LUTSO`.
 - Capture path: `STEPLIB` (or linklist) must include `SYS1.LPALIB` so `IRXEXEC` can be loaded.
 
-### Capture lifecycle (SYSTSPRT via REXX OUTTRAP)
+### Capture lifecycle (TSOOUT via REXX OUTTRAP)
 
 When `capture=true`, `tso.cmd` uses REXX `OUTTRAP` to isolate the command
-output and then reads `SYSTSPRT` directly.
+output and then reads `TSOOUT` directly.
 
 Contract:
 
-1) JCL allocates `SYSTSPRT` (dataset or SYSOUT).
-2) REXX `LUTSO` traps the command output with `OUTTRAP` and emits it to `SYSTSPRT`.
-3) C reads `DD:SYSTSPRT` (record I/O when possible) and returns only the
-   new lines produced since the previous `tso.cmd` call in the same process.
+1) JCL allocates `SYSTSPRT` (dataset or SYSOUT) for TMP output.
+2) REXX `LUTSO` deletes any prior `SYSUID.LUAZ.TSOOUT`, allocates it as `TSOOUT`,
+   and traps command output with `OUTTRAP`.
+3) REXX writes trapped lines to `DD:TSOOUT` via `EXECIO`.
+4) C reads `DD:TSOOUT` (record I/O when possible) and returns captured lines.
+5) C issues `FREE DDNAME(TSOOUT) DELETE` to release and delete the dataset.
 
 Notes:
 
@@ -55,7 +57,7 @@ Notes:
   - `cmd`: TSO command string.
   - `capture`: optional boolean (default `false`) to enable output capture.
   - `rc`: TSO return code.
-  - `lines`: table of output lines from `SYSTSPRT`, each prefixed with `LUZ30031`
+  - `lines`: table of output lines from `TSOOUT`, each prefixed with `LUZ30031`
     when `capture=true`; `nil` when `capture=false`.
 - `tso.alloc(spec) -> rc`
   - `spec`: allocation spec (e.g., `DD(LUTMP) DSN('HLQ.DATA') SHR`).
