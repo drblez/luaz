@@ -47,6 +47,9 @@ CREDENTIAL.md
 # Job outputs
 jcl/*.out
 
+# Local build stamps
+build/.stamp/
+
 # Local PDS maps
 pds-map-rexx.csv
 pds-map-test.csv

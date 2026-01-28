@@ -1,6 +1,6 @@
 # IBM References for src/tsocmd.asm
 
-## snapx-pre-ikjeftsr
+## snapx-pre-ikjeftsr (removed)
 
 Source: IBM z/OS MVS Programming: Authorized Assembler Services Guide.
 
@@ -11,8 +11,9 @@ Source: IBM z/OS MVS Programming: Authorized Assembler Services Guide.
 - SNAP dump DCB requirements (RECFM/LRECL/BLKSIZE/MACRF, OPEN before SNAPX):
   https://www.ibm.com/docs/en/zos/3.1.0?topic=dump-obtaining-snap-dumps
 
-These references document the SNAPX execute-form usage and the DCB
-attributes required to emit a SNAP dump from TSOCMD before IKJEFTSR.
+These references document the SNAPX execute-form usage and DCB
+attributes that were used before TSOCMD SNAPX diagnostics were
+removed.
 
 ## open-return-codes
 
@@ -41,5 +42,4 @@ Assembler Services Reference.
   https://www.ibm.com/docs/en/zos/2.5.0?topic=iar-epie-information
 
 These references document ESPIE SET/RESET usage and the register
-environment for the ESPIE exit that captures SNAPX diagnostics during
-TSODALC.
+environment for the ESPIE exit (SNAPX diagnostics removed).

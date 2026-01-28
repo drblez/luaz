@@ -13,6 +13,7 @@
  * | luaz_policy_key_count | function | Return number of known policy keys |
  * | luaz_policy_key_name | function | Get policy key name by index |
  * | luaz_policy_value_name | function | Get policy value by index |
+ * | luaz_policy_trace_enabled | function | Check if trace level enables a message |
  *
  * Platform Requirements:
  * - LE: required (C runtime).
@@ -193,6 +194,27 @@ static int policy_is_trace_level(const char *value)
       policy_stricmp(value, "debug") == 0)
     return 1;
   return 0;
+}
+
+/**
+ * @brief Map a trace level literal to an ordinal rank.
+ *
+ * @param value Trace level literal.
+ * @return Rank value, or -1 if invalid.
+ */
+static int policy_trace_rank(const char *value)
+{
+  if (value == NULL)
+    return -1;
+  if (policy_stricmp(value, "off") == 0)
+    return 0;
+  if (policy_stricmp(value, "error") == 0)
+    return 1;
+  if (policy_stricmp(value, "info") == 0)
+    return 2;
+  if (policy_stricmp(value, "debug") == 0)
+    return 3;
+  return -1;
 }
 
 /**
@@ -467,4 +489,33 @@ const char *luaz_policy_value_name(int index)
   if (!g_policy[index].set)
     return NULL;
   return g_policy[index].value;
+}
+
+/**
+ * @brief Check whether a given trace level is enabled by policy.
+ *
+ * @param level Trace level string (error/info/debug).
+ * @return 1 if enabled, 0 otherwise.
+ *
+ * Change note: add trace-level helper for diagnostics gating.
+ * Problem: debug prints were unconditional in LUACMD/LUAEXRUN paths.
+ * Expected effect: trace.level controls diagnostic verbosity centrally.
+ * Impact: LUZ3007x diagnostics are emitted only when enabled.
+ */
+int luaz_policy_trace_enabled(const char *level)
+{
+  const char *cfg = NULL;
+  int cfg_rank = -1;
+  int req_rank = -1;
+
+  req_rank = policy_trace_rank(level);
+  if (req_rank < 0)
+    return 0;
+  cfg = luaz_policy_get_raw("trace.level");
+  if (cfg == NULL || cfg[0] == '\0')
+    return 0;
+  cfg_rank = policy_trace_rank(cfg);
+  if (cfg_rank < 0)
+    return 0;
+  return (cfg_rank >= req_rank) ? 1 : 0;
 }

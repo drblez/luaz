@@ -13,6 +13,7 @@
  * | luaz_policy_key_count | function | Return number of known policy keys |
  * | luaz_policy_key_name | function | Get policy key name by index |
  * | luaz_policy_value_name | function | Get policy value by index |
+ * | luaz_policy_trace_enabled | function | Check if trace level enables a message |
  */
 #ifndef POLICY_H
 #define POLICY_H
@@ -76,6 +77,13 @@ const char *luaz_policy_key_name(int index);
  * @return Value string, or NULL if not set.
  */
 const char *luaz_policy_value_name(int index);
+/**
+ * @brief Check whether a given trace level is enabled by policy.
+ *
+ * @param level Trace level string (error/info/debug).
+ * @return 1 if enabled, 0 otherwise.
+ */
+int luaz_policy_trace_enabled(const char *level);
 
 #ifdef __cplusplus
 }

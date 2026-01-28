@@ -26,6 +26,10 @@
 | LUZ00022 | Lua io.write ok | tests | None | integration test |
 | LUZ00023 | Lua io.stdout ok | tests | None | integration test |
 | LUZ00024 | Lua config OK | tests | None | integration test |
+| LUZ00040 | LUACFG UT OK | tests | None | unit test |
+| LUZ00041 | LUACFG UT failed | tests | Inspect UT_LUACFG job output and LUACFG content | unit test |
+| LUZ00042 | LUACFG IT OK | tests | None | integration test |
+| LUZ00043 | LUACFG IT failed | tests | Inspect IT_LUACFG job output and LUACFG content | integration test |
 | LUZ00022 | TSNUT start | tests | If missing, native TSO UT did not start | unit test |
 | LUZ00023 | TSNUT failed rc=%d reason=%d abend=%d dair_rc=%d cat_rc=%d | tests | Inspect UT_TSN output and DAIR/IKJEFTSR status | unit test |
 | LUZ00024 | TSNENV start | tests | If missing, native TSO env UT did not start | unit test |

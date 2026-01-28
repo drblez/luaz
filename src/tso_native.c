@@ -30,6 +30,7 @@
 #include "ERRORS"
 #include "TSOCMDA"
 #include "TSODASM"
+#include "POLICY"
 
 #include <string.h>
 #include <stdlib.h>
@@ -145,14 +146,17 @@ static void tso_native_dump_parms(const tso_cmd_parms_t *parms)
  */
 void tso_native_set_cppl(void *cppl)
 {
-  /* Change note: trace TSONCPPL invocation and CPPL value.
-   * Problem: CPPL remains NULL in tso_native despite LUACMD call.
-   * Expected effect: SYSOUT shows whether TSONCPPL is invoked and
-   * which CPPL pointer it receives.
-   * Impact: adds a diagnostic line per TSONCPPL call.
+  /* Change note: gate TSONCPPL diagnostics by trace.level.
+   * Problem: unconditional debug output clutters SYSOUT.
+   * Expected effect: trace.level controls LUZ30074 emission.
+   * Impact: LUZ30074 appears only when trace.level=debug.
    */
-  printf("LUZ30074 TSONCPPL called cppl=%p\n", cppl);
-  fflush(NULL);
+  if (!luaz_policy_loaded())
+    luaz_policy_load("DD:LUACFG");
+  if (luaz_policy_trace_enabled("debug")) {
+    printf("LUZ30074 TSONCPPL called cppl=%p\n", cppl);
+    fflush(NULL);
+  }
   if (cppl == NULL)
     return;
   /* Change note: dereference CPPL value cell for OS-linkage plist.
@@ -162,15 +166,16 @@ void tso_native_set_cppl(void *cppl)
    * Impact: tso_native_env_init sees CPPL and enables native calls.
    */
   g_env_cppl = *(void **)cppl;
-  /* Change note: log dereferenced CPPL value and cached pointer.
-   * Problem: CPPL cell may be empty or overwritten before call.
-   * Expected effect: SYSOUT shows the dereferenced CPPL value and the
-   * cached pointer used by tso_native.
-   * Impact: narrows whether the CPPL cell is populated by LUACMD.
+  /* Change note: gate CPPL deref diagnostics by trace.level.
+   * Problem: unconditional debug output clutters SYSOUT.
+   * Expected effect: trace.level controls LUZ30076 emission.
+   * Impact: LUZ30076 appears only when trace.level=debug.
    */
-  printf("LUZ30076 TSONCPPL deref cppl=%p g_env_cppl=%p\n",
-         *(void **)cppl, g_env_cppl);
-  fflush(NULL);
+  if (luaz_policy_trace_enabled("debug")) {
+    printf("LUZ30076 TSONCPPL deref cppl=%p g_env_cppl=%p\n",
+           *(void **)cppl, g_env_cppl);
+    fflush(NULL);
+  }
   g_env_state = 1;
   g_env_rc = 0;
   g_env_reason = 0;

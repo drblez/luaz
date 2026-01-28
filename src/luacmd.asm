@@ -92,12 +92,6 @@ LUCBASE  EQU   *                              Base label for LUACMD.
 * Store CPPL pointer for preinit calls.
          ST    R10,CPPLPTR                    Save CPPL pointer.
          USING CPPL,R10                       Map CPPL control block.
-* Change note: add SNAPX before LUAEXRUN call_sub for CEEPIPI context.
-* Problem: ABEND 4088/63 occurs inside LE after call_sub; need
-* pre-call evidence.
-* Expected effect: SNAPX captures CEEPIPI plists, line buffer, and
-* PreInit table before LE entry.
-* Impact: SNAP output is produced in LUACMD before LUAEXRUN call_sub.
 * Algorithm: parse CPPL command buffer to derive operand
 * pointer/length.
 * - If CPPLCBUF is NULL or too short, clear PARMPTR/PARMLENFW.
@@ -309,41 +303,11 @@ LINESET  DS    0H                             Mark line build complete.
          ST    R7,PPARMP                   Store parm_ptr for call_sub.
          LA    R1,PCALLLST                 Load call_sub plist address.
          L     R15,PPRTNPTR                 Load CEEPIPI entry address.
-* Change note: capture SNAPX before LUAEXRUN call_sub for ABEND
-* diagnosis.
-* Problem: ABEND 4088/63 occurs inside LE (CEEPLPKA) after call_sub.
-* Expected effect: SNAPX dumps CEEPIPI/LUAEXRUN plist state and line
-* buffer before CEEPIPI enters LE.
-* Impact: additional SNAP output; ABEND if SNAP cannot open.
-* Ref: src/luacmd.asm.md#snapx-pre-luaexrun
-* Save registers before SNAPX sequence.
-         STM   R0,R15,SNAPREGS           Save registers for SNAPX call.
-* Open SNAP DD for SNAPX output.
-         OPEN  (LUSNAP,(OUTPUT))              Open SNAP DD for SNAPX.
-* Test OPEN return code.
-         LTR   R15,R15                      Test SNAP OPEN return code.
-* Treat RC <= 4 as usable OPEN (warning still opens DD).
-         CHI   R15,4                        Compare OPEN RC to warning.
-* Detect OPEN failure (RC > 4) and ABEND for diagnosis.
-* Problem: SNAP output missing may be due to OPEN failure.
-* Expected effect: ABEND makes OPEN failure visible in SYSTSPRT.
-* Impact: job ends early when SNAP cannot be opened.
-         BH    SNAP_FAIL               Branch on OPEN failure (RC > 4).
-* Issue SNAPX for CEEPIPI and LUAEXRUN context.
-         SNAPX DCB=LUSNAP,ID=1,PDATA=(REGS,PSW,SAH),                   +
-               STORAGE=(LINEPTRV,LBUFEND,PPTBL,PPTBL_END)
-* Close SNAP DD to flush output.
-         CLOSE (LUSNAP)                      Close SNAP DD after SNAPX.
-* Branch around SNAP_FAIL on success.
-         B     SNAP_DONE                 Skip SNAP_FAIL on normal path.
-* SNAP OPEN failure handler.
-SNAP_FAIL DS   0H                            SNAP OPEN failed (RC > 4).
-* Abend on SNAP OPEN failure for visibility.
-         ABEND 4094,DUMP                    Abend when SNAP OPEN fails.
-* Anchor for SNAPX done path.
-SNAP_DONE DS   0H                             Mark SNAPX done path.
-* Restore registers after SNAPX sequence.
-         LM    R0,R15,SNAPREGS           Restore registers after SNAPX.
+* Change note: remove SNAPX pre-call diagnostics.
+* Problem: SNAPX diagnostics are no longer required and add DD
+* dependencies for LUACMD execution.
+* Expected effect: LUAEXRUN call_sub runs without SNAP DD.
+* Impact: LUACMD no longer abends when SNAP is not allocated.
          BALR  R14,R15                        Call call_sub (LUAEXRUN).
 * Trace: record call_sub RC and LUAEXRUN outputs.
          MVC   TR_RUN_STAGE,TRC_RUN           Set trace stage value.
@@ -365,17 +329,13 @@ SNAP_DONE DS   0H                             Mark SNAPX done path.
          MVC   TR_TERM_ENVRC,PENVRC           Save environment RC.
          LTR   R15,R15                        Test term RC in R15.
          BNZ   PIPI_FAIL_TERM                 Branch on term failure.
-* Change note: return directly after term; SNAPX already captured
-* before LUAEXRUN call_sub.
-* Problem: post-term dumps are redundant and can obscure pre-call
-* evidence.
-* Expected effect: LUACMD returns without extra SNAPX side effects.
+* Change note: return directly after term with no SNAPX dependency.
+* Problem: SNAPX diagnostics were removed from LUACMD.
+* Expected effect: return path is clean and has no SNAP DD dependency.
          B     EPILOG                         Fallback return path.
-* Change note: failure paths return directly; SNAPX is emitted only
-* for the LUAEXRUN call_sub path.
-* Problem: dumping on failure paths adds noise without call_sub
-* context.
-* Expected effect: failures return RC directly without extra dumps.
+* Change note: failure paths return directly without SNAPX.
+* Problem: diagnostic SNAPX paths are no longer present.
+* Expected effect: failures return RC directly with no SNAP activity.
 * Failure: CEEPIPI LOAD failed.
 PIPI_FAIL_LOAD DS 0H                         Mark CEEPIPI load failure.
          LHI   R15,12                      Load RC for preinit failure.
@@ -464,12 +424,6 @@ TRC_RUN   DC   F'6'                      Trace stage id: LUAEXRUN done.
 TRC_TERM  DC   F'7'                          Trace stage id: term done.
 TRC_EXIT  DC   F'8'                           Trace stage id: exit.
 TRC_DUMP_END EQU *-1                          Trace dump block end.
-* SNAPX register save area for pre-call dump.
-SNAPREGS DS    16F                   Save area for R0-R15 during SNAPX.
-* SNAPX output DCB for DD SNAP (VBA/125/882).
-* Define SNAPX DCB for SYSOUT SNAP dumps.
-LUSNAP   DCB   DDNAME=SNAP,DSORG=PS,MACRF=(W),RECFM=VBA,               +
-               LRECL=125,BLKSIZE=882
 * LUAEXRUN line argument cells.
 LINEPTRV DS    F                            LINEBUF pointer value cell.
 LINELENV DS    F                             LINEBUF length value cell.

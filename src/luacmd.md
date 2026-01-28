@@ -18,17 +18,14 @@ IBM references:
 - Using preinitialization (CEEPIPI overview):
   https://www.ibm.com/docs/en/zos/2.5.0?topic=services-using-preinitialization
 
-## debug-trace
+## debug-trace (removed)
 
 Purpose:
-- LUACMD emits SNAPX before LUAEXRUN call_sub to capture the CEEPIPI
-  call_sub context, plist state, and line buffer just before entering
-  LE.
+- SNAPX diagnostics were removed from LUACMD to avoid SNAP DD
+  dependencies and ABENDs when SNAP is not allocated.
 
 Notes:
-- SNAPX output is written to DD SNAP in the invoking JCL (see ITTSO
-  job). 
-- Detailed SNAPX references are tracked in `src/luacmd.asm.md`.
+- LUACMD no longer requires DD SNAP in invoking JCL.
 
 ## ceepipi-init-sub
 

@@ -628,13 +628,15 @@ static int luaexec_tokenize(const char *line, int line_len, char *buf,
     return argc;
   }
 
-  /* Change note: emit raw ASM->C line before tokenization.
-   * Problem: LUAZ_MODE is PGM; need to confirm MODE= token presence.
-   * Expected effect: SYSOUT shows exact line content from LUACMD.
-   * Impact: adds one diagnostic line per LUAEXRUN parse.
+  /* Change note: emit raw ASM->C line only in debug mode.
+   * Problem: raw line diagnostics clutter SYSOUT in normal runs.
+   * Expected effect: trace.level controls LUZ30073 emission.
+   * Impact: LUZ30073 appears only when trace.level=debug.
    */
-  printf("LUZ30073 LUAEXRUN parse line len=%d text='%.*s'\n",
-         line_len, line_len, line);
+  if (luaz_policy_trace_enabled("debug")) {
+    printf("LUZ30073 LUAEXRUN parse line len=%d text='%.*s'\n",
+           line_len, line_len, line);
+  }
 
   if ((size_t)len >= cap)
     len = (int)cap - 1;
@@ -703,6 +705,13 @@ int luaexec_run_line(const char *line, int line_len, void *cppl)
     puts("LUZ30053 LUAEXRUN invalid line length");
     return 8;
   }
+  /* Change note: load LUACFG early for trace-level diagnostics.
+   * Problem: trace.level was unavailable before tokenization logs.
+   * Expected effect: LUZ30072/30073 honor trace.level in LUACFG.
+   * Impact: debug diagnostics appear only when trace.level=debug.
+   */
+  if (!luaz_policy_loaded())
+    luaz_policy_load("DD:LUACFG");
   /* Change note: cache LUACMD CPPL for IKJEFTSR optional parameters.
    * Problem: CPPL from LUACMD was ignored, preventing param8 usage.
    * Expected effect: LUAEXRUN forwards CPPL to TSO command execution.
@@ -710,14 +719,16 @@ int luaexec_run_line(const char *line, int line_len, void *cppl)
    * Ref: src/luaexec.c.md#cppl-forwarding
    */
   lua_tso_set_cppl_cmd(cppl);
-  /* Change note: add LUAEXRUN address diagnostics for ASM->C compare.
-   * Problem: LUACMD->LUAEXRUN argument addresses must be validated.
-   * Expected effect: SYSOUT shows pointer/length addresses for SNAPX match.
-   * Impact: emits one diagnostic line per LUAEXRUN invocation.
+  /* Change note: gate LUAEXRUN address diagnostics by trace.level.
+   * Problem: unconditional debug output clutters SYSOUT.
+   * Expected effect: trace.level controls LUZ30072 emission.
+   * Impact: LUZ30072 appears only when trace.level=debug.
    */
-  printf("LUZ30072 LUAEXRUN dbg line=%08X len=%d buf=%08X argv=%08X\n",
-         (unsigned int)(uintptr_t)line, line_len,
-         (unsigned int)(uintptr_t)buf, (unsigned int)(uintptr_t)argv);
+  if (luaz_policy_trace_enabled("debug")) {
+    printf("LUZ30072 LUAEXRUN dbg line=%08X len=%d buf=%08X argv=%08X\n",
+           (unsigned int)(uintptr_t)line, line_len,
+           (unsigned int)(uintptr_t)buf, (unsigned int)(uintptr_t)argv);
+  }
 
   /* Change note: remove LUAEXRUN entry/raw-line debug output.
    * Problem: debug prints clutter SYSOUT in normal runs.

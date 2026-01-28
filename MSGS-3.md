@@ -54,11 +54,11 @@
 | LUZ30069 | tso_native TSOCMD r1=%08X parms=%08X match=%d | src/tso_native.c | Compare incoming R1 with parameter block address (OS PLIST vs direct) | diagnostic |
 | LUZ30070 | ITLUACMD ok LUAZ_MODE=TSO args ok | tests/integration/lua/ITLUACMD.lua | None | diagnostic |
 | LUZ30071 | ITLUACMD validation failed: %s | tests/integration/lua/ITLUACMD.lua | Run via LUACMD under IKJEFT01 and ensure MODE=TSO and operands are preserved | validation |
-| LUZ30072 | LUAEXRUN dbg line=%08X len=%d buf=%08X argv=%08X | src/luaexec.c | Compare printed addresses with SNAPX dump to validate ASM->C parameter passing | diagnostic |
-| LUZ30073 | LUAEXRUN parse line len=%d text='%.*s' | src/luaexec.c | Print raw LUACMD line content before tokenization to verify MODE= token | diagnostic |
-| LUZ30074 | TSONCPPL called cppl=%p | src/tso_native.c | Verify TSONCPPL invocation and CPPL pointer passed from LUACMD | diagnostic |
+| LUZ30072 | LUAEXRUN dbg line=%08X len=%d buf=%08X argv=%08X | src/luaexec.c | Debug-only: verify LUAEXRUN argument addresses (trace.level=debug) | diagnostic |
+| LUZ30073 | LUAEXRUN parse line len=%d text='%.*s' | src/luaexec.c | Debug-only: verify LUACMD line content before tokenization (trace.level=debug) | diagnostic |
+| LUZ30074 | TSONCPPL called cppl=%p | src/tso_native.c | Debug-only: verify TSONCPPL invocation and CPPL pointer (trace.level=debug) | diagnostic |
 | LUZ30075 | IKJTSOEV rc=%d reason=%d abend=%d cppl=%p | src/tso_native.c | Validate IKJTSOEV outcome and CPPL pointer returned in TSO mode | diagnostic |
-| LUZ30076 | TSONCPPL deref cppl=%p g_env_cppl=%p | src/tso_native.c | Check whether the CPPL cell is populated and cached correctly | diagnostic |
+| LUZ30076 | TSONCPPL deref cppl=%p g_env_cppl=%p | src/tso_native.c | Debug-only: verify CPPL dereference and cache (trace.level=debug) | diagnostic |
 | LUZ30077 | LE abend msg=%d fac=%.3s c1=%d c2=%d case=%d sev=%d ctrl=%d isi=%d abend=%08X reason=%08X | src/luaexec.c | Use the abend/reason fields to look up LE runtime messages or compare with SYSUDUMP | diagnostic |
 | LUZ30078 | CEEHDLR failed msgno=%d | src/luaexec.c | Verify LE runtime availability and handler registration | diagnostic |
 | LUZ30079 | TSOCMD parms cppl=%p cmd=%p cmd_len=%d outdd=%p reason=%p abend=%p dair=%p cat=%p work=%p | src/tso_native.c | Verify TSOCMD parameter block contents before the ASM call | diagnostic |

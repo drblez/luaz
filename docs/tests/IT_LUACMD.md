@@ -15,7 +15,7 @@ automatically, and preserves user operands.
 
 1) Upload `tests/integration/lua/ITLUACMD.lua` into `DRBLEZ.LUA.TEST(ITLUACMD)`.
 2) Submit `jcl/IT_LUACMD.jcl` (run under IKJEFT01, passes ARG1/'ARG TWO'/ARG3=Z/ARG4).
-3) Inspect SYSOUT for `LUZ30070` and argument validation.
+3) Inspect LUAOUT for `LUZ30070` and argument validation.
 
 ## Expected RC per step
 

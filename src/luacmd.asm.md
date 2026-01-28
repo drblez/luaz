@@ -1,6 +1,6 @@
 # IBM References for src/luacmd.asm
 
-## snapx-pre-luaexrun
+## snapx-pre-luaexrun (removed)
 
 Source: IBM z/OS MVS Programming: Authorized Assembler Services Guide.
 
@@ -11,8 +11,8 @@ Source: IBM z/OS MVS Programming: Authorized Assembler Services Guide.
 - SNAP dump DCB requirements (RECFM/LRECL/BLKSIZE/MACRF, OPEN before SNAPX):
   https://www.ibm.com/docs/en/zos/3.1.0?topic=dump-obtaining-snap-dumps
 
-These references document SNAPX usage and DCB attributes for the
-LUACMD pre-call dump just before CEEPIPI call_sub invokes LUAEXRUN.
+These references document SNAPX usage and DCB attributes that were
+used for LUACMD pre-call dumps before SNAPX diagnostics were removed.
 
 ## open-return-codes
 
