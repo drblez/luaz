@@ -55,10 +55,11 @@ Notes:
 
 - `tso.cmd(cmd, capture?) -> rc, lines`
   - `cmd`: TSO command string.
-  - `capture`: optional boolean (default `false`) to enable output capture.
+  - `capture`: optional boolean (default from `tso.cmd.capture.default` in LUACFG).
   - `rc`: TSO return code.
   - `lines`: table of output lines from `TSOOUT`, each prefixed with `LUZ30031`
     when `capture=true`; `nil` when `capture=false`.
+  - If policy allow/deny rules block the command, returns `nil, LUZ30099|LUZ30100, rc`.
 - `tso.alloc(spec) -> rc`
   - `spec`: allocation spec (e.g., `DD(LUTMP) DSN('HLQ.DATA') SHR`).
 - `tso.free(spec) -> rc`

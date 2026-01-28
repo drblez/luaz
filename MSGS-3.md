@@ -21,6 +21,14 @@
 | LUZ30088 | tso.cmd free outdd failed rc=%d | src/tso.c | Ensure TSO FREE DD(TSOOUT) is available and LUTSO ran successfully | runtime |
 | LUZ30089 | LUAEXEC LUAOUT open failed errno=%d | src/luaexec.c | Allocate LUAOUT DDNAME and ensure it is writable; review errno for details | runtime |
 | LUZ30092 | LUAEXEC LUAOUT io.output failed: %s | src/luaexec.c | Verify Lua io library initialization and LUAOUT handle setup | runtime |
+| LUZ30093 | LUACFG line too long line=%d | src/policy.c | Shorten LUACFG line or split values | runtime |
+| LUZ30094 | LUACFG invalid line=%d | src/policy.c | Use `key = value` format in LUACFG | runtime |
+| LUZ30095 | LUACFG unknown key=%s line=%d | src/policy.c | Remove the key or add support in LUACFG parser | runtime |
+| LUZ30096 | LUACFG invalid value key=%s line=%d | src/policy.c | Fix value format for the specified key | runtime |
+| LUZ30097 | LUACFG value too long key=%s line=%d | src/policy.c | Shorten the value to fit limits | runtime |
+| LUZ30098 | LUACFG duplicate key=%s | src/policy.c | Remove duplicate entries or keep a single key | runtime |
+| LUZ30099 | tso.cmd blocked by policy allowlist verb=%s | src/tso.c | Add command to allowlist or change allow mode | runtime |
+| LUZ30100 | tso.cmd blocked by policy denylist verb=%s | src/tso.c | Remove command from denylist or change allow mode | runtime |
 | LUZ30033 | tso.alloc failed (native rc in message) | src/tso.c | Check native DAIR path and ALLOC spec | runtime |
 | LUZ30034 | tso.free failed (native rc in message) | src/tso.c | Ensure DDNAME is allocated and native DAIR path works | runtime |
 | LUZ30035 | tso.msg failed (irx_rc/rexx_rc in message) | src/tso.c | Ensure IKJTSOEV init and message string are valid | runtime |
@@ -71,7 +79,7 @@
 | LUZ30015 | time backend not implemented | src/time.c | Build without `LUAZ_TIME_ZOS` or implement time hooks | stub |
 | LUZ30016 | localtime backend not implemented | src/time.c | Build without `LUAZ_TIME_ZOS` or implement time hooks | stub |
 | LUZ30017 | gmt backend not implemented | src/time.c | Build without `LUAZ_TIME_ZOS` or implement time hooks | stub |
-| LUZ30018 | policy get not implemented | src/policy.c | Build without `LUAZ_POLICY` or implement policy hooks | stub |
+| LUZ30018 | policy get failed | src/policy.c | Check LUACFG content and key names | runtime |
 | LUZ30019 | clock backend not implemented | src/time.c | Build without `LUAZ_TIME_ZOS` or implement time hooks | stub |
 | LUZ30020 | LUAMAP lookup not implemented | src/path.c | Implement LUAPATH lookup hooks | stub |
 | LUZ30021 | LUAPATH load not implemented | src/path.c | Implement LUAPATH loader hooks | stub |

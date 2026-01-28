@@ -1,6 +1,8 @@
 # Policy/Config Dataset (Draft)
 
 This document describes the planned configuration policy dataset.
+Full key list (including optional overrides) is tracked in
+`docs/RUNTIME_CONFIG_KEYS.md`.
 
 ## Format
 

@@ -373,6 +373,11 @@
   INCLUDE OBJLIB(LUAEXEC)
   INCLUDE OBJLIB(PATH)
   INCLUDE OBJLIB(PLATFORM)
+* Change: link POLICY into LUACMD.
+* Problem: LUACMD now calls policy APIs via LUAEXEC and required symbols.
+* Expected effect: LUACMD resolves luaz_policy_* symbols at link-edit.
+* Impact: LUACMD load module includes POLICY object.
+  INCLUDE OBJLIB(POLICY)
   INCLUDE OBJLIB(TSO)
   INCLUDE OBJLIB(LAPI)
   INCLUDE OBJLIB(LAUXLIB)

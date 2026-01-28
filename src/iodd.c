@@ -10,6 +10,7 @@
  */
 #include "IODD"
 #include "PLATFORM"
+#include "POLICY"
 
 #include <stdio.h>
 #include <string.h>
@@ -63,12 +64,21 @@ static int read_stream(FILE *fp, char *buf, unsigned long *len)
 static int luaz_dd_open(const char *member, FILE **out)
 {
   char path[128];
+  const char *ddname = NULL;
   int rc;
 
   if (out == NULL || member == NULL)
     return -1;
 
-  rc = snprintf(path, sizeof(path), "//DD:LUAPATH(%s)", member);
+  /* Change note: allow LUAPATH DDNAME override via LUACFG.
+   * Problem: LUAPATH DDNAME was hardcoded in DDNAME I/O helpers.
+   * Expected effect: config can redirect module search DDNAME.
+   * Impact: require/loadfile use configured LUAPATH when set.
+   */
+  ddname = luaz_policy_get_raw("luapath.dd");
+  if (ddname == NULL || ddname[0] == '\0')
+    ddname = "LUAPATH";
+  rc = snprintf(path, sizeof(path), "//DD:%s(%s)", ddname, member);
   if (rc <= 0 || (size_t)rc >= sizeof(path))
     return -1;
 

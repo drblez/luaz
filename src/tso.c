@@ -7,6 +7,10 @@
  * | Object | Kind | Purpose |
  * |--------|------|---------|
  * | read_dd_to_lines | function | Read DDNAME output into Lua table |
+ * | tso_policy_cmd_check | function | Apply policy allowlist/denylist |
+ * | tso_policy_output_limit | function | Read output line limit |
+ * | tso_policy_capture_default | function | Read capture default |
+ * | tso_policy_copy_ddname | function | Normalize DDNAME from config |
  * | tso_alloc_outdd | function | Allocate temporary OUTDD via DAIR |
  * | tso_free_outdd | function | Free temporary OUTDD allocation |
  * | tso_stack_outdd | function | Route output to OUTDD via STACK |
@@ -33,6 +37,7 @@
 #include "ERRORS"
 #include "TSONATV"
 #include "tso_dair_asm.h"
+#include "POLICY"
 
 #include "LUA"
 #include "LAUXLIB"
@@ -41,6 +46,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
 
 /* IKJTSOEV function signature for environment probing. */
@@ -78,6 +84,203 @@ static size_t g_systsprt_offset = 0; /* Bytes read from SYSTSPRT (per process). 
  * Impact: unused by tso.cmd until STACK capture is reinstated.
  */
 static const char g_tso_outdd_name[] = "LUZOUT00";
+
+/**
+ * @brief Case-insensitive string compare for policy values.
+ *
+ * @param a First string.
+ * @param b Second string.
+ * @return 0 when equal, nonzero otherwise.
+ */
+static int tso_stricmp(const char *a, const char *b)
+{
+  unsigned char ca;
+  unsigned char cb;
+
+  if (a == NULL || b == NULL)
+    return (a == b) ? 0 : 1;
+  while (*a && *b) {
+    ca = (unsigned char)tolower((unsigned char)*a++);
+    cb = (unsigned char)tolower((unsigned char)*b++);
+    if (ca != cb)
+      return (int)ca - (int)cb;
+  }
+  return (int)tolower((unsigned char)*a) - (int)tolower((unsigned char)*b);
+}
+
+/**
+ * @brief Normalize a DDNAME value from config or fallback.
+ *
+ * @param out Output buffer for DDNAME.
+ * @param cap Output buffer capacity.
+ * @param value Config value (may be NULL).
+ * @param fallback Default DDNAME when config is missing.
+ * @return None.
+ */
+static void tso_policy_copy_ddname(char *out, size_t cap, const char *value,
+                                   const char *fallback)
+{
+  size_t i = 0;
+  const char *src = NULL;
+
+  if (out == NULL || cap == 0)
+    return;
+  src = (value != NULL && value[0] != '\0') ? value : fallback;
+  if (src == NULL || strlen(src) > 8) {
+    out[0] = '\0';
+    return;
+  }
+  for (i = 0; i + 1 < cap && src[i] != '\0' && i < 8; i++)
+    out[i] = (char)toupper((unsigned char)src[i]);
+  out[i] = '\0';
+}
+
+/**
+ * @brief Parse a boolean value from policy text.
+ *
+ * @param value Policy value string.
+ * @param out Output boolean value.
+ * @return 1 when parsed, 0 otherwise.
+ */
+static int tso_policy_parse_bool(const char *value, int *out)
+{
+  if (value == NULL || out == NULL)
+    return 0;
+  if (tso_stricmp(value, "true") == 0 || tso_stricmp(value, "1") == 0) {
+    *out = 1;
+    return 1;
+  }
+  if (tso_stricmp(value, "false") == 0 || tso_stricmp(value, "0") == 0) {
+    *out = 0;
+    return 1;
+  }
+  return 0;
+}
+
+/**
+ * @brief Read default capture mode from policy.
+ *
+ * @return 1 if capture default is true, 0 otherwise.
+ */
+static int tso_policy_capture_default(void)
+{
+  int value = 0;
+  const char *raw = luaz_policy_get_raw("tso.cmd.capture.default");
+
+  if (raw == NULL)
+    return 0;
+  if (!tso_policy_parse_bool(raw, &value))
+    return 0;
+  return value;
+}
+
+/**
+ * @brief Read output line limit from policy.
+ *
+ * @return Line limit (0 means unlimited).
+ */
+static int tso_policy_output_limit(void)
+{
+  const char *raw = luaz_policy_get_raw("limits.output.lines");
+  long limit = 0;
+
+  if (raw == NULL || raw[0] == '\0')
+    return 0;
+  limit = strtol(raw, NULL, 10);
+  if (limit <= 0)
+    return 0;
+  if (limit > INT32_MAX)
+    limit = INT32_MAX;
+  return (int)limit;
+}
+
+/**
+ * @brief Extract the command verb for policy checks.
+ *
+ * @param cmd Full TSO command.
+ * @param verb Output buffer for verb.
+ * @param cap Output buffer capacity.
+ * @return 1 when verb was extracted, 0 otherwise.
+ */
+static int tso_policy_extract_verb(const char *cmd, char *verb, size_t cap)
+{
+  size_t i = 0;
+
+  if (cmd == NULL || verb == NULL || cap == 0)
+    return 0;
+  while (*cmd != '\0' && isspace((unsigned char)*cmd))
+    cmd++;
+  if (*cmd == '\0')
+    return 0;
+  while (*cmd != '\0' && !isspace((unsigned char)*cmd) && i + 1 < cap) {
+    verb[i++] = (char)toupper((unsigned char)*cmd++);
+  }
+  verb[i] = '\0';
+  return (i > 0) ? 1 : 0;
+}
+
+/**
+ * @brief Check if a command verb is present in a comma list.
+ *
+ * @param list Comma-separated list value.
+ * @param verb Command verb to find.
+ * @return 1 if present, 0 otherwise.
+ */
+static int tso_policy_list_contains(const char *list, const char *verb)
+{
+  const char *p = list;
+  char token[32];
+  size_t len = 0;
+
+  if (list == NULL || verb == NULL || verb[0] == '\0')
+    return 0;
+  while (*p != '\0') {
+    while (*p == ',' || isspace((unsigned char)*p))
+      p++;
+    if (*p == '\0')
+      break;
+    len = 0;
+    while (*p != '\0' && *p != ',' && len + 1 < sizeof(token)) {
+      if (!isspace((unsigned char)*p))
+        token[len++] = (char)toupper((unsigned char)*p);
+      p++;
+    }
+    token[len] = '\0';
+    if (len > 0 && tso_stricmp(token, verb) == 0)
+      return 1;
+    while (*p != '\0' && *p != ',')
+      p++;
+  }
+  return 0;
+}
+
+/**
+ * @brief Apply allowlist/denylist policy to a TSO command.
+ *
+ * @param cmd TSO command string.
+ * @param verb Output buffer for the parsed verb.
+ * @param cap Output buffer capacity.
+ * @return 0 when allowed, 1 when blocked by allowlist, 2 when blocked by denylist.
+ */
+static int tso_policy_cmd_check(const char *cmd, char *verb, size_t cap)
+{
+  const char *mode = luaz_policy_get_raw("allow.tso.cmd");
+  const char *whitelist = luaz_policy_get_raw("tso.cmd.whitelist");
+  const char *blacklist = luaz_policy_get_raw("tso.cmd.blacklist");
+
+  if (mode == NULL || mode[0] == '\0')
+    return 0;
+  if (!tso_policy_extract_verb(cmd, verb, cap))
+    return 0;
+  if (tso_stricmp(mode, "whitelist") == 0) {
+    if (!tso_policy_list_contains(whitelist, verb))
+      return 1;
+  } else if (tso_stricmp(mode, "blacklist") == 0) {
+    if (tso_policy_list_contains(blacklist, verb))
+      return 2;
+  }
+  return 0;
+}
 
 /* STACK operation selectors for TSOSTK. */
 enum {
@@ -790,9 +993,10 @@ static int tso_free_outdd(const char *outdd_name, int *out_cmd_rc,
  *
  * @param L Lua state.
  * @param ddname DDNAME to read (EBCDIC, 1-8 chars).
+ * @param max_lines Maximum lines to emit (0 means unlimited).
  * @return 1 on success, 0 on failure.
  */
-static int read_dd_to_lines(lua_State *L, const char *ddname)
+static int read_dd_to_lines(lua_State *L, const char *ddname, int max_lines)
 {
   char path[32];
   char alt_path[32];
@@ -802,6 +1006,12 @@ static int read_dd_to_lines(lua_State *L, const char *ddname)
   size_t rec_cap = 32760u;
   int record_io = 0;
   int idx = 0;
+  int emit = 1;
+  /* Change note: enforce policy line limit on captured output.
+   * Problem: unlimited capture could grow memory or spool usage.
+   * Expected effect: only the first N lines are returned to Lua.
+   * Impact: remaining output is read and discarded for offset tracking.
+   */
   size_t bytes_read = 0;
   size_t skip_bytes = 0;
   int is_systsprt = 0;
@@ -916,10 +1126,14 @@ reopen_dd:
               rec[n - 1] == '\r' || rec[n - 1] == '\n')) {
         n--;
       }
-      lua_pushstring(L, "LUZ30031 ");
-      lua_pushlstring(L, rec, n);
-      lua_concat(L, 2);
-      lua_rawseti(L, -2, ++idx);
+      if (emit) {
+        lua_pushstring(L, "LUZ30031 ");
+        lua_pushlstring(L, rec, n);
+        lua_concat(L, 2);
+        lua_rawseti(L, -2, ++idx);
+        if (max_lines > 0 && idx >= max_lines)
+          emit = 0;
+      }
     }
     free(rec);
   } else {
@@ -927,10 +1141,14 @@ reopen_dd:
       size_t raw_len = strlen(buf);
       size_t len = strcspn(buf, "\r\n");
       bytes_read += raw_len;
-      lua_pushstring(L, "LUZ30031 ");
-      lua_pushlstring(L, buf, len);
-      lua_concat(L, 2);
-      lua_rawseti(L, -2, ++idx);
+      if (emit) {
+        lua_pushstring(L, "LUZ30031 ");
+        lua_pushlstring(L, buf, len);
+        lua_concat(L, 2);
+        lua_rawseti(L, -2, ++idx);
+        if (max_lines > 0 && idx >= max_lines)
+          emit = 0;
+      }
     }
   }
   fclose(fp);
@@ -1052,6 +1270,10 @@ static int lua_tso_cmd_capture(lua_State *L, const char *cmd)
   int rc = 0;
   int free_rc = 0;
   const char *outdd_name = "TSOOUT";
+  const char *cfg_rexx_dd = NULL;
+  const char *cfg_rexx_exec = NULL;
+  char rexx_ddname[9];
+  char rexx_member[9];
 
   if (tso_env_init() != 0) {
     lua_pushnil(L);
@@ -1067,7 +1289,22 @@ static int lua_tso_cmd_capture(lua_State *L, const char *cmd)
    * Ref: src/tso.c.md#tso-rexx-outtrap
    */
   tso_sync_systsprt_offset();
-  rc = tso_call_rexx("SYSEXEC", "LUTSO", "CMD", cmd, outdd_name,
+  /* Change note: allow REXX DDNAME/member override via LUACFG.
+   * Problem: REXX exec location was hardcoded to SYSEXEC/LUTSO.
+   * Expected effect: policy can redirect capture to alternate DD/member.
+   * Impact: tso.cmd capture uses configured REXX exec if provided.
+   */
+  cfg_rexx_dd = luaz_policy_get_raw("tso.rexx.dd");
+  cfg_rexx_exec = luaz_policy_get_raw("tso.rexx.exec");
+  tso_policy_copy_ddname(rexx_ddname, sizeof(rexx_ddname), cfg_rexx_dd,
+                         "SYSEXEC");
+  tso_policy_copy_ddname(rexx_member, sizeof(rexx_member), cfg_rexx_exec,
+                         "LUTSO");
+  if (rexx_ddname[0] == '\0')
+    strcpy(rexx_ddname, "SYSEXEC");
+  if (rexx_member[0] == '\0')
+    strcpy(rexx_member, "LUTSO");
+  rc = tso_call_rexx(rexx_ddname, rexx_member, "CMD", cmd, outdd_name,
                      LUZ_E_TSO_CMD);
   if (rc == LUZ_E_TSO_CMD && g_last_irx_rc != 0) {
     lua_pushnil(L);
@@ -1078,7 +1315,7 @@ static int lua_tso_cmd_capture(lua_State *L, const char *cmd)
     return 3;
   }
   lua_pushinteger(L, rc);
-  if (!read_dd_to_lines(L, outdd_name)) {
+  if (!read_dd_to_lines(L, outdd_name, tso_policy_output_limit())) {
     lua_newtable(L);
   }
   /* Change note: free the temp output DD after capture.
@@ -1086,7 +1323,8 @@ static int lua_tso_cmd_capture(lua_State *L, const char *cmd)
    * Expected effect: DD is freed in C after reading output.
    * Impact: temp allocations do not leak across calls.
    */
-  free_rc = tso_call_rexx("SYSEXEC", "LUTSO", "FREE", "DDNAME(TSOOUT) DELETE", "",
+  free_rc = tso_call_rexx(rexx_ddname, rexx_member, "FREE",
+                          "DDNAME(TSOOUT) DELETE", "",
                           LUZ_E_TSO_CMD);
   if (free_rc != 0) {
     printf("LUZ30088 tso.cmd free outdd failed rc=%d\n", free_rc);
@@ -1229,9 +1467,13 @@ static int l_tso_cmd(lua_State *L)
 {
   const char *cmd = luaL_checkstring(L, 1);
   int capture = 0;
+  int capture_set = 0;
+  int block_rc = 0;
+  char verb[32];
   if (!lua_isnoneornil(L, 2)) {
     luaL_checktype(L, 2, LUA_TBOOLEAN);
     capture = lua_toboolean(L, 2);
+    capture_set = 1;
   }
 
   lua_getglobal(L, "LUAZ_MODE");
@@ -1244,12 +1486,35 @@ static int l_tso_cmd(lua_State *L)
   }
   lua_pop(L, 1);
 
+  /* Change note: enforce allowlist/denylist for tso.cmd.
+   * Problem: TSO commands could be executed without policy checks.
+   * Expected effect: LUACFG allow/deny rules block unsafe commands.
+   * Impact: tso.cmd returns policy error without running command.
+   */
+  block_rc = tso_policy_cmd_check(cmd, verb, sizeof(verb));
+  if (block_rc == 1) {
+    lua_pushnil(L);
+    lua_pushfstring(L, "LUZ30099 tso.cmd blocked by policy allowlist verb=%s",
+                    verb);
+    lua_pushinteger(L, LUZ_E_TSO_CMD);
+    return 3;
+  }
+  if (block_rc == 2) {
+    lua_pushnil(L);
+    lua_pushfstring(L, "LUZ30100 tso.cmd blocked by policy denylist verb=%s",
+                    verb);
+    lua_pushinteger(L, LUZ_E_TSO_CMD);
+    return 3;
+  }
+
   /* Change note: add capture flag to select output handling.
    * Problem: callers need a no-capture path and a capture path without ASM.
    * Expected effect: capture=true uses REXX OUTTRAP, false uses IKJEFTSR only.
    * Impact: tso.cmd defaults to no output capture unless requested.
    * Ref: src/tso.c.md#tso-rexx-outtrap
    */
+  if (!capture_set)
+    capture = tso_policy_capture_default();
   if (capture)
     return lua_tso_cmd_capture(L, cmd);
   return lua_tso_cmd_nocap(L, cmd);

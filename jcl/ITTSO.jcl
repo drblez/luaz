@@ -47,6 +47,18 @@
   TRACE(ON,256K,DUMP,LE=1)
 /*
 //LUAIN   DD DSN=&HLQ..LUA.TEST(ITTSO),DISP=SHR
+//LUACFG  DD *
+  allow.tso.cmd = whitelist
+  tso.cmd.whitelist = LISTCAT
+  tso.cmd.capture.default = true
+  limits.output.lines = 50
+  tso.rexx.dd = SYSEXEC
+  tso.rexx.exec = LUTSO
+  luain.dd = LUAIN
+  luaout.dd = LUAOUT
+  luapath.dd = LUAPATH
+  trace.level = info
+/*
 //* Change: provide REXX exec library for capture=true OUTTRAP path.
 //* Problem: tso.cmd(..., true) calls LUTSO via IRXEXEC.
 //* Expected effect: LUTSO is found under SYSEXEC for command capture.

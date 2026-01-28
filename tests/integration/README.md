@@ -31,6 +31,7 @@ and their interaction with datasets and JCL in batch mode.
 
 - `tso.cmd(..., true)` returns RC and captures output.
 - `tso.cmd(..., true)` output lines are prefixed with `LUZ30031` and printed to LUAOUT; Lua stdout prints `LUZ00022` and `LUZ00023` in LUAOUT.
+- `LUAZ_CONFIG` is present and `tso.cmd` default capture/allowlist behavior matches LUACFG (see IT_TSO).
 -- `tso.alloc/free` are out of scope until direct TSO allocation is implemented.
 - `tso.msg` emits LUZ‑prefixed output.
 - `tso.exit` terminates with requested RC.

@@ -16,6 +16,8 @@
  * | luaexec_close_luaout | function | Close LUAOUT output stream |
  * | luaexec_io_noclose | function | Keep LUAOUT stdout handle open |
  * | luaexec_bind_luaout_stdout | function | Bind io.stdout/io.output to LUAOUT |
+ * | luaexec_publish_config | function | Publish LUAZ_CONFIG table |
+ * | luaexec_copy_ddname | function | Normalize DDNAME from config |
  * | luaexec_run_line | function | Run LUAEXEC for LUACMD (TSO path) |
  * | lua_tso_luain_load | function | Load LUAIN with VB/FB80 record support |
  *
@@ -30,11 +32,13 @@
 #include "LAUXLIB"
 #include "LUALIB"
 #include "TSO"
+#include "POLICY"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <ctype.h>
 #include <leawi.h>
 #include <ceeedcct.h>
 #include <errno.h>
@@ -218,16 +222,52 @@ static int luaexec_print_luaout(lua_State *L)
 }
 
 /**
- * @brief Redirect Lua print/output to DD:LUAOUT when available.
+ * @brief Normalize a DDNAME value from config or fallback.
  *
- * @param L Lua state.
+ * @param out Output buffer for DDNAME.
+ * @param cap Output buffer capacity.
+ * @param value Config value (may be NULL).
+ * @param fallback Default DDNAME when config is missing.
  * @return None.
  */
-static void luaexec_redirect_luaout(lua_State *L)
+static void luaexec_copy_ddname(char *out, size_t cap, const char *value,
+                                const char *fallback)
 {
-  const char *path = "DD:LUAOUT";
+  size_t i = 0;
+  const char *src = NULL;
+
+  if (out == NULL || cap == 0)
+    return;
+  src = (value != NULL && value[0] != '\0') ? value : fallback;
+  if (src == NULL) {
+    out[0] = '\0';
+    return;
+  }
+  if (strlen(src) > 8) {
+    out[0] = '\0';
+    return;
+  }
+  for (i = 0; i + 1 < cap && src[i] != '\0' && i < 8; i++)
+    out[i] = (char)toupper((unsigned char)src[i]);
+  out[i] = '\0';
+}
+
+/**
+ * @brief Redirect Lua print/output to DDNAME when available.
+ *
+ * @param L Lua state.
+ * @param ddname Output DDNAME (defaults to LUAOUT).
+ * @return None.
+ */
+static void luaexec_redirect_luaout(lua_State *L, const char *ddname)
+{
+  char path[32];
+  const char *use_dd = (ddname != NULL && ddname[0] != '\0') ? ddname
+                                                            : "LUAOUT";
 
   if (L == NULL)
+    return;
+  if (snprintf(path, sizeof(path), "DD:%s", use_dd) <= 0)
     return;
   g_luaout_fp = fopen(path, "w");
   if (g_luaout_fp == NULL) {
@@ -296,6 +336,32 @@ static void luaexec_bind_luaout_stdout(lua_State *L)
   }
 
   lua_pop(L, 2);
+}
+
+/**
+ * @brief Publish LUAZ_CONFIG table based on loaded policy values.
+ *
+ * @param L Lua state.
+ * @return None.
+ */
+static void luaexec_publish_config(lua_State *L)
+{
+  int count = 0;
+  int i = 0;
+
+  if (L == NULL)
+    return;
+  count = luaz_policy_key_count();
+  lua_newtable(L);
+  for (i = 0; i < count; i++) {
+    const char *key = luaz_policy_key_name(i);
+    const char *value = luaz_policy_value_name(i);
+    if (key == NULL || value == NULL)
+      continue;
+    lua_pushstring(L, value);
+    lua_setfield(L, -2, key);
+  }
+  lua_setglobal(L, "LUAZ_CONFIG");
 }
 
 /**
@@ -427,8 +493,13 @@ cleanup:
 static int luaexec_run(int argc, char **argv, const char *mode)
 {
   luaexec_parm parm;
-  const char *script = "DD:LUAIN";
+  const char *script = NULL;
   const char *run_mode = mode;
+  const char *cfg_luain = NULL;
+  const char *cfg_luaout = NULL;
+  char luain_ddname[9];
+  char luaout_ddname[9];
+  char luain_path[32];
   lua_State *L = NULL;
   luaexec_parse_parm(argc, argv, &parm);
   if (parm.dsn != NULL && parm.dsn[0] != '\0') {
@@ -444,6 +515,25 @@ static int luaexec_run(int argc, char **argv, const char *mode)
    * Expected effect: reduce diagnostic noise without changing behavior.
    * Impact: no mode/args_start printout during LUAEXEC.
    */
+
+  /* Change note: load LUACFG before Lua state creation.
+   * Problem: runtime policy and DD overrides were unavailable at startup.
+   * Expected effect: policy values can affect LUAIN/LUAOUT and TSO defaults.
+   * Impact: LUACFG parsing happens once per LUAEXEC run.
+   */
+  luaz_policy_load("DD:LUACFG");
+  cfg_luain = luaz_policy_get_raw("luain.dd");
+  cfg_luaout = luaz_policy_get_raw("luaout.dd");
+  luaexec_copy_ddname(luain_ddname, sizeof(luain_ddname), cfg_luain, "LUAIN");
+  luaexec_copy_ddname(luaout_ddname, sizeof(luaout_ddname), cfg_luaout,
+                      "LUAOUT");
+  if (luain_ddname[0] == '\0') {
+    strcpy(luain_ddname, "LUAIN");
+  }
+  if (snprintf(luain_path, sizeof(luain_path), "DD:%s", luain_ddname) > 0)
+    script = luain_path;
+  else
+    script = "DD:LUAIN";
 
   L = luaL_newstate();
   if (L == NULL) {
@@ -461,6 +551,7 @@ static int luaexec_run(int argc, char **argv, const char *mode)
   lua_pop(L, 1);
   lua_pushstring(L, run_mode);
   lua_setglobal(L, "LUAZ_MODE");
+  luaexec_publish_config(L);
 
   luaexec_set_args(L, script, argc, argv, parm.args_start);
   /* Change note: direct Lua output to LUAOUT DDNAME.
@@ -468,7 +559,7 @@ static int luaexec_run(int argc, char **argv, const char *mode)
    * Expected effect: Lua stdout (print/io) routes to LUAOUT when allocated.
    * Impact: debug output remains on SYSTSPRT; Lua output is separated.
    */
-  luaexec_redirect_luaout(L);
+  luaexec_redirect_luaout(L, luaout_ddname);
   luaexec_bind_luaout_stdout(L);
 
   if (lua_tso_luain_load(L, script) != LUA_OK) {
