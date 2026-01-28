@@ -5,10 +5,10 @@
 -- Object Table:
 -- | Object | Kind | Purpose |
 -- |--------|------|---------|
--- | tso.cmd | function | Execute TSO command |
--- | tso.alloc | function | Allocate dataset via TSO |
--- | tso.free | function | Free dataset allocation |
--- | tso.msg | function | Write TSO message |
+-- | tso.cmd | function | Execute TSO command (lines, err) |
+-- | tso.alloc | function | Allocate dataset via TSO (err) |
+-- | tso.free | function | Free dataset allocation (err) |
+-- | tso.msg | function | Write TSO message (err) |
 -- | tso.exit | function | Exit with RC |
 local tso = {}
 

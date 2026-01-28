@@ -12,6 +12,13 @@
 | LUZ30030 | tso.msg output | src/tso.c | None | emitted |
 | LUZ30031 | tso.cmd output line | src/tso.c | Use `tso.cmd` output table to consume lines | emitted |
 | LUZ30032 | tso.cmd failed (native reason/abend/dair_rc or irx_rc/rexx_rc in message) | src/tso.c | Check TMP/DAIR setup or IRXEXEC/LUTSO fallback status | runtime |
+| LUZ30048 | tso.cmd IKJEFTSR rc=4 cmd_rc=%d | src/tso.c | Check the TSO command return code in cmd_rc | runtime |
+| LUZ30049 | tso.cmd IKJEFTSR rc=8 attention interruption | src/tso.c | Re-run the command or check for attention keys/timeouts | runtime |
+| LUZ30050 | tso.cmd IKJEFTSR rc=12 abend=%d reason=%d | src/tso.c | Inspect abend/reason and SYSUDUMP/CEEDUMP for details | runtime |
+| LUZ30051 | tso.cmd IKJEFTSR rc=16 invalid parameter address | src/tso.c | Verify IKJEFTSR plist addresses and caller storage | runtime |
+| LUZ30052 | tso.cmd IKJEFTSR rc=20 rsn=%d %s | src/tso.c | Fix IKJEFTSR parameter list (HOB, flags, command name) | runtime |
+| LUZ30055 | tso.cmd IKJEFTSR rc=24 rsn=%d | src/tso.c | Ensure TSO/E environment is initialized under TMP | runtime |
+| LUZ30056 | tso.cmd IKJEFTSR rc=28 24-bit/31-bit address mismatch | src/tso.c | Ensure caller uses AMODE 31 and passes 31-bit addresses | runtime |
 | LUZ30082 | tso.cmd alloc failed rc=%d dair=%d cat=%d da34_darc=%d da34_flg=%d r15_34=%d r15_08=%d dslen=%d ds_hex=%s dd=%s dd_hex=%s | src/tso.c | Verify DAIR availability under TMP, DAIR X'34' outputs, and DDNAME diagnostics | runtime |
 | LUZ30083 | tso.cmd free failed rc=%d dair=%d cat=%d | src/tso.c | Ensure OUTDD was allocated via DAIR and TSODFRE is available | runtime |
 | LUZ30084 | tso.cmd missing CPPL for STACK output | src/tso.c | Run under LUACMD or ensure IKJTSOEV returns a CPPL address | runtime |
@@ -67,10 +74,15 @@
 | LUZ30090 | ITLUAINFB ok LUAZ_MODE=TSO args ok | jcl/IT_LUAIN_FB80.jcl | None | diagnostic |
 | LUZ30091 | ITLUAINFB fail %s | jcl/IT_LUAIN_FB80.jcl | Run via LUACMD under IKJEFT01 and ensure LUAIN is FB80 in-stream data | validation |
 | LUZ30060 | LUAZ_MODE debug output | tests/integration/lua/ITTSO.lua | None | diagnostic |
-| LUZ30006 | ds.open_dd not implemented | src/ds.c | Use DDNAME I/O via JCL tools | stub |
-| LUZ30007 | ds.read not implemented | src/ds.c | Use dataset utilities for reads | stub |
-| LUZ30008 | ds.write not implemented | src/ds.c | Use dataset utilities for writes | stub |
-| LUZ30009 | ds.close not implemented | src/ds.c | None | stub |
+| LUZ30006 | ds.open_dd/open_dsn failed | src/ds.c | Verify DDNAME/DSN allocation and dataset access | runtime |
+| LUZ30007 | ds.read failed | src/ds.c | Verify dataset content, mode, and RECFM/LRECL | runtime |
+| LUZ30008 | ds.write failed | src/ds.c | Verify dataset attributes and write mode | runtime |
+| LUZ30009 | ds.close failed | src/ds.c | Ensure handle is open and not reused after close | runtime |
+| LUZ30026 | ds.remove failed | src/ds.c | Verify dataset name and access permissions | runtime |
+| LUZ30027 | ds.rename failed | src/ds.c | Verify source/target DSN and access permissions | runtime |
+| LUZ30028 | ds.tmpname failed | src/ds.c | Check SYSUID/LOGNAME/USER and retry | runtime |
+| LUZ30029 | ds.member invalid input | src/ds.c | Provide a DSN and 1-8 character member name | runtime |
+| LUZ30037 | ds.info failed | src/ds.c | Verify dataset exists and is readable | runtime |
 | LUZ30010 | ispf.qry not implemented | src/ispf.c | Verify ISPF setup manually | stub |
 | LUZ30011 | ispf.exec not implemented | src/ispf.c | Use ISPF services via JCL | stub |
 | LUZ30012 | axr.request not implemented | src/axr.c | Use AXR gateway exec | stub |

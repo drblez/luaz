@@ -129,4 +129,4 @@ run_step "INC-vm" "sync_code" scripts/ftp_sync_src.sh --pds "$HLQ.LUA.INC" --roo
 run_step "LUA" "sync_lua" scripts/ftp_sync_src.sh --pds "$HLQ.LUA.LUA" --root lua --ext .lua "${DEBUG_FLAG[@]}" "${FULL_SYNC_FLAG[@]}"
 run_step "JCL" "sync_jcl" scripts/ftp_sync_src.sh --pds "$HLQ.LUA.JCL" --root jcl --ext .jcl "${DEBUG_FLAG[@]}" "${FULL_SYNC_FLAG[@]}"
 run_step "REXX" "sync_rexx" scripts/ftp_sync_src.sh --pds "$HLQ.LUA.REXX" --root rexx --map pds-map-rexx.csv "${DEBUG_FLAG[@]}" "${FULL_SYNC_FLAG[@]}"
-run_step "TEST" "sync_test" scripts/ftp_sync_src.sh --pds "$HLQ.LUA.TEST" --root tests/integration/lua --map pds-map-test.csv --ext .lua "${DEBUG_FLAG[@]}" "${FULL_SYNC_FLAG[@]}"
+run_step "TEST" "sync_test" scripts/ftp_sync_src.sh --pds "$HLQ.LUA.TEST" --root tests --map pds-map-test.csv --ext .lua "${DEBUG_FLAG[@]}" "${FULL_SYNC_FLAG[@]}"

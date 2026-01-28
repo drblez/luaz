@@ -53,18 +53,25 @@ Notes:
 
 ## API Behavior
 
-- `tso.cmd(cmd, capture?) -> rc, lines`
+All `tso.*` APIs return a **single error object** (`err`) on failure.
+When `err == nil`, the call is successful. Error details are carried
+in a structured table (no string parsing required).
+
+- `tso.cmd(cmd, capture?) -> lines, err`
   - `cmd`: TSO command string.
   - `capture`: optional boolean (default from `tso.cmd.capture.default` in LUACFG).
-  - `rc`: TSO return code.
   - `lines`: table of output lines from `TSOOUT`, each prefixed with `LUZ30031`
     when `capture=true`; `nil` when `capture=false`.
-  - If policy allow/deny rules block the command, returns `nil, LUZ30099|LUZ30100, rc`.
-- `tso.alloc(spec) -> rc`
+  - `err`: `nil` on success; otherwise a table with fields like:
+    `luz`, `code`, `origin`, `stage`, `svc`, `rc`, `rsn`, `abend`,
+    `irx_rc`, `rexx_rc`, `verb`.
+- `tso.alloc(spec) -> err`
   - `spec`: allocation spec (e.g., `DD(LUTMP) DSN('HLQ.DATA') SHR`).
-- `tso.free(spec) -> rc`
+  - `err`: `nil` on success; otherwise includes `luz=30033` and `spec`.
+- `tso.free(spec) -> err`
   - `spec`: free spec (e.g., `DD(LUTMP)`).
-- `tso.msg(text, level?) -> rc`
+  - `err`: `nil` on success; otherwise includes `luz=30034` and `spec`.
+- `tso.msg(text, level?) -> err`
   - `text`: message string (should be `LUZNNNNN ...`).
   - `level`: reserved for future use.
 - `tso.exit(rc)`

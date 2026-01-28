@@ -6,7 +6,7 @@
 -- | Object | Kind | Purpose |
 -- |--------|------|---------|
 -- | fail | function | Raise a LUZNNNNN-prefixed error |
--- | expect_rc | function | Assert RC is zero |
+-- | expect_ok | function | Assert error is nil |
 -- | main | function | Run tso.cmd checks (direct TSO path) |
 --
 -- Change note: align prefix format to LUZNNNNN.
@@ -19,9 +19,9 @@ local function fail(msg)
   error("LUZ00021 " .. msg)
 end
 
-local function expect_rc(label, rc)
-  if rc ~= 0 then
-    fail(label .. " rc=" .. tostring(rc))
+local function expect_ok(label, err)
+  if err ~= nil then
+    fail(label .. " failed luz=" .. tostring(err.luz))
   end
 end
 
@@ -45,11 +45,8 @@ local function main()
   -- Problem: capture must be opt-in and validated in batch tests.
   -- Expected effect: tso.cmd returns LUZ30031-prefixed output lines.
   -- Impact: ITTSO exercises capture=true path only.
-  local rc, lines, errcode = tso.cmd("LISTCAT LEVEL(DRBLEZ.LUA)", true)
-  if rc == nil then
-    fail("tso.cmd failed: " .. tostring(lines) .. " err=" .. tostring(errcode))
-  end
-  expect_rc("tso.cmd", rc)
+  local lines, err = tso.cmd("LISTCAT LEVEL(DRBLEZ.LUA)", true)
+  expect_ok("tso.cmd", err)
   if type(lines) ~= "table" or #lines == 0 then
     fail("tso.cmd empty output")
   end
@@ -67,10 +64,8 @@ local function main()
   -- Problem: capture default was not configurable.
   -- Expected effect: tso.cmd with no flag uses configured default.
   -- Impact: ITTSO checks capture default behavior.
-  local rc2, lines2, errcode2 = tso.cmd("LISTCAT LEVEL(DRBLEZ.LUA)")
-  if rc2 == nil then
-    fail("tso.cmd default failed: " .. tostring(lines2) .. " err=" .. tostring(errcode2))
-  end
+  local lines2, err2 = tso.cmd("LISTCAT LEVEL(DRBLEZ.LUA)")
+  expect_ok("tso.cmd default", err2)
   if type(lines2) ~= "table" or #lines2 == 0 then
     fail("tso.cmd default capture missing output")
   end
@@ -78,11 +73,11 @@ local function main()
   -- Problem: tso.cmd allowed any command without policy checks.
   -- Expected effect: non-whitelisted commands are blocked.
   -- Impact: ITTSO asserts allowlist behavior.
-  local rc3, err3, code3 = tso.cmd("TIME")
-  if rc3 ~= nil then
+  local lines3, err3 = tso.cmd("TIME")
+  if err3 == nil then
     fail("tso.cmd policy allowlist did not block TIME")
   end
-  if type(err3) ~= "string" or not err3:match("^LUZ30099") then
+  if err3.luz ~= 30099 then
     fail("tso.cmd policy error missing LUZ30099")
   end
   -- Change note: verify io.write/io.stdout redirection to LUAOUT.

@@ -369,6 +369,11 @@
 //OBJLIB DD DSN=&HLQ..LUA.OBJ,DISP=SHR
 //SYSLIN DD *
   INCLUDE OBJLIB(CORE)
+* Change: link DS into LUACMD for ds.open_dd preload in LUAEXEC.
+* Problem: LUACMD references luaopen_ds via LUAEXEC but DS was not linked.
+* Expected effect: LUACMD resolves luaopen_ds at link-edit.
+* Impact: LUACMD can preload ds without unresolved symbol.
+  INCLUDE OBJLIB(DS)
   INCLUDE OBJLIB(IODD)
   INCLUDE OBJLIB(LUAEXEC)
   INCLUDE OBJLIB(PATH)

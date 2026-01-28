@@ -24,13 +24,13 @@ and their interaction with datasets and JCL in batch mode.
 
 - **One test = one JCL job** (`IT_*.jcl`).
 - Tests must be **batch‑safe** and **idempotent** (create/clean datasets).
-- Each test must validate **return codes** and **expected output**.
+- Each test must validate **error objects** and **expected output**.
 - All user‑visible output must use `LUZNNNNN` prefixes.
 - Lua scripts should **exit non‑zero** on failure.
 
 ## Required Checks (Lua)
 
-- `tso.cmd(..., true)` returns RC and captures output.
+- `tso.cmd(..., true)` returns output lines and `err` is nil on success.
 - `tso.cmd(..., true)` output lines are prefixed with `LUZ30031` and printed to LUAOUT; Lua stdout prints `LUZ00022` and `LUZ00023` in LUAOUT.
 - `LUAZ_CONFIG` is present and matches LUACFG values (see IT_TSO, IT_LUACFG).
 -- `tso.alloc/free` are out of scope until direct TSO allocation is implemented.

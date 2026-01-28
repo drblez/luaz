@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Validate `tso.cmd(..., true)` output capture in batch mode using a Lua script.
+Validate `tso.cmd(..., true)` output capture in batch mode using a Lua script (err == nil).
 
 ## Preconditions
 

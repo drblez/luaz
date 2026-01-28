@@ -15,6 +15,13 @@
 - CPPL layout and purpose (four-word parameter list from TMP).
   https://www.ibm.com/docs/en/zos/2.4.0?topic=environment-command-processor-parameter-list-cppl
 
+## ikjeftsr-rc-mapping
+
+- Return codes from IKJEFTSR (RC 0/4/8/12/16/20/24/28 meanings).
+  https://www.ibm.com/docs/en/zos/2.4.0?topic=ikjeftsr-return-codes-from
+- Reason codes from IKJEFTSR when RC=20 (parameter list errors).
+  https://www.ibm.com/docs/en/zos/2.4.0?topic=ikjeftsr-reason-codes-from
+
 ## tso-alloc-command
 
 - TSO ALLOCATE command examples for new sequential datasets (DSORG/SPACE/RECFM).

@@ -44,6 +44,7 @@
 #include <errno.h>
 
 extern int luaopen_tso(lua_State *L);
+extern int luaopen_ds(lua_State *L);
 
 typedef struct luaexec_parm {
   const char *dsn;
@@ -548,6 +549,13 @@ static int luaexec_run(int argc, char **argv, const char *mode)
 
   luaL_openlibs(L);
   luaL_requiref(L, "tso", luaopen_tso, 1);
+  lua_pop(L, 1);
+  /* Change note: preload ds module for DDNAME dataset I/O.
+   * Problem: ds.open_dd was unavailable in Lua runtime.
+   * Expected effect: Lua can open DDNAME streams via ds.open_dd.
+   * Impact: ds module is available through package.preload.
+   */
+  luaL_requiref(L, "ds", luaopen_ds, 1);
   lua_pop(L, 1);
   lua_pushstring(L, run_mode);
   lua_setglobal(L, "LUAZ_MODE");

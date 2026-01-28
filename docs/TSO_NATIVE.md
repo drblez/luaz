@@ -14,6 +14,8 @@ Links (IBM Docs):
 - https://www.ibm.com/docs/en/zos/3.2.0?topic=introduction-overview-tsoe-programming-services
 - https://www.ibm.com/docs/en/zos/3.2.0?topic=ikjtsoev-summary-tsoe-services-available-under
 - https://www.ibm.com/docs/en/zos/2.4.0?topic=ikjeftsr-parameter-list
+- https://www.ibm.com/docs/en/zos/2.4.0?topic=ikjeftsr-return-codes-from
+- https://www.ibm.com/docs/en/zos/2.4.0?topic=ikjeftsr-reason-codes-from
 - https://www.ibm.com/docs/en/zos/3.2.0?topic=dairfail-parameter-list
 - https://www.ibm.com/docs/SSLTBW_3.1.0/com.ibm.zos.v3r1.ikjb400/tmpbtch.htm
 
@@ -23,6 +25,7 @@ Links (IBM Docs):
   - Execute TSO commands directly from C when `capture=false`.
   - Output capture reads `TSOOUT` directly (no DAIR redirection).
   - CPPL is forwarded when available for OS-linkage calls.
+  - IKJEFTSR RC/RSN/ABEND are mapped to LUZ30048+ diagnostics (no RC changes).
 - `tso.alloc` / `tso.free` -> DAIR + DAIRFAIL
   - Dynamic allocation interface with diagnostic mapping.
   - DAIR calls use ASM macro wrappers (IKJDAPL/IKJDAP08/IKJDAP18) to avoid C struct drift.
@@ -48,6 +51,11 @@ Per IBM, IKJEFTSR receives a parameter list with:
 **Batch I/O:** foreground uses terminal; background uses **SYSTSIN** for input and **SYSTSPRT** for output. citeturn1view0
 
 For a working assembler example (IKJEFTSI/IKJEFTSR/IKJEFTST), see IBM sample program in the docs. citeturn0search3
+
+## IKJEFTSR return/ reason codes
+
+- Return codes reference (RC 0/4/8/12/16/20/24/28): see IBM docs link above.
+- Reason codes reference for RC=20: see IBM docs link above.
 
 ## DAIR/DAIRFAIL parameter lists
 
@@ -86,6 +94,6 @@ Key DAIR request blocks (from the extracted macros):
 
 - The native backend still requires a valid TSO/E environment.
 - `tso.cmd` depends on JCL-allocated `SYSTSPRT` (dataset or SYSOUT).
-- `tso.cmd(..., true)` returns output from a temporary `TSOOUT` DDNAME
-  (per-call output isolation).
+- `tso.cmd(..., true)` returns output lines from a temporary `TSOOUT` DDNAME
+  (per-call output isolation); errors are returned as structured tables.
 - All messages must use `LUZNNNNN` prefix and be registered in `MSGS-*.md`.

@@ -4,8 +4,7 @@
 //* +---------+--------------------------------------------+
 //* | ALLOC   | Allocate temp PS datasets                  |
 //* | GENIN   | Create input data                          |
-//* | UTBLD   | Compile DSUT/DS and link into &HLQ..LUA.LOAD|
-//* | RUN     | Execute DSUT with DDNAMEs                  |
+//* | RUN     | Execute UTDOPEN Lua script via LUACMD      |
 //* +---------+--------------------------------------------+
 //UTDOPEN JOB (ACCT),'UT DSOPEN',CLASS=A,MSGCLASS=H,NOTIFY=&SYSUID,
 //             MSGLEVEL=(1,1),REGION=0M
@@ -27,29 +26,17 @@ HELLO
 //SYSPRINT DD SYSOUT=*
 //SYSIN   DD DUMMY
 //*
-//UTBLD  EXEC UTBLD,HLQ=&HLQ,
-//         IN1MEM=DSUT,OUT1=DSUT,
-//         USE2=1,IN2MEM=DS,OUT2=DS,
-//         USE3=0,IN3MEM=ZZZ2,OUT3=ZZZ2,
-//         USE4=0,IN4MEM=ZZZ3,OUT4=ZZZ3,
-//         LMEM=DSUT
-//LKED.SYSLIN DD *
-  INCLUDE OBJLIB(DSUT)
-  INCLUDE OBJLIB(DS)
-  NAME DSUT(R)
+//* Run unit test script via LUACMD
+//RUN     EXEC PGM=IKJEFT01,COND=(0,NE,GENIN)
+//STEPLIB  DD DSN=&HLQ..LUA.LOADLIB,DISP=SHR
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  LUACMD
 /*
-//*
-//RUN     EXEC PGM=DSUT,COND=(0,NE,UTBLD.LKED)
-//STEPLIB DD DSN=&HLQ..LUA.LOAD,DISP=SHR
+//LUAIN   DD DSN=&HLQ..LUA.TEST(UTDOPEN),DISP=SHR
 //DSIN    DD DSN=&&DSIN,DISP=(OLD,DELETE)
-//DSOUT   DD DSN=&&DSOUT,DISP=(OLD,PASS)
-//SYSOUT  DD SYSOUT=*
-//SYSPRINT DD SYSOUT=*
-//SYSUDUMP DD SYSOUT=*
-//*
-//VERIFY  EXEC PGM=DSUT,PARM='VERIFY',COND=(0,NE,RUN)
-//STEPLIB DD DSN=&HLQ..LUA.LOAD,DISP=SHR
-//DDCHECK DD DSN=&&DSOUT,DISP=(OLD,DELETE)
+//DSOUT   DD DSN=&&DSOUT,DISP=(OLD,DELETE)
+//LUAOUT  DD SYSOUT=*
 //SYSOUT  DD SYSOUT=*
 //SYSPRINT DD SYSOUT=*
 //SYSUDUMP DD SYSOUT=*

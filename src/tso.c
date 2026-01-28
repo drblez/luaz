@@ -489,6 +489,197 @@ static int tso_ikjeftsr_call(const char *cmd, int *cmd_rc, int *cmd_rsn,
 }
 
 /**
+ * @brief Set a string field in the error table (skips NULL/empty values).
+ *
+ * @param L Lua state.
+ * @param key Field name.
+ * @param value Field value.
+ * @return None.
+ */
+static void tso_err_set_string(lua_State *L, const char *key,
+                               const char *value)
+{
+  if (L == NULL || key == NULL || value == NULL || value[0] == '\0')
+    return;
+  lua_pushstring(L, value);
+  lua_setfield(L, -2, key);
+}
+
+/**
+ * @brief Set an integer field in the error table when enabled.
+ *
+ * @param L Lua state.
+ * @param key Field name.
+ * @param value Field value.
+ * @param enable Nonzero to store the value.
+ * @return None.
+ */
+static void tso_err_set_int(lua_State *L, const char *key, int value,
+                            int enable)
+{
+  if (L == NULL || key == NULL || !enable)
+    return;
+  lua_pushinteger(L, (lua_Integer)value);
+  lua_setfield(L, -2, key);
+}
+
+/**
+ * @brief Push a base LUAZ error table onto the Lua stack.
+ *
+ * @param L Lua state.
+ * @param luz LUZ message number.
+ * @param code Internal error code (LUZ_E_*).
+ * @param origin Function name (e.g., "tso.cmd").
+ * @param stage Error stage string.
+ * @param svc Service name (IKJEFTSR/IRXEXEC/etc).
+ * @return None (table is left on stack).
+ */
+static void tso_push_error(lua_State *L, int luz, int code, const char *origin,
+                           const char *stage, const char *svc)
+{
+  lua_newtable(L);
+  lua_pushstring(L, "LUAZ_ERROR");
+  lua_setfield(L, -2, "kind");
+  lua_pushinteger(L, (lua_Integer)luz);
+  lua_setfield(L, -2, "luz");
+  lua_pushinteger(L, (lua_Integer)code);
+  lua_setfield(L, -2, "code");
+  tso_err_set_string(L, "origin", origin);
+  tso_err_set_string(L, "stage", stage);
+  tso_err_set_string(L, "svc", svc);
+}
+
+/**
+ * @brief Map IKJEFTSR rc=20 reason codes to a short text description.
+ *
+ * @param rsn IKJEFTSR reason code (parameter 5 when rc=20).
+ * @return Pointer to a static description string.
+ */
+static const char *tso_ikjeftsr_reason_text(int rsn)
+{
+  switch (rsn) {
+  case 4:
+    return "invalid plist length or HOB";
+  case 8:
+    return "flag byte1 nonzero";
+  case 12:
+    return "invalid function flag byte";
+  case 16:
+    return "command with program plist";
+  case 20:
+    return "invalid abend flag byte";
+  case 24:
+    return "non-TSO/E environment";
+  case 28:
+    return "invalid function buffer length";
+  case 32:
+    return "program plist storage not accessible";
+  case 36:
+    return "program plist invalid";
+  case 40:
+    return "function not found";
+  case 44:
+    return "function name syntax error";
+  case 48:
+    return "CLIST name with % but CLIST not requested";
+  case 52:
+    return "unsupported background function";
+  case 56:
+    return "authorized function not found in authorized lib";
+  case 60:
+    return "authorized/unauthorized mismatch";
+  case 64:
+    return "incorrect token";
+  case 68:
+    return "parallel TMP disallows authorized env";
+  default:
+    return "unknown reason";
+  }
+}
+
+/**
+ * @brief Format IKJEFTSR failures into specific LUZ diagnostics.
+ *
+ * @param svc_rc IKJEFTSR return code.
+ * @param cmd_rc IKJEFTSR parameter 4 (command RC when svc_rc=4).
+ * @param cmd_rsn IKJEFTSR parameter 5 (reason when svc_rc=12/20/24).
+ * @param cmd_abend IKJEFTSR parameter 6 (abend when svc_rc=12).
+ * @param out_luz Output LUZ message number.
+ * @param out Output buffer for the formatted message.
+ * @param cap Output buffer capacity.
+ * @return 0 when formatted, or -1 on unsupported svc_rc.
+ */
+static int tso_ikjeftsr_format_error(int svc_rc, int cmd_rc, int cmd_rsn,
+                                     int cmd_abend, int *out_luz, char *out,
+                                     size_t cap)
+{
+  const char *rsn_text = NULL;
+
+  if (out == NULL || cap == 0 || out_luz == NULL)
+    return -1;
+  out[0] = '\0';
+  *out_luz = 0;
+
+  /* Change note: map IKJEFTSR RC/RSN/ABEND to LUZ-specific messages.
+   * Problem: tso.cmd only emitted generic LUZ30032 diagnostics.
+   * Expected effect: IKJEFTSR failures map to LUZ30048+ messages.
+   * Impact: error text changes only; return codes are unchanged.
+   * Ref: src/tso.c.md#ikjeftsr-rc-mapping
+   */
+  switch (svc_rc) {
+  case 4:
+    *out_luz = 30048;
+    return (snprintf(out, cap, "LUZ30048 tso.cmd IKJEFTSR rc=4 cmd_rc=%d",
+                     cmd_rc) > 0)
+               ? 0
+               : -1;
+  case 8:
+    *out_luz = 30049;
+    return (snprintf(out, cap,
+                     "LUZ30049 tso.cmd IKJEFTSR rc=8 attention interruption") >
+            0)
+               ? 0
+               : -1;
+  case 12:
+    *out_luz = 30050;
+    return (snprintf(out, cap,
+                     "LUZ30050 tso.cmd IKJEFTSR rc=12 abend=%d reason=%d",
+                     cmd_abend, cmd_rsn) > 0)
+               ? 0
+               : -1;
+  case 16:
+    *out_luz = 30051;
+    return (snprintf(out, cap,
+                     "LUZ30051 tso.cmd IKJEFTSR rc=16 invalid parameter address") >
+            0)
+               ? 0
+               : -1;
+  case 20:
+    *out_luz = 30052;
+    rsn_text = tso_ikjeftsr_reason_text(cmd_rsn);
+    return (snprintf(out, cap, "LUZ30052 tso.cmd IKJEFTSR rc=20 rsn=%d %s",
+                     cmd_rsn, rsn_text) > 0)
+               ? 0
+               : -1;
+  case 24:
+    *out_luz = 30055;
+    return (snprintf(out, cap, "LUZ30055 tso.cmd IKJEFTSR rc=24 rsn=%d",
+                     cmd_rsn) > 0)
+               ? 0
+               : -1;
+  case 28:
+    *out_luz = 30056;
+    return (snprintf(out, cap,
+                     "LUZ30056 tso.cmd IKJEFTSR rc=28 24-bit/31-bit address mismatch") >
+            0)
+               ? 0
+               : -1;
+  default:
+    return -1;
+  }
+}
+
+/**
  * @brief Pad a DDNAME to 8 characters with trailing spaces.
  *
  * @param outdd Output 8-character DDNAME buffer.
@@ -1236,24 +1427,38 @@ static int lua_tso_cmd_nocap(lua_State *L, const char *cmd)
   int cmd_rc = 0;
   int cmd_rsn = 0;
   int cmd_abend = 0;
+  char msg[160];
+  int luz = 0;
 
   if (tso_env_init() != 0) {
     lua_pushnil(L);
-    lua_pushstring(L, "LUZ30047 tso.cmd TSO environment unavailable");
-    lua_pushinteger(L, LUZ_E_TSO_CMD);
-    return 3;
+    tso_push_error(L, 30047, LUZ_E_TSO_CMD, "tso.cmd", "ikjtsoev",
+                   "IKJTSOEV");
+    tso_err_set_int(L, "rc", g_last_irx_rc, 1);
+    tso_err_set_int(L, "rsn", g_last_rexx_rc, 1);
+    return 2;
   }
 
   svc_rc = tso_ikjeftsr_call(cmd, &cmd_rc, &cmd_rsn, &cmd_abend);
   if (svc_rc != 0) {
     lua_pushnil(L);
-    lua_pushfstring(L,
-                    "LUZ30032 tso.cmd failed native reason=%d abend=%d",
-                    cmd_rsn, cmd_abend);
-    lua_pushinteger(L, LUZ_E_TSO_CMD);
-    return 3;
+    if (tso_ikjeftsr_format_error(svc_rc, cmd_rc, cmd_rsn, cmd_abend, &luz,
+                                  msg, sizeof(msg)) == 0) {
+      tso_push_error(L, luz, LUZ_E_TSO_CMD, "tso.cmd", "ikjeftsr",
+                     "IKJEFTSR");
+    } else {
+      tso_push_error(L, 30032, LUZ_E_TSO_CMD, "tso.cmd", "ikjeftsr",
+                     "IKJEFTSR");
+    }
+    tso_err_set_int(L, "rc", svc_rc, 1);
+    tso_err_set_int(L, "cmd_rc", cmd_rc, svc_rc == 4);
+    tso_err_set_int(L, "rsn", cmd_rsn, 1);
+    tso_err_set_int(L, "abend", cmd_abend, svc_rc == 12);
+    if (svc_rc == 20)
+      tso_err_set_string(L, "rsn_text", tso_ikjeftsr_reason_text(cmd_rsn));
+    return 2;
   }
-  lua_pushinteger(L, cmd_rc);
+  lua_pushnil(L);
   lua_pushnil(L);
   return 2;
 }
@@ -1277,9 +1482,11 @@ static int lua_tso_cmd_capture(lua_State *L, const char *cmd)
 
   if (tso_env_init() != 0) {
     lua_pushnil(L);
-    lua_pushstring(L, "LUZ30047 tso.cmd TSO environment unavailable");
-    lua_pushinteger(L, LUZ_E_TSO_CMD);
-    return 3;
+    tso_push_error(L, 30047, LUZ_E_TSO_CMD, "tso.cmd", "ikjtsoev",
+                   "IKJTSOEV");
+    tso_err_set_int(L, "rc", g_last_irx_rc, 1);
+    tso_err_set_int(L, "rsn", g_last_rexx_rc, 1);
+    return 2;
   }
 
   /* Change note: use REXX OUTTRAP for capture=true path.
@@ -1308,13 +1515,11 @@ static int lua_tso_cmd_capture(lua_State *L, const char *cmd)
                      LUZ_E_TSO_CMD);
   if (rc == LUZ_E_TSO_CMD && g_last_irx_rc != 0) {
     lua_pushnil(L);
-    lua_pushfstring(L,
-                    "LUZ30032 tso.cmd failed rexx irx_rc=%d rexx_rc=%d",
-                    g_last_irx_rc, g_last_rexx_rc);
-    lua_pushinteger(L, LUZ_E_TSO_CMD);
-    return 3;
+    tso_push_error(L, 30032, LUZ_E_TSO_CMD, "tso.cmd", "rexx", "IRXEXEC");
+    tso_err_set_int(L, "irx_rc", g_last_irx_rc, 1);
+    tso_err_set_int(L, "rexx_rc", g_last_rexx_rc, 1);
+    return 2;
   }
-  lua_pushinteger(L, rc);
   if (!read_dd_to_lines(L, outdd_name, tso_policy_output_limit())) {
     lua_newtable(L);
   }
@@ -1330,6 +1535,13 @@ static int lua_tso_cmd_capture(lua_State *L, const char *cmd)
     printf("LUZ30088 tso.cmd free outdd failed rc=%d\n", free_rc);
     fflush(NULL);
   }
+  if (rc != 0) {
+    tso_push_error(L, 30032, LUZ_E_TSO_CMD, "tso.cmd", "rexx", "IRXEXEC");
+    tso_err_set_int(L, "irx_rc", g_last_irx_rc, 1);
+    tso_err_set_int(L, "rexx_rc", g_last_rexx_rc, 1);
+    return 2;
+  }
+  lua_pushnil(L);
   return 2;
 }
 
@@ -1480,9 +1692,8 @@ static int l_tso_cmd(lua_State *L)
   if (!lua_isstring(L, -1) || strcmp(lua_tostring(L, -1), "TSO") != 0) {
     lua_pop(L, 1);
     lua_pushnil(L);
-    lua_pushstring(L, "LUZ30045 tso.cmd not available in PGM mode");
-    lua_pushinteger(L, LUZ_E_TSO_CMD);
-    return 3;
+    tso_push_error(L, 30045, LUZ_E_TSO_CMD, "tso.cmd", "mode", NULL);
+    return 2;
   }
   lua_pop(L, 1);
 
@@ -1494,17 +1705,17 @@ static int l_tso_cmd(lua_State *L)
   block_rc = tso_policy_cmd_check(cmd, verb, sizeof(verb));
   if (block_rc == 1) {
     lua_pushnil(L);
-    lua_pushfstring(L, "LUZ30099 tso.cmd blocked by policy allowlist verb=%s",
-                    verb);
-    lua_pushinteger(L, LUZ_E_TSO_CMD);
-    return 3;
+    tso_push_error(L, 30099, LUZ_E_TSO_CMD, "tso.cmd", "policy", NULL);
+    tso_err_set_string(L, "policy", "allowlist");
+    tso_err_set_string(L, "verb", verb);
+    return 2;
   }
   if (block_rc == 2) {
     lua_pushnil(L);
-    lua_pushfstring(L, "LUZ30100 tso.cmd blocked by policy denylist verb=%s",
-                    verb);
-    lua_pushinteger(L, LUZ_E_TSO_CMD);
-    return 3;
+    tso_push_error(L, 30100, LUZ_E_TSO_CMD, "tso.cmd", "policy", NULL);
+    tso_err_set_string(L, "policy", "denylist");
+    tso_err_set_string(L, "verb", verb);
+    return 2;
   }
 
   /* Change note: add capture flag to select output handling.
@@ -1532,10 +1743,8 @@ static int l_tso_alloc(lua_State *L)
   lua_getglobal(L, "LUAZ_MODE");
   if (!lua_isstring(L, -1) || strcmp(lua_tostring(L, -1), "TSO") != 0) {
     lua_pop(L, 1);
-    lua_pushnil(L);
-    lua_pushstring(L, "LUZ30045 tso.alloc not available in PGM mode");
-    lua_pushinteger(L, LUZ_E_TSO_ALLOC);
-    return 3;
+    tso_push_error(L, 30045, LUZ_E_TSO_ALLOC, "tso.alloc", "mode", NULL);
+    return 1;
   }
   lua_pop(L, 1);
   /* Change note: enforce direct TSO allocation path (no REXX).
@@ -1545,12 +1754,12 @@ static int l_tso_alloc(lua_State *L)
    */
   int rc = tso_native_alloc(spec);
   if (rc == LUZ_E_TSO_ALLOC) {
-    lua_pushnil(L);
-    lua_pushfstring(L, "LUZ30033 tso.alloc failed native rc=%d", rc);
-    lua_pushinteger(L, rc);
-    return 3;
+    tso_push_error(L, 30033, rc, "tso.alloc", "native", "DAIR");
+    tso_err_set_int(L, "rc", rc, 1);
+    tso_err_set_string(L, "spec", spec);
+    return 1;
   }
-  lua_pushinteger(L, rc);
+  lua_pushnil(L);
   return 1;
 }
 
@@ -1566,10 +1775,8 @@ static int l_tso_free(lua_State *L)
   lua_getglobal(L, "LUAZ_MODE");
   if (!lua_isstring(L, -1) || strcmp(lua_tostring(L, -1), "TSO") != 0) {
     lua_pop(L, 1);
-    lua_pushnil(L);
-    lua_pushstring(L, "LUZ30045 tso.free not available in PGM mode");
-    lua_pushinteger(L, LUZ_E_TSO_FREE);
-    return 3;
+    tso_push_error(L, 30045, LUZ_E_TSO_FREE, "tso.free", "mode", NULL);
+    return 1;
   }
   lua_pop(L, 1);
   /* Change note: enforce direct TSO deallocation path (no REXX).
@@ -1579,12 +1786,12 @@ static int l_tso_free(lua_State *L)
    */
   int rc = tso_native_free(spec);
   if (rc == LUZ_E_TSO_FREE) {
-    lua_pushnil(L);
-    lua_pushfstring(L, "LUZ30034 tso.free failed native rc=%d", rc);
-    lua_pushinteger(L, rc);
-    return 3;
+    tso_push_error(L, 30034, rc, "tso.free", "native", "DAIR");
+    tso_err_set_int(L, "rc", rc, 1);
+    tso_err_set_string(L, "spec", spec);
+    return 1;
   }
-  lua_pushinteger(L, rc);
+  lua_pushnil(L);
   return 1;
 }
 
@@ -1601,21 +1808,18 @@ static int l_tso_msg(lua_State *L)
   lua_getglobal(L, "LUAZ_MODE");
   if (!lua_isstring(L, -1) || strcmp(lua_tostring(L, -1), "TSO") != 0) {
     lua_pop(L, 1);
-    lua_pushnil(L);
-    lua_pushstring(L, "LUZ30045 tso.msg not available in PGM mode");
-    lua_pushinteger(L, LUZ_E_TSO_MSG);
-    return 3;
+    tso_push_error(L, 30045, LUZ_E_TSO_MSG, "tso.msg", "mode", NULL);
+    return 1;
   }
   lua_pop(L, 1);
   int rc = lua_tso_msg(text, level);
   if (rc == LUZ_E_TSO_MSG) {
-    lua_pushnil(L);
-    lua_pushfstring(L, "LUZ30035 tso.msg failed irx_rc=%d rexx_rc=%d",
-                    g_last_irx_rc, g_last_rexx_rc);
-    lua_pushinteger(L, rc);
-    return 3;
+    tso_push_error(L, 30035, rc, "tso.msg", "native", NULL);
+    tso_err_set_int(L, "irx_rc", g_last_irx_rc, 1);
+    tso_err_set_int(L, "rexx_rc", g_last_rexx_rc, 1);
+    return 1;
   }
-  lua_pushinteger(L, rc);
+  lua_pushnil(L);
   return 1;
 }
 
@@ -1631,10 +1835,8 @@ static int l_tso_exit(lua_State *L)
   lua_getglobal(L, "LUAZ_MODE");
   if (!lua_isstring(L, -1) || strcmp(lua_tostring(L, -1), "TSO") != 0) {
     lua_pop(L, 1);
-    lua_pushnil(L);
-    lua_pushstring(L, "LUZ30045 tso.exit not available in PGM mode");
-    lua_pushinteger(L, LUZ_E_TSO_EXIT);
-    return 3;
+    tso_push_error(L, 30045, LUZ_E_TSO_EXIT, "tso.exit", "mode", NULL);
+    return 1;
   }
   lua_pop(L, 1);
   lua_tso_exit(code);

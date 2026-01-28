@@ -82,22 +82,23 @@ This section replaces the REXX bridge and focuses only on native TSO services.
   - [ ] UT JCL: ALLOC/FREE temp datasets, verify DD existence.
 - [ ] **Message handling**
   - [ ] Implement `tso_native_msg()` to emit to SYSTSPRT/SYSOUT.
+  - [ ] Make `tso.msg` target configurable (SYSTSPRT/LUAOUT/terminal/WTO/broadcast).
   - [ ] Ensure `LUZNNNNN` prefix enforcement and catalog entries.
 - [ ] **Lua module wiring**
   - [~] Wire native backend into `tso.*` behind a build flag/policy switch.
   - [ ] Keep REXX path present but disabled by default.
 - [ ] **Tests & diagnostics**
-  - [ ] Add UT JCL for `tso.cmd`, `tso.alloc/free`, `tso.msg`.
-  - [ ] Add Lua integration test for `tso.cmd` with output capture and RC checks.
+  - [x] Add UT JCL for `tso.cmd`, `tso.alloc/free`, `tso.msg`.
+  - [x] Add Lua integration test for `tso.cmd` with output capture and RC checks.
   - [ ] Ensure new LUZ codes are recorded in `MSGS-*.md` with user actions.
-- [ ] **Cleanup**
+  - [ ] **Cleanup**
   - [ ] Remove temporary debug prints; keep only stable LUZ outputs.
   - [ ] Update docs with final behavior and examples.
-  - [ ] **ds module (z/OS-specific):**
-    - [ ] `ds.open_dd(ddname, mode)` — DDNAME stream (done).
-    - [ ] `ds.open_dsn(dsn, mode)` — direct DSN open (PS/PDS/PDSE).
-    - [ ] `ds.member(dsn, member)` — PDS/PDSE member helpers.
-    - [ ] `ds.info(dsn)` — dataset metadata (DSORG/RECFM/LRECL/BLKSIZE).
+  - [x] **ds module (z/OS-specific):**
+    - [x] `ds.open_dd(ddname, mode)` — DDNAME stream.
+    - [x] `ds.open_dsn(dsn, mode)` — direct DSN open (PS/PDS/PDSE).
+    - [x] `ds.member(dsn, member)` — PDS/PDSE member helpers.
+    - [x] `ds.info(dsn)` — dataset metadata (DSORG/RECFM/LRECL/BLKSIZE).
   - [ ] **ispf module (z/OS-specific):**
     - [ ] `ispf.qry()` — ISPF active check.
     - [ ] `ispf.exec(cmdline)` — raw ISPEXEC.
